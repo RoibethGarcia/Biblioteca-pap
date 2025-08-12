@@ -44,8 +44,8 @@ src/
 
 1. **Clonar el repositorio**
    ```bash
-   git clone https://github.com/RoibethGarcia/biblioteca-pap.git
-   cd biblioteca-pap
+   git clone https://github.com/RoibethGarcia/Biblioteca-pap.git
+   cd Biblioteca-pap
    ```
 
 2. **Abrir en IntelliJ IDEA**
