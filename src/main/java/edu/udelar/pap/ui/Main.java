@@ -58,6 +58,81 @@ public class Main {
                 JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
                 JButton btnAceptar = new JButton("Aceptar");
                 JButton btnCancelar = new JButton("Cancelar");
+                
+                // Funcionalidad del botón Aceptar
+                btnAceptar.addActionListener(evt -> {
+                    String nombre = tfNombre.getText().trim();
+                    String email = tfEmail.getText().trim();
+                    
+                    // Validación básica
+                    if (nombre.isEmpty() || email.isEmpty()) {
+                        JOptionPane.showMessageDialog(internal, 
+                            "Por favor complete todos los campos", 
+                            "Campos requeridos", 
+                            JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                    
+                    // Validación mejorada de email usando regex
+                    String emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
+                    if (!email.matches(emailRegex)) {
+                        JOptionPane.showMessageDialog(internal, 
+                            "Por favor ingrese un email válido\n" +
+                            "Ejemplo: usuario@dominio.com", 
+                            "Email inválido", 
+                            JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                    
+                    // Mostrar confirmación
+                    int confirmacion = JOptionPane.showConfirmDialog(internal,
+                        "¿Desea crear el lector con los siguientes datos?\n" +
+                        "Nombre: " + nombre + "\n" +
+                        "Email: " + email,
+                        "Confirmar creación",
+                        JOptionPane.YES_NO_OPTION);
+                    
+                    if (confirmacion == JOptionPane.YES_OPTION) {
+                        // Aquí posteriormente se guardaría en la base de datos
+                        JOptionPane.showMessageDialog(internal,
+                            "Lector creado exitosamente:\n" +
+                            "Nombre: " + nombre + "\n" +
+                            "Email: " + email,
+                            "Éxito",
+                            JOptionPane.INFORMATION_MESSAGE);
+                        
+                        // Limpiar campos
+                        tfNombre.setText("");
+                        tfEmail.setText("");
+                        tfNombre.requestFocus();
+                    }
+                });
+                
+                // Funcionalidad del botón Cancelar mejorada
+                btnCancelar.addActionListener(evtCancel -> {
+                    String nombre = tfNombre.getText().trim();
+                    String email = tfEmail.getText().trim();
+                    
+                    // Si hay datos en los campos, preguntar confirmación
+                    if (!nombre.isEmpty() || !email.isEmpty()) {
+                        int confirmacion = JOptionPane.showConfirmDialog(internal,
+                            "¿Está seguro que desea cancelar?\n" +
+                            "Se perderán los datos ingresados.",
+                            "Confirmar cancelación",
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.QUESTION_MESSAGE);
+                        
+                        if (confirmacion != JOptionPane.YES_OPTION) {
+                            return; // No cancelar si el usuario dice "No"
+                        }
+                    }
+                    
+                    // Limpiar campos
+                    tfNombre.setText("");
+                    tfEmail.setText("");
+                    tfNombre.requestFocus();
+                });
+                
                 actions.add(btnAceptar);
                 actions.add(btnCancelar);
 
