@@ -10,8 +10,22 @@ public final class HibernateUtil {
 
     private static SessionFactory buildSessionFactory() {
         try {
-            String db = System.getProperty("db", "h2");
-            String cfg = db.equalsIgnoreCase("mysql") ? "hibernate-mysql.cfg.xml" : "hibernate-h2.cfg.xml";
+            String db = System.getProperty("db", "mysql");
+            String cfg;
+            
+            switch (db.toLowerCase()) {
+                case "mysql":
+                    cfg = "hibernate-mysql.cfg.xml";
+                    break;
+                case "mysql-team":
+                    cfg = "hibernate-mysql-team.cfg.xml";
+                    break;
+                case "h2":
+                default:
+                    cfg = "hibernate-h2.cfg.xml";
+                    break;
+            }
+            
             Configuration configuration = new Configuration();
             configuration.configure(cfg);
             return configuration.buildSessionFactory();

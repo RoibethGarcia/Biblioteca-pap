@@ -57,9 +57,14 @@ public class ValidacionesUtil {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         LocalDate fecha = LocalDate.parse(fechaStr, formatter);
         
-        // Validar que la fecha no sea futura
-        if (fecha.isAfter(LocalDate.now())) {
+        // Validar que la fecha no sea futura (permitir hasta 1 día en el futuro para zonas horarias)
+        if (fecha.isAfter(LocalDate.now().plusDays(1))) {
             throw new DateTimeParseException("Fecha futura", fechaStr, 0);
+        }
+        
+        // Validar que la fecha no sea muy antigua (más de 150 años)
+        if (fecha.isBefore(LocalDate.now().minusYears(150))) {
+            throw new DateTimeParseException("Fecha muy antigua", fechaStr, 0);
         }
         
         return fecha;
@@ -131,5 +136,39 @@ public class ValidacionesUtil {
             mensaje,
             "Error",
             JOptionPane.ERROR_MESSAGE);
+    }
+    
+    /**
+     * Valida que un string sea un número entero positivo
+     */
+    public static boolean validarNumeroEntero(String numeroStr) {
+        try {
+            int numero = Integer.parseInt(numeroStr);
+            return numero > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Valida que un string sea un número decimal positivo
+     */
+    public static boolean validarNumeroDecimal(String numeroStr) {
+        try {
+            double numero = Double.parseDouble(numeroStr);
+            return numero > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Muestra mensaje de error para número inválido
+     */
+    public static void mostrarErrorNumero(JInternalFrame parent, String tipo) {
+        JOptionPane.showMessageDialog(parent,
+            "Por favor ingrese un " + tipo + " válido (número positivo)",
+            "Número inválido",
+            JOptionPane.WARNING_MESSAGE);
     }
 }

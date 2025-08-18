@@ -16,6 +16,7 @@ import edu.udelar.pap.ui.DatabaseUtil;
 import edu.udelar.pap.ui.InterfaceUtil;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 
 public class Main {
     public static void main(String[] args) {
@@ -150,7 +151,8 @@ public class Main {
                             tfNombre.requestFocus();
                             
                         } catch (Exception ex) {
-                            ValidacionesUtil.mostrarError(internal, "Error al guardar el lector: " + ex.getMessage());
+                            String mensajeError = DatabaseUtil.obtenerMensajeError(ex);
+                            ValidacionesUtil.mostrarError(internal, "Error al guardar el lector: " + mensajeError);
                         }
                     }
                 });
@@ -268,7 +270,8 @@ public class Main {
                             tfNombre.requestFocus();
 
                         } catch (Exception ex) {
-                            ValidacionesUtil.mostrarError(internal, "Error al guardar el bibliotecario: " + ex.getMessage());
+                            String mensajeError = DatabaseUtil.obtenerMensajeError(ex);
+                            ValidacionesUtil.mostrarError(internal, "Error al guardar el bibliotecario: " + mensajeError);
                         }
                     }
                 });
@@ -402,16 +405,11 @@ public class Main {
                             }
 
                             // Validar que páginas sea un número
-                            int paginas;
-                            try {
-                                paginas = Integer.parseInt(paginasStr);
-                                if (paginas <= 0) {
-                                    throw new NumberFormatException();
-                                }
-                            } catch (NumberFormatException ex) {
-                                ValidacionesUtil.mostrarError(internal, "El número de páginas debe ser un número entero positivo");
+                            if (!ValidacionesUtil.validarNumeroEntero(paginasStr)) {
+                                ValidacionesUtil.mostrarErrorNumero(internal, "número entero");
                                 return;
                             }
+                            int paginas = Integer.parseInt(paginasStr);
 
                             // Crear y guardar libro
                             Libro libro = new Libro();
@@ -445,16 +443,11 @@ public class Main {
                             }
 
                             // Validar que peso sea un número
-                            double peso;
-                            try {
-                                peso = Double.parseDouble(pesoStr);
-                                if (peso <= 0) {
-                                    throw new NumberFormatException();
-                                }
-                            } catch (NumberFormatException ex) {
-                                ValidacionesUtil.mostrarError(internal, "El peso debe ser un número positivo");
+                            if (!ValidacionesUtil.validarNumeroDecimal(pesoStr)) {
+                                ValidacionesUtil.mostrarErrorNumero(internal, "número decimal");
                                 return;
                             }
+                            double peso = Double.parseDouble(pesoStr);
 
                             // Crear y guardar artículo especial
                             ArticuloEspecial articulo = new ArticuloEspecial();
@@ -480,7 +473,8 @@ public class Main {
                         }
 
                     } catch (Exception ex) {
-                        ValidacionesUtil.mostrarError(internal, "Error al guardar la donación: " + ex.getMessage());
+                        String mensajeError = DatabaseUtil.obtenerMensajeError(ex);
+                        ValidacionesUtil.mostrarError(internal, "Error al guardar la donación: " + mensajeError);
                     }
                 });
 
@@ -519,12 +513,14 @@ public class Main {
 
             // Test mínimo de inicialización de Hibernate en H2
             try {
-                SessionFactory sf = HibernateUtil.getSessionFactory();
-                try (Session s = sf.openSession()) {
+                if (DatabaseUtil.verificarConexion()) {
                     System.out.println("Hibernate inicializado OK (" + (System.getProperty("db", "h2")) + ")");
+                } else {
+                    throw new Exception("No se pudo verificar la conexión a la base de datos");
                 }
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(frame, "Error inicializando persistencia: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                String mensajeError = DatabaseUtil.obtenerMensajeError(ex);
+                JOptionPane.showMessageDialog(frame, "Error inicializando persistencia: " + mensajeError, "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
     }

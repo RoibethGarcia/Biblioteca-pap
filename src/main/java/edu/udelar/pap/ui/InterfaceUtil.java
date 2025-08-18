@@ -34,6 +34,16 @@ public class InterfaceUtil {
     public static JInternalFrame crearVentanaInterna(String titulo, int ancho, int alto) {
         JInternalFrame internal = new JInternalFrame(titulo, true, true, true, true);
         internal.setSize(ancho, alto);
+        
+        // Centrar la ventana en el desktop
+        internal.setLocation(50, 50);
+        
+        // Evitar que se superpongan las ventanas
+        internal.setResizable(true);
+        internal.setMaximizable(true);
+        internal.setIconifiable(true);
+        internal.setClosable(true);
+        
         internal.setVisible(true);
         return internal;
     }

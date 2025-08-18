@@ -5,7 +5,7 @@
 <hibernate-configuration>
     <session-factory>
         <property name="hibernate.connection.driver_class">com.mysql.cj.jdbc.Driver</property>
-        <property name="hibernate.connection.url">jdbc:mysql://localhost:3306/BD_Pap?useSSL=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC</property>
+        <property name="hibernate.connection.url">jdbc:mysql://192.168.1.5:3306/BD_Pap?useSSL=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC</property>
         <property name="hibernate.connection.username">biblioteca_user</property>
         <property name="hibernate.connection.password">biblioteca_pass</property>
 
@@ -21,5 +21,7 @@
         <mapping class="edu.udelar.pap.domain.Libro"/>
         <mapping class="edu.udelar.pap.domain.ArticuloEspecial"/>
         <mapping class="edu.udelar.pap.domain.Prestamo"/>
+        <mapping class="edu.udelar.pap.domain.EstadoLector"/>
+        <mapping class="edu.udelar.pap.domain.Zona"/>
     </session-factory>
 </hibernate-configuration>
