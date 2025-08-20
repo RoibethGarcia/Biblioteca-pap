@@ -4,7 +4,6 @@ import edu.udelar.pap.persistence.HibernateUtil;
 import edu.udelar.pap.domain.*;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 
 import java.time.LocalDate;
 

@@ -26,7 +26,7 @@ public class SchemaGenerator {
                 Transaction tx = session.beginTransaction();
                 
                 // Hacer una consulta simple para forzar la creación de tablas
-                session.createQuery("FROM Usuario").setMaxResults(1).getResultList();
+                session.createQuery("FROM Usuario", Object.class).setMaxResults(1).getResultList();
                 
                 tx.commit();
                 System.out.println("✓ Esquema creado exitosamente");
@@ -41,7 +41,7 @@ public class SchemaGenerator {
                 
                 for (String entidad : entidades) {
                     try {
-                        session.createQuery("FROM " + entidad + " LIMIT 1").getResultList();
+                        session.createQuery("FROM " + entidad + " LIMIT 1", Object.class).getResultList();
                         System.out.println("✓ Tabla " + entidad + " existe");
                     } catch (Exception e) {
                         System.out.println("✗ Error en tabla " + entidad + ": " + e.getMessage());

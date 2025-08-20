@@ -56,6 +56,11 @@ public class Lector extends Usuario {
     public void setZona(Zona zona) {
         this.zona = zona;
     }
+    
+    @Override
+    public String toString() {
+        return "👤 " + getNombre() + " - " + zona + " (" + estado + ")";
+    }
 }
 
 

@@ -18,6 +18,11 @@ public class Bibliotecario extends Usuario {
     public void setNumeroEmpleado(String numeroEmpleado) {
         this.numeroEmpleado = numeroEmpleado;
     }
+    
+    @Override
+    public String toString() {
+        return "👨‍💼 " + getNombre() + " - Empleado #" + numeroEmpleado;
+    }
 }
 
 
