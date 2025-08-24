@@ -110,7 +110,7 @@ public class LectorController {
     private JPanel crearPanelAcciones(JInternalFrame internal) {
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         
-        JButton btnAceptar = new JButton("Aceptar");
+        JButton btnAceptar = new JButton("Crear Usuario");
         JButton btnCancelar = new JButton("Cancelar");
         
         btnAceptar.addActionListener(e -> crearLector(internal));
@@ -285,6 +285,27 @@ public class LectorController {
      */
     public List<Lector> obtenerLectoresActivos() {
         return lectorService.obtenerLectoresActivos();
+    }
+    
+    /**
+     * Busca lectores por nombre y apellido
+     */
+    public List<Lector> buscarLectores(String nombre, String apellido) {
+        return lectorService.buscarLectoresPorNombreYApellido(nombre, apellido);
+    }
+    
+    /**
+     * Obtiene un lector por ID
+     */
+    public Lector obtenerLectorPorId(Long id) {
+        return lectorService.obtenerLectorPorId(id);
+    }
+    
+    /**
+     * Actualiza un lector existente
+     */
+    public void actualizarLector(Lector lector) {
+        lectorService.actualizarLector(lector);
     }
     
     /**

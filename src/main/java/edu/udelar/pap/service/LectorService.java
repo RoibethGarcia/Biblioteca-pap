@@ -85,10 +85,42 @@ public class LectorService {
     public List<Lector> buscarLectoresPorNombre(String nombre) {
         try (Session session = sessionFactory.openSession()) {
             return session.createQuery(
-                "FROM Lector WHERE nombre LIKE :nombre ORDER BY nombre", 
+                "FROM Lector WHERE LOWER(nombre) LIKE LOWER(:nombre) ORDER BY nombre", 
                 Lector.class)
                 .setParameter("nombre", "%" + nombre + "%")
                 .list();
+        }
+    }
+    
+    /**
+     * Busca lectores por nombre y apellido
+     */
+    public List<Lector> buscarLectoresPorNombreYApellido(String nombre, String apellido) {
+        try (Session session = sessionFactory.openSession()) {
+            String hql;
+            if (nombre != null && !nombre.trim().isEmpty() && apellido != null && !apellido.trim().isEmpty()) {
+                // Buscar por ambos campos - case insensitive
+                hql = "FROM Lector WHERE LOWER(nombre) LIKE LOWER(:nombre) AND LOWER(nombre) LIKE LOWER(:apellido) ORDER BY nombre";
+                return session.createQuery(hql, Lector.class)
+                    .setParameter("nombre", "%" + nombre + "%")
+                    .setParameter("apellido", "%" + apellido + "%")
+                    .list();
+            } else if (nombre != null && !nombre.trim().isEmpty()) {
+                // Buscar solo por nombre - case insensitive
+                hql = "FROM Lector WHERE LOWER(nombre) LIKE LOWER(:nombre) ORDER BY nombre";
+                return session.createQuery(hql, Lector.class)
+                    .setParameter("nombre", "%" + nombre + "%")
+                    .list();
+            } else if (apellido != null && !apellido.trim().isEmpty()) {
+                // Buscar solo por apellido - case insensitive
+                hql = "FROM Lector WHERE LOWER(nombre) LIKE LOWER(:apellido) ORDER BY nombre";
+                return session.createQuery(hql, Lector.class)
+                    .setParameter("apellido", "%" + apellido + "%")
+                    .list();
+            } else {
+                // Si no hay criterios, devolver todos
+                return obtenerTodosLosLectores();
+            }
         }
     }
     
