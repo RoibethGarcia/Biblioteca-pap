@@ -10,6 +10,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import java.util.List;
+import edu.udelar.pap.domain.EstadoPrestamo;
 
 /**
  * Servicio para la gestión de préstamos
@@ -153,6 +154,67 @@ public class PrestamoService {
                 Long.class)
                 .setParameter("lector", lector)
                 .uniqueResult();
+        }
+    }
+
+    /**
+     * Obtiene todos los préstamos activos (EN_CURSO) de un lector
+     */
+    public List<Prestamo> obtenerPrestamosActivosPorLector(Lector lector) {
+        try (Session session = sessionFactory.openSession()) {
+            return session.createQuery(
+                "FROM Prestamo WHERE lector = :lector AND estado = 'EN_CURSO' ORDER BY fechaSolicitud DESC", 
+                Prestamo.class)
+                .setParameter("lector", lector)
+                .list();
+        }
+    }
+
+    /**
+     * Obtiene todos los préstamos activos (EN_CURSO)
+     */
+    public List<Prestamo> obtenerTodosLosPrestamosActivos() {
+        try (Session session = sessionFactory.openSession()) {
+            return session.createQuery(
+                "FROM Prestamo WHERE estado = 'EN_CURSO' ORDER BY fechaSolicitud DESC", 
+                Prestamo.class)
+                .list();
+        }
+    }
+
+    /**
+     * Marca un préstamo como devuelto
+     */
+    public boolean marcarPrestamoComoDevuelto(Long prestamoId) {
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            try {
+                Prestamo prestamo = session.get(Prestamo.class, prestamoId);
+                if (prestamo != null && prestamo.getEstado() == EstadoPrestamo.EN_CURSO) {
+                    prestamo.setEstado(EstadoPrestamo.DEVUELTO);
+                    session.merge(prestamo);
+                    tx.commit();
+                    return true;
+                }
+                tx.rollback();
+                return false;
+            } catch (Exception e) {
+                tx.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Obtiene préstamos por estado
+     */
+    public List<Prestamo> obtenerPrestamosPorEstado(EstadoPrestamo estado) {
+        try (Session session = sessionFactory.openSession()) {
+            return session.createQuery(
+                "FROM Prestamo WHERE estado = :estado ORDER BY fechaSolicitud DESC", 
+                Prestamo.class)
+                .setParameter("estado", estado)
+                .list();
         }
     }
 }

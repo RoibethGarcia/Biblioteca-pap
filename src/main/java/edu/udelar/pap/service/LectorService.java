@@ -6,6 +6,8 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import java.util.List;
+import edu.udelar.pap.domain.EstadoLector;
+import edu.udelar.pap.domain.Zona;
 
 /**
  * Servicio para la gestión de lectores
@@ -110,5 +112,64 @@ public class LectorService {
      */
     public boolean existeLectorConEmail(String email) {
         return buscarLectorPorEmail(email) != null;
+    }
+
+    /**
+     * Obtiene lectores por estado
+     */
+    public List<Lector> obtenerLectoresPorEstado(EstadoLector estado) {
+        try (Session session = sessionFactory.openSession()) {
+            return session.createQuery(
+                "FROM Lector WHERE estado = :estado ORDER BY nombre", 
+                Lector.class)
+                .setParameter("estado", estado)
+                .list();
+        }
+    }
+
+    /**
+     * Cambia el estado de un lector
+     */
+    public boolean cambiarEstadoLector(Long lectorId, EstadoLector nuevoEstado) {
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            try {
+                Lector lector = session.get(Lector.class, lectorId);
+                if (lector != null) {
+                    lector.setEstado(nuevoEstado);
+                    session.merge(lector);
+                    tx.commit();
+                    return true;
+                }
+                tx.rollback();
+                return false;
+            } catch (Exception e) {
+                tx.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Cambia la zona de un lector
+     */
+    public boolean cambiarZonaLector(Long lectorId, Zona nuevaZona) {
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            try {
+                Lector lector = session.get(Lector.class, lectorId);
+                if (lector != null) {
+                    lector.setZona(nuevaZona);
+                    session.merge(lector);
+                    tx.commit();
+                    return true;
+                }
+                tx.rollback();
+                return false;
+            } catch (Exception e) {
+                tx.rollback();
+                throw e;
+            }
+        }
     }
 }

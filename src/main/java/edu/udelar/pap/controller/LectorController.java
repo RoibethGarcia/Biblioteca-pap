@@ -7,6 +7,7 @@ import edu.udelar.pap.service.LectorService;
 import edu.udelar.pap.ui.ValidacionesUtil;
 import edu.udelar.pap.ui.DatabaseUtil;
 import edu.udelar.pap.ui.DateTextField;
+import edu.udelar.pap.ui.InterfaceUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -299,5 +300,362 @@ public class LectorController {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Muestra la interfaz para gestionar la edición de lectores
+     */
+    public void mostrarInterfazGestionEdicionLectores(JDesktopPane desktop) {
+        JInternalFrame internal = crearVentanaEdicionLectores();
+        JPanel panel = crearPanelEdicionLectores(internal);
+        internal.setContentPane(panel);
+        desktop.add(internal);
+        internal.toFront();
+    }
+
+    /**
+     * Crea la ventana interna para edición de lectores
+     */
+    private JInternalFrame crearVentanaEdicionLectores() {
+        return InterfaceUtil.crearVentanaInterna("Gestión de Edición de Lectores", 900, 700);
+    }
+
+    /**
+     * Crea el panel principal para edición de lectores
+     */
+    private JPanel crearPanelEdicionLectores(JInternalFrame internal) {
+        JPanel panel = new JPanel(new BorderLayout());
+        
+        // Panel superior para filtros
+        JPanel filtrosPanel = crearPanelFiltrosEdicion(internal);
+        panel.add(filtrosPanel, BorderLayout.NORTH);
+        
+        // Panel central para la tabla de lectores
+        JPanel tablaPanel = crearPanelTablaLectores(internal);
+        panel.add(tablaPanel, BorderLayout.CENTER);
+        
+        // Panel inferior para acciones
+        JPanel accionesPanel = crearPanelAccionesEdicion(internal);
+        panel.add(accionesPanel, BorderLayout.SOUTH);
+        
+        return panel;
+    }
+
+    /**
+     * Crea el panel de filtros para edición
+     */
+    private JPanel crearPanelFiltrosEdicion(JInternalFrame internal) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        panel.setBorder(BorderFactory.createTitledBorder("Filtros"));
+        
+        // Combo para filtrar por estado
+        JComboBox<EstadoLector> cbEstado = new JComboBox<>();
+        cbEstado.addItem(null); // Opción "Todos los estados"
+        cbEstado.addItem(EstadoLector.ACTIVO);
+        cbEstado.addItem(EstadoLector.SUSPENDIDO);
+        
+        JLabel lblEstado = new JLabel("Estado:");
+        panel.add(lblEstado);
+        panel.add(cbEstado);
+        
+        // Botón para filtrar
+        JButton btnFiltrar = new JButton("Filtrar Lectores");
+        btnFiltrar.addActionListener(e -> filtrarLectores(internal));
+        panel.add(btnFiltrar);
+        
+        // Botón para mostrar todos
+        JButton btnMostrarTodos = new JButton("Mostrar Todos");
+        btnMostrarTodos.addActionListener(e -> mostrarTodosLosLectores(internal));
+        panel.add(btnMostrarTodos);
+        
+        // Guardar referencias
+        internal.putClientProperty("cbEstado", cbEstado);
+        internal.putClientProperty("btnFiltrar", btnFiltrar);
+        
+        return panel;
+    }
+
+    /**
+     * Crea el panel de la tabla de lectores
+     */
+    private JPanel crearPanelTablaLectores(JInternalFrame internal) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("Lectores"));
+        
+        // Crear tabla
+        String[] columnas = {"ID", "Nombre", "Email", "Dirección", "Estado", "Zona", "Fecha Registro"};
+        Object[][] datos = {};
+        
+        JTable tabla = new JTable(datos, columnas);
+        JScrollPane scrollPane = new JScrollPane(tabla);
+        
+        panel.add(scrollPane, BorderLayout.CENTER);
+        
+        // Guardar referencia
+        internal.putClientProperty("tablaLectores", tabla);
+        
+        return panel;
+    }
+
+    /**
+     * Crea el panel de acciones para edición
+     */
+    private JPanel crearPanelAccionesEdicion(JInternalFrame internal) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        panel.setBorder(BorderFactory.createTitledBorder("Acciones"));
+        
+        // Botón para cambiar estado
+        JButton btnCambiarEstado = new JButton("Cambiar Estado");
+        btnCambiarEstado.addActionListener(e -> cambiarEstadoLector(internal));
+        panel.add(btnCambiarEstado);
+        
+        // Botón para cambiar zona
+        JButton btnCambiarZona = new JButton("Cambiar Zona");
+        btnCambiarZona.addActionListener(e -> cambiarZonaLector(internal));
+        panel.add(btnCambiarZona);
+        
+        // Botón para ver detalles
+        JButton btnVerDetalles = new JButton("Ver Detalles");
+        btnVerDetalles.addActionListener(e -> verDetallesLector(internal));
+        panel.add(btnVerDetalles);
+        
+        // Botón para cerrar
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.addActionListener(e -> internal.dispose());
+        panel.add(btnCerrar);
+        
+        return panel;
+    }
+
+    /**
+     * Filtra lectores por estado
+     */
+    private void filtrarLectores(JInternalFrame internal) {
+        @SuppressWarnings("unchecked")
+        JComboBox<EstadoLector> cbEstado = (JComboBox<EstadoLector>) internal.getClientProperty("cbEstado");
+        EstadoLector estadoSeleccionado = (EstadoLector) cbEstado.getSelectedItem();
+        
+        try {
+            List<Lector> lectores;
+            if (estadoSeleccionado != null) {
+                lectores = lectorService.obtenerLectoresPorEstado(estadoSeleccionado);
+            } else {
+                lectores = lectorService.obtenerTodosLosLectores();
+            }
+            
+            actualizarTablaLectores(internal, lectores);
+            
+        } catch (Exception e) {
+            ValidacionesUtil.mostrarError(internal, "Error al filtrar lectores: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Muestra todos los lectores
+     */
+    private void mostrarTodosLosLectores(JInternalFrame internal) {
+        try {
+            List<Lector> lectores = lectorService.obtenerTodosLosLectores();
+            actualizarTablaLectores(internal, lectores);
+        } catch (Exception e) {
+            ValidacionesUtil.mostrarError(internal, "Error al cargar lectores: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Actualiza la tabla de lectores
+     */
+    private void actualizarTablaLectores(JInternalFrame internal, List<Lector> lectores) {
+        JTable tabla = (JTable) internal.getClientProperty("tablaLectores");
+        
+        // Crear modelo de datos
+        String[] columnas = {"ID", "Nombre", "Email", "Dirección", "Estado", "Zona", "Fecha Registro"};
+        Object[][] datos = new Object[lectores.size()][columnas.length];
+        
+        for (int i = 0; i < lectores.size(); i++) {
+            Lector lector = lectores.get(i);
+            datos[i][0] = lector.getId();
+            datos[i][1] = lector.getNombre();
+            datos[i][2] = lector.getEmail();
+            datos[i][3] = lector.getDireccion();
+            datos[i][4] = lector.getEstado();
+            datos[i][5] = lector.getZona();
+            datos[i][6] = lector.getFechaRegistro();
+        }
+        
+        // Actualizar tabla
+        tabla.setModel(new javax.swing.table.DefaultTableModel(datos, columnas));
+    }
+
+    /**
+     * Cambia el estado del lector seleccionado
+     */
+    private void cambiarEstadoLector(JInternalFrame internal) {
+        JTable tabla = (JTable) internal.getClientProperty("tablaLectores");
+        
+        int filaSeleccionada = tabla.getSelectedRow();
+        if (filaSeleccionada == -1) {
+            ValidacionesUtil.mostrarError(internal, "Por favor seleccione un lector para cambiar su estado");
+            return;
+        }
+        
+        Long lectorId = (Long) tabla.getValueAt(filaSeleccionada, 0);
+        String lectorNombre = (String) tabla.getValueAt(filaSeleccionada, 1);
+        EstadoLector estadoActual = (EstadoLector) tabla.getValueAt(filaSeleccionada, 4);
+        
+        // Determinar nuevo estado
+        EstadoLector nuevoEstado = (estadoActual == EstadoLector.ACTIVO) ? 
+            EstadoLector.SUSPENDIDO : EstadoLector.ACTIVO;
+        
+        // Confirmar acción
+        String mensajeConfirmacion = estadoActual == EstadoLector.ACTIVO ?
+            "¿Está seguro que desea SUSPENDER al lector?\n\n" +
+            "ID: " + lectorId + "\n" +
+            "Nombre: " + lectorNombre + "\n" +
+            "Estado actual: " + estadoActual + "\n" +
+            "Nuevo estado: " + nuevoEstado + "\n\n" +
+            "Un lector suspendido no podrá realizar nuevos préstamos." :
+            "¿Está seguro que desea ACTIVAR al lector?\n\n" +
+            "ID: " + lectorId + "\n" +
+            "Nombre: " + lectorNombre + "\n" +
+            "Estado actual: " + estadoActual + "\n" +
+            "Nuevo estado: " + nuevoEstado + "\n\n" +
+            "Un lector activo podrá realizar préstamos.";
+        
+        int confirmacion = JOptionPane.showConfirmDialog(
+            internal,
+            mensajeConfirmacion,
+            "Confirmar Cambio de Estado",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+        
+        if (confirmacion == JOptionPane.YES_OPTION) {
+            try {
+                boolean exito = lectorService.cambiarEstadoLector(lectorId, nuevoEstado);
+                if (exito) {
+                    String mensajeExito = estadoActual == EstadoLector.ACTIVO ?
+                        "Lector suspendido exitosamente:\n" +
+                        "ID: " + lectorId + "\n" +
+                        "Nombre: " + lectorNombre + "\n" +
+                        "Nuevo estado: " + nuevoEstado :
+                        "Lector activado exitosamente:\n" +
+                        "ID: " + lectorId + "\n" +
+                        "Nombre: " + lectorNombre + "\n" +
+                        "Nuevo estado: " + nuevoEstado;
+                    
+                    ValidacionesUtil.mostrarExito(internal, mensajeExito);
+                    
+                    // Actualizar tabla
+                    filtrarLectores(internal);
+                } else {
+                    ValidacionesUtil.mostrarError(internal, 
+                        "No se pudo cambiar el estado del lector. Verifique que el lector existe.");
+                }
+            } catch (Exception e) {
+                ValidacionesUtil.mostrarError(internal, 
+                    "Error al cambiar estado del lector: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Cambia la zona del lector seleccionado
+     */
+    private void cambiarZonaLector(JInternalFrame internal) {
+        JTable tabla = (JTable) internal.getClientProperty("tablaLectores");
+        
+        int filaSeleccionada = tabla.getSelectedRow();
+        if (filaSeleccionada == -1) {
+            ValidacionesUtil.mostrarError(internal, "Por favor seleccione un lector para cambiar su zona");
+            return;
+        }
+        
+        Long lectorId = (Long) tabla.getValueAt(filaSeleccionada, 0);
+        String lectorNombre = (String) tabla.getValueAt(filaSeleccionada, 1);
+        Zona zonaActual = (Zona) tabla.getValueAt(filaSeleccionada, 5);
+        
+        // Mostrar diálogo para seleccionar nueva zona
+        Zona nuevaZona = (Zona) JOptionPane.showInputDialog(
+            internal,
+            "Seleccione la nueva zona para el lector:\n\n" +
+            "Lector: " + lectorNombre + "\n" +
+            "Zona actual: " + zonaActual,
+            "Cambiar Zona",
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            Zona.values(),
+            zonaActual
+        );
+        
+        if (nuevaZona != null && nuevaZona != zonaActual) {
+            try {
+                boolean exito = lectorService.cambiarZonaLector(lectorId, nuevaZona);
+                if (exito) {
+                    ValidacionesUtil.mostrarExito(internal, 
+                        "Zona cambiada exitosamente:\n" +
+                        "ID: " + lectorId + "\n" +
+                        "Nombre: " + lectorNombre + "\n" +
+                        "Zona anterior: " + zonaActual + "\n" +
+                        "Nueva zona: " + nuevaZona);
+                    
+                    // Actualizar tabla
+                    filtrarLectores(internal);
+                } else {
+                    ValidacionesUtil.mostrarError(internal, 
+                        "No se pudo cambiar la zona del lector. Verifique que el lector existe.");
+                }
+            } catch (Exception e) {
+                ValidacionesUtil.mostrarError(internal, 
+                    "Error al cambiar zona del lector: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Muestra los detalles del lector seleccionado
+     */
+    private void verDetallesLector(JInternalFrame internal) {
+        JTable tabla = (JTable) internal.getClientProperty("tablaLectores");
+        
+        int filaSeleccionada = tabla.getSelectedRow();
+        if (filaSeleccionada == -1) {
+            ValidacionesUtil.mostrarError(internal, "Por favor seleccione un lector para ver sus detalles");
+            return;
+        }
+        
+        Long lectorId = (Long) tabla.getValueAt(filaSeleccionada, 0);
+        
+        try {
+            Lector lector = lectorService.obtenerLectorPorId(lectorId);
+            if (lector != null) {
+                mostrarDialogoDetallesLector(internal, lector);
+            } else {
+                ValidacionesUtil.mostrarError(internal, "No se encontró el lector seleccionado");
+            }
+        } catch (Exception e) {
+            ValidacionesUtil.mostrarError(internal, "Error al obtener detalles del lector: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Muestra un diálogo con los detalles del lector
+     */
+    private void mostrarDialogoDetallesLector(JInternalFrame internal, Lector lector) {
+        String detalles = "Detalles del Lector\n\n" +
+            "ID: " + lector.getId() + "\n" +
+            "Nombre: " + lector.getNombre() + "\n" +
+            "Email: " + lector.getEmail() + "\n" +
+            "Dirección: " + lector.getDireccion() + "\n" +
+            "Estado: " + lector.getEstado() + "\n" +
+            "Zona: " + lector.getZona() + "\n" +
+            "Fecha de Registro: " + lector.getFechaRegistro();
+        
+        JOptionPane.showMessageDialog(
+            internal,
+            detalles,
+            "Detalles del Lector",
+            JOptionPane.INFORMATION_MESSAGE
+        );
     }
 }

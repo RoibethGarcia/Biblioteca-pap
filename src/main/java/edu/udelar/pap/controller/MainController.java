@@ -65,12 +65,15 @@ public class MainController {
         // Menú Usuarios
         JMenu menuUsuarios = new JMenu("Usuarios");
         JMenuItem miLectores = new JMenuItem("Gestionar Lectores");
+        JMenuItem miEditarLectores = new JMenuItem("Editar Lectores");
         JMenuItem miBibliotecarios = new JMenuItem("Gestionar Bibliotecarios");
         
         miLectores.addActionListener(e -> lectorController.mostrarInterfazGestionLectores(desktop));
+        miEditarLectores.addActionListener(e -> lectorController.mostrarInterfazGestionEdicionLectores(desktop));
         miBibliotecarios.addActionListener(e -> bibliotecarioController.mostrarInterfazGestionBibliotecarios(desktop));
         
         menuUsuarios.add(miLectores);
+        menuUsuarios.add(miEditarLectores);
         menuUsuarios.add(miBibliotecarios);
         
         // Menú Materiales
@@ -84,10 +87,13 @@ public class MainController {
         // Menú Préstamos
         JMenu menuPrestamos = new JMenu("Préstamos");
         JMenuItem miPrestamos = new JMenuItem("Gestionar Préstamos");
+        JMenuItem miDevoluciones = new JMenuItem("Gestionar Devoluciones");
         
         miPrestamos.addActionListener(e -> prestamoController.mostrarInterfazGestionPrestamos(desktop));
+        miDevoluciones.addActionListener(e -> prestamoController.mostrarInterfazGestionDevoluciones(desktop));
         
         menuPrestamos.add(miPrestamos);
+        menuPrestamos.add(miDevoluciones);
         
         // Agregar menús a la barra
         menuBar.add(menuUsuarios);
