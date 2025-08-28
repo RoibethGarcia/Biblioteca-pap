@@ -85,10 +85,13 @@ public class MainController {
         // Menú Materiales
         JMenu menuMateriales = new JMenu("Materiales");
         JMenuItem miDonaciones = new JMenuItem("Donaciones");
+        JMenuItem miConsultarDonaciones = new JMenuItem("Consultar Donaciones");
         
         miDonaciones.addActionListener(e -> donacionController.mostrarInterfazDonaciones(desktop));
+        miConsultarDonaciones.addActionListener(e -> donacionController.mostrarInterfazConsultarDonaciones(desktop));
         
         menuMateriales.add(miDonaciones);
+        menuMateriales.add(miConsultarDonaciones);
         
         // Menú Préstamos
         JMenu menuPrestamos = new JMenu("Préstamos");

@@ -66,7 +66,8 @@ public class DonacionController {
         
         // Campo para donante
         JTextField tfDonante = new JTextField();
-        form.add(new JLabel("Donante:"));
+        tfDonante.setToolTipText("Deje vacío para usar 'Anónimo' como donante");
+        form.add(new JLabel("Donante (opcional):"));
         form.add(tfDonante);
         
         // Campo para tipo de material
@@ -192,10 +193,9 @@ public class DonacionController {
         String donante = tfDonante.getText().trim();
         String tipoMaterial = (String) cbTipoMaterial.getSelectedItem();
         
-        // Validación básica
-        if (!ValidacionesUtil.validarCamposObligatorios(donante)) {
-            ValidacionesUtil.mostrarErrorCamposRequeridos(internal);
-            return;
+        // Si el campo donante está vacío, usar "Anónimo" como valor por defecto
+        if (donante.isEmpty()) {
+            donante = "Anónimo";
         }
         
         try {
@@ -234,6 +234,7 @@ public class DonacionController {
         libro.setTitulo(titulo);
         libro.setPaginas(paginas);
         libro.setFechaIngreso(LocalDate.now());
+        libro.setDonante(donante);
         
         donacionService.guardarLibro(libro);
         
@@ -241,7 +242,7 @@ public class DonacionController {
             "ID: " + libro.getId() + "\n" +
             "Título: " + libro.getTitulo() + "\n" +
             "Páginas: " + libro.getPaginas() + "\n" +
-            "Donante: " + donante + "\n" +
+            "Donante: " + libro.getDonante() + "\n" +
             "Fecha de Ingreso: " + libro.getFechaIngreso();
         ValidacionesUtil.mostrarExito(internal, mensajeExito);
         
@@ -276,6 +277,7 @@ public class DonacionController {
         articulo.setPeso(peso);
         articulo.setDimensiones(dimensiones);
         articulo.setFechaIngreso(LocalDate.now());
+        articulo.setDonante(donante);
         
         donacionService.guardarArticuloEspecial(articulo);
         
@@ -284,7 +286,7 @@ public class DonacionController {
             "Descripción: " + articulo.getDescripcion() + "\n" +
             "Peso: " + articulo.getPeso() + " kg\n" +
             "Dimensiones: " + articulo.getDimensiones() + "\n" +
-            "Donante: " + donante + "\n" +
+            "Donante: " + articulo.getDonante() + "\n" +
             "Fecha de Ingreso: " + articulo.getFechaIngreso();
         ValidacionesUtil.mostrarExito(internal, mensajeExito);
         
@@ -364,5 +366,234 @@ public class DonacionController {
      */
     public List<ArticuloEspecial> obtenerArticulosEspecialesDisponibles() {
         return donacionService.obtenerArticulosEspecialesDisponibles();
+    }
+    
+    /**
+     * Muestra la interfaz para consultar donaciones
+     */
+    public void mostrarInterfazConsultarDonaciones(JDesktopPane desktop) {
+        JInternalFrame internal = crearVentanaConsultarDonaciones();
+        JPanel panel = crearPanelConsultarDonaciones(internal);
+        internal.setContentPane(panel);
+        desktop.add(internal);
+        internal.toFront();
+    }
+    
+    /**
+     * Crea la ventana para consultar donaciones
+     */
+    private JInternalFrame crearVentanaConsultarDonaciones() {
+        return InterfaceUtil.crearVentanaInterna("Consultar Donaciones", 1000, 700);
+    }
+    
+    /**
+     * Crea el panel principal para consultar donaciones
+     */
+    private JPanel crearPanelConsultarDonaciones(JInternalFrame internal) {
+        JPanel panel = new JPanel(new BorderLayout());
+        
+        // Panel de búsqueda
+        JPanel searchPanel = crearPanelBusquedaDonante(internal);
+        panel.add(searchPanel, BorderLayout.NORTH);
+        
+        // Panel de resultados
+        JPanel resultsPanel = crearPanelResultadosDonaciones(internal);
+        panel.add(resultsPanel, BorderLayout.CENTER);
+        
+        return panel;
+    }
+    
+    /**
+     * Crea el panel de búsqueda por donante
+     */
+    private JPanel crearPanelBusquedaDonante(JInternalFrame internal) {
+        JPanel searchPanel = new JPanel(new GridBagLayout());
+        searchPanel.setBorder(BorderFactory.createTitledBorder("Buscar por Donante"));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // Campo Donante
+        gbc.gridx = 0; gbc.gridy = 0;
+        searchPanel.add(new JLabel("Donante:"), gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        JTextField tfDonante = new JTextField(20);
+        tfDonante.setToolTipText("Deje vacío para mostrar todas las donaciones");
+        searchPanel.add(tfDonante, gbc);
+        
+        // Botón Buscar
+        gbc.gridx = 2; gbc.gridy = 0;
+        gbc.weightx = 0.0;
+        gbc.fill = GridBagConstraints.NONE;
+        JButton btnBuscar = new JButton("🔍 Buscar");
+        btnBuscar.addActionListener(e -> realizarBusquedaDonaciones(internal, tfDonante.getText()));
+        searchPanel.add(btnBuscar, gbc);
+        
+        // Botón Limpiar
+        gbc.gridx = 3; gbc.gridy = 0;
+        JButton btnLimpiar = new JButton("🧹 Limpiar");
+        btnLimpiar.addActionListener(e -> limpiarBusquedaDonaciones(internal));
+        searchPanel.add(btnLimpiar, gbc);
+        
+        // Guardar referencias
+        internal.putClientProperty("tfDonante", tfDonante);
+        
+        return searchPanel;
+    }
+    
+    /**
+     * Crea el panel de resultados de donaciones
+     */
+    private JPanel crearPanelResultadosDonaciones(JInternalFrame internal) {
+        JPanel resultsPanel = new JPanel(new BorderLayout());
+        resultsPanel.setBorder(BorderFactory.createTitledBorder("Resultados de Donaciones"));
+        
+        // Tabla de resultados
+        String[] columnNames = {"ID", "Tipo", "Donante", "Fecha Ingreso", "Detalles"};
+        Object[][] data = {};
+        JTable table = new JTable(data, columnNames);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        
+        // Configurar renderer para resaltar tipos
+        table.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, 
+                boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                
+                // Obtener el tipo en la columna 1 (Tipo)
+                String tipo = (String) table.getValueAt(row, 1);
+                if ("Libro".equals(tipo)) {
+                    c.setBackground(new Color(173, 216, 230)); // Azul claro
+                    c.setForeground(new Color(0, 0, 139)); // Azul oscuro
+                } else if ("Artículo Especial".equals(tipo)) {
+                    c.setBackground(new Color(144, 238, 144)); // Verde claro
+                    c.setForeground(new Color(0, 100, 0)); // Verde oscuro
+                } else if (isSelected) {
+                    c.setBackground(table.getSelectionBackground());
+                    c.setForeground(table.getSelectionForeground());
+                } else {
+                    c.setBackground(table.getBackground());
+                    c.setForeground(table.getForeground());
+                }
+                
+                return c;
+            }
+        });
+        
+        JScrollPane scrollPane = new JScrollPane(table);
+        resultsPanel.add(scrollPane, BorderLayout.CENTER);
+        
+        // Panel de información
+        JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JLabel infoLabel = new JLabel("💡 Libros: Azul | Artículos Especiales: Verde");
+        infoLabel.setForeground(new Color(0, 100, 200));
+        infoLabel.setFont(infoLabel.getFont().deriveFont(java.awt.Font.ITALIC));
+        infoPanel.add(infoLabel);
+        resultsPanel.add(infoPanel, BorderLayout.SOUTH);
+        
+        // Guardar referencias
+        internal.putClientProperty("tableDonaciones", table);
+        
+        return resultsPanel;
+    }
+    
+    /**
+     * Realiza la búsqueda de donaciones
+     */
+    private void realizarBusquedaDonaciones(JInternalFrame internal, String donante) {
+        try {
+            List<Libro> libros;
+            List<ArticuloEspecial> articulos;
+            
+            if (donante == null || donante.trim().isEmpty()) {
+                // Mostrar todas las donaciones
+                libros = donacionService.obtenerTodosLosLibros();
+                articulos = donacionService.obtenerTodosLosArticulosEspeciales();
+            } else {
+                // Buscar por donante
+                libros = donacionService.buscarLibrosPorDonante(donante.trim());
+                articulos = donacionService.buscarArticulosPorDonante(donante.trim());
+            }
+            
+            mostrarResultadosDonaciones(internal, libros, articulos);
+            
+        } catch (Exception ex) {
+            ValidacionesUtil.mostrarError(internal, "Error al realizar la búsqueda: " + ex.getMessage());
+        }
+    }
+    
+    /**
+     * Muestra los resultados de la búsqueda en la tabla
+     */
+    private void mostrarResultadosDonaciones(JInternalFrame internal, List<Libro> libros, List<ArticuloEspecial> articulos) {
+        JTable table = (JTable) internal.getClientProperty("tableDonaciones");
+        
+        // Calcular tamaño total
+        int totalResultados = libros.size() + articulos.size();
+        Object[][] data = new Object[totalResultados][5];
+        
+        int index = 0;
+        
+        // Agregar libros
+        for (Libro libro : libros) {
+            data[index][0] = libro.getId();
+            data[index][1] = "Libro";
+            data[index][2] = libro.getDonante();
+            data[index][3] = libro.getFechaIngreso().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            data[index][4] = "📚 " + libro.getTitulo() + " (" + libro.getPaginas() + " páginas)";
+            index++;
+        }
+        
+        // Agregar artículos especiales
+        for (ArticuloEspecial articulo : articulos) {
+            data[index][0] = articulo.getId();
+            data[index][1] = "Artículo Especial";
+            data[index][2] = articulo.getDonante();
+            data[index][3] = articulo.getFechaIngreso().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            data[index][4] = "📦 " + articulo.getDescripcion() + " (" + articulo.getPeso() + " kg, " + articulo.getDimensiones() + ")";
+            index++;
+        }
+        
+        String[] columnNames = {"ID", "Tipo", "Donante", "Fecha Ingreso", "Detalles"};
+        table.setModel(new javax.swing.table.DefaultTableModel(data, columnNames) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Hacer la tabla no editable
+            }
+        });
+        
+        // Mostrar mensaje informativo
+        String mensaje = "Se encontraron " + totalResultados + " donaciones";
+        if (libros.size() > 0 && articulos.size() > 0) {
+            mensaje += " (" + libros.size() + " libros, " + articulos.size() + " artículos especiales)";
+        } else if (libros.size() > 0) {
+            mensaje += " (" + libros.size() + " libros)";
+        } else if (articulos.size() > 0) {
+            mensaje += " (" + articulos.size() + " artículos especiales)";
+        }
+        mensaje += ". Ordenadas por fecha de ingreso (más reciente primero).";
+        
+        JOptionPane.showMessageDialog(internal, mensaje, "Resultados", JOptionPane.INFORMATION_MESSAGE);
+    }
+    
+    /**
+     * Limpia la búsqueda de donaciones
+     */
+    private void limpiarBusquedaDonaciones(JInternalFrame internal) {
+        JTextField tfDonante = (JTextField) internal.getClientProperty("tfDonante");
+        JTable table = (JTable) internal.getClientProperty("tableDonaciones");
+        
+        tfDonante.setText("");
+        
+        // Limpiar tabla
+        String[] columnNames = {"ID", "Tipo", "Donante", "Fecha Ingreso", "Detalles"};
+        Object[][] data = {};
+        table.setModel(new javax.swing.table.DefaultTableModel(data, columnNames));
+        
+        tfDonante.requestFocus();
     }
 }
