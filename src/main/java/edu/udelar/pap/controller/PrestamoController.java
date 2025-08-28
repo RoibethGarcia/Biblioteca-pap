@@ -3,7 +3,7 @@ package edu.udelar.pap.controller;
 import edu.udelar.pap.domain.Prestamo;
 import edu.udelar.pap.domain.Lector;
 import edu.udelar.pap.domain.Bibliotecario;
-import edu.udelar.pap.domain.DonacionMaterial;
+
 import edu.udelar.pap.domain.Libro;
 import edu.udelar.pap.domain.ArticuloEspecial;
 import edu.udelar.pap.domain.EstadoPrestamo;
@@ -527,21 +527,344 @@ public class PrestamoController {
         
         // Obtener datos del lector seleccionado
         Long lectorId = (Long) table.getValueAt(selectedRow, 0);
-        String nombreLector = (String) table.getValueAt(selectedRow, 1);
         
-        // Mostrar mensaje de confirmación (aquí se implementará la lógica de devolución)
-        JOptionPane.showMessageDialog(internal, 
-            "Lector seleccionado: " + nombreLector + " (ID: " + lectorId + ")\n\n" +
-            "Aquí se implementará la funcionalidad de asentar devolución.", 
-            "Lector Seleccionado", 
-            JOptionPane.INFORMATION_MESSAGE);
+        try {
+            // Obtener el lector completo
+            Lector lectorSeleccionado = lectorController.obtenerLectorPorId(lectorId);
+            if (lectorSeleccionado == null) {
+                ValidacionesUtil.mostrarError(internal, "No se pudo encontrar el lector seleccionado.");
+                return;
+            }
+            
+            // Mostrar la interfaz de préstamos del lector
+            mostrarPrestamosDelLector(internal, lectorSeleccionado);
+            
+        } catch (Exception ex) {
+            ValidacionesUtil.mostrarError(internal, "Error al obtener los préstamos del lector: " + ex.getMessage());
+        }
+    }
+    
+    /**
+     * Muestra la interfaz con los préstamos de un lector específico
+     */
+    private void mostrarPrestamosDelLector(JInternalFrame parentFrame, Lector lector) {
+        JInternalFrame prestamosFrame = crearVentanaPrestamosLector(lector);
+        JPanel panel = crearPanelPrestamosLector(prestamosFrame, lector);
+        prestamosFrame.setContentPane(panel);
         
-        // TODO: Implementar la lógica de asentar devolución
-        // Esto podría incluir:
-        // 1. Mostrar préstamos activos del lector
-        // 2. Permitir seleccionar qué préstamo devolver
-        // 3. Actualizar el estado del préstamo a DEVUELTO
-        // 4. Registrar la fecha de devolución
+        // Obtener el desktop pane del frame padre
+        JDesktopPane desktop = (JDesktopPane) parentFrame.getParent();
+        desktop.add(prestamosFrame);
+        prestamosFrame.toFront();
+    }
+    
+    /**
+     * Crea la ventana para mostrar préstamos de un lector
+     */
+    private JInternalFrame crearVentanaPrestamosLector(Lector lector) {
+        return InterfaceUtil.crearVentanaInterna("Préstamos de " + lector.getNombre(), 1000, 700);
+    }
+    
+    /**
+     * Crea el panel con los préstamos del lector
+     */
+    private JPanel crearPanelPrestamosLector(JInternalFrame internal, Lector lector) {
+        JPanel panel = new JPanel(new BorderLayout());
+        
+        // Panel de información del lector
+        JPanel infoPanel = crearPanelInfoLector(lector);
+        panel.add(infoPanel, BorderLayout.NORTH);
+        
+        // Panel de préstamos
+        JPanel prestamosPanel = crearPanelTablaPrestamos(internal, lector);
+        panel.add(prestamosPanel, BorderLayout.CENTER);
+        
+        // Panel de acciones
+        JPanel accionesPanel = crearPanelAccionesDevolucion(internal);
+        panel.add(accionesPanel, BorderLayout.SOUTH);
+        
+        return panel;
+    }
+    
+    /**
+     * Crea el panel de información del lector
+     */
+    private JPanel crearPanelInfoLector(Lector lector) {
+        JPanel infoPanel = new JPanel(new GridBagLayout());
+        infoPanel.setBorder(BorderFactory.createTitledBorder("Información del Lector"));
+        infoPanel.setBackground(new Color(240, 248, 255));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+        
+        // Nombre
+        gbc.gridx = 0; gbc.gridy = 0;
+        infoPanel.add(new JLabel("👤 Nombre:"), gbc);
+        gbc.gridx = 1;
+        infoPanel.add(new JLabel(lector.getNombre()), gbc);
+        
+        // Email
+        gbc.gridx = 0; gbc.gridy = 1;
+        infoPanel.add(new JLabel("📧 Email:"), gbc);
+        gbc.gridx = 1;
+        infoPanel.add(new JLabel(lector.getEmail()), gbc);
+        
+        // Estado
+        gbc.gridx = 0; gbc.gridy = 2;
+        infoPanel.add(new JLabel("📊 Estado:"), gbc);
+        gbc.gridx = 1;
+        JLabel estadoLabel = new JLabel(lector.getEstado().toString());
+        estadoLabel.setForeground(lector.getEstado() == edu.udelar.pap.domain.EstadoLector.ACTIVO ? 
+            new Color(0, 128, 0) : new Color(255, 0, 0));
+        infoPanel.add(estadoLabel, gbc);
+        
+        // Zona
+        gbc.gridx = 0; gbc.gridy = 3;
+        infoPanel.add(new JLabel("📍 Zona:"), gbc);
+        gbc.gridx = 1;
+        infoPanel.add(new JLabel(lector.getZona().toString()), gbc);
+        
+        return infoPanel;
+    }
+    
+    /**
+     * Crea el panel con la tabla de préstamos
+     */
+    private JPanel crearPanelTablaPrestamos(JInternalFrame internal, Lector lector) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("Préstamos del Lector"));
+        
+        try {
+            // Obtener préstamos del lector
+            List<Prestamo> prestamos = prestamoService.obtenerPrestamosPorLector(lector);
+            
+            // Crear tabla
+            String[] columnNames = {"ID", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Bibliotecario"};
+            Object[][] data = new Object[prestamos.size()][6];
+            
+            for (int i = 0; i < prestamos.size(); i++) {
+                Prestamo prestamo = prestamos.get(i);
+                data[i][0] = prestamo.getId();
+                data[i][1] = prestamo.getMaterial().toString();
+                data[i][2] = prestamo.getFechaSolicitud().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                data[i][3] = prestamo.getFechaEstimadaDevolucion().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                data[i][4] = prestamo.getEstado().toString();
+                data[i][5] = prestamo.getBibliotecario().getNombre();
+            }
+            
+            JTable table = new JTable(data, columnNames);
+            table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            
+            // Configurar renderer para resaltar préstamos PENDIENTE
+            table.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+                @Override
+                public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, 
+                    boolean hasFocus, int row, int column) {
+                    Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                    
+                    // Obtener el estado del préstamo en la columna 4 (Estado)
+                    String estado = (String) table.getValueAt(row, 4);
+                    if ("EN_CURSO".equals(estado)) {
+                        c.setBackground(new Color(255, 255, 224)); // Amarillo claro
+                        c.setForeground(new Color(255, 140, 0)); // Naranja
+                        if (c instanceof JLabel) {
+                            ((JLabel) c).setFont(c.getFont().deriveFont(java.awt.Font.BOLD));
+                        }
+                    } else if (isSelected) {
+                        c.setBackground(table.getSelectionBackground());
+                        c.setForeground(table.getSelectionForeground());
+                    } else {
+                        c.setBackground(table.getBackground());
+                        c.setForeground(table.getForeground());
+                    }
+                    
+                    return c;
+                }
+            });
+            
+            JScrollPane scrollPane = new JScrollPane(table);
+            panel.add(scrollPane, BorderLayout.CENTER);
+            
+            // Guardar referencia a la tabla
+            internal.putClientProperty("tablePrestamos", table);
+            internal.putClientProperty("lectorSeleccionado", lector);
+            
+            // Mostrar mensaje informativo
+            String mensaje = "Se encontraron " + prestamos.size() + " préstamos. ";
+            long enCurso = prestamos.stream().filter(p -> p.getEstado() == edu.udelar.pap.domain.EstadoPrestamo.EN_CURSO).count();
+            if (enCurso > 0) {
+                mensaje += "⚠️ " + enCurso + " préstamos están EN_CURSO (resaltados en amarillo).";
+            }
+            
+            JLabel infoLabel = new JLabel(mensaje);
+            infoLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+            panel.add(infoLabel, BorderLayout.SOUTH);
+            
+            // Agregar instrucciones para el usuario
+            JLabel instruccionesLabel = new JLabel("💡 Seleccione un préstamo EN_CURSO o PENDIENTE y haga clic en 'Marcar como DEVUELTO'");
+            instruccionesLabel.setForeground(new Color(0, 100, 200));
+            instruccionesLabel.setFont(instruccionesLabel.getFont().deriveFont(java.awt.Font.ITALIC));
+            instruccionesLabel.setBorder(BorderFactory.createEmptyBorder(2, 10, 5, 10));
+            panel.add(instruccionesLabel, BorderLayout.NORTH);
+            
+        } catch (Exception ex) {
+            ValidacionesUtil.mostrarError(internal, "Error al cargar los préstamos: " + ex.getMessage());
+        }
+        
+        return panel;
+    }
+    
+    /**
+     * Crea el panel de acciones para devolución
+     */
+    private JPanel crearPanelAccionesDevolucion(JInternalFrame internal) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        panel.setBorder(BorderFactory.createTitledBorder("Acciones"));
+        
+        JButton btnProcesarDevolucion = new JButton("🔄 Marcar como DEVUELTO");
+        JButton btnCerrar = new JButton("❌ Cerrar");
+        
+        // Hacer el botón más prominente
+        btnProcesarDevolucion.setBackground(new Color(76, 175, 80)); // Verde
+        btnProcesarDevolucion.setForeground(Color.WHITE);
+        btnProcesarDevolucion.setFont(btnProcesarDevolucion.getFont().deriveFont(java.awt.Font.BOLD));
+        
+        btnProcesarDevolucion.addActionListener(e -> procesarDevolucionSeleccionada(internal));
+        btnCerrar.addActionListener(e -> internal.dispose());
+        
+        panel.add(btnProcesarDevolucion);
+        panel.add(btnCerrar);
+        
+        return panel;
+    }
+    
+    /**
+     * Procesa la devolución del préstamo seleccionado
+     */
+    private void procesarDevolucionSeleccionada(JInternalFrame internal) {
+        JTable table = (JTable) internal.getClientProperty("tablePrestamos");
+        Lector lector = (Lector) internal.getClientProperty("lectorSeleccionado");
+        
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(internal, 
+                "Por favor seleccione un préstamo para procesar su devolución.", 
+                "Sin Selección", 
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        // Obtener datos del préstamo seleccionado
+        Long prestamoId = (Long) table.getValueAt(selectedRow, 0);
+        String material = (String) table.getValueAt(selectedRow, 1);
+        String fechaSolicitud = (String) table.getValueAt(selectedRow, 2);
+        String fechaDevolucion = (String) table.getValueAt(selectedRow, 3);
+        String estado = (String) table.getValueAt(selectedRow, 4);
+        String bibliotecario = (String) table.getValueAt(selectedRow, 5);
+        
+        // Verificar que el préstamo no esté ya devuelto
+        if ("DEVUELTO".equals(estado)) {
+            JOptionPane.showMessageDialog(internal, 
+                "❌ Este préstamo ya ha sido devuelto.\n\n" +
+                "📚 Material: " + material + "\n" +
+                "📅 Fecha de devolución: " + fechaDevolucion + "\n" +
+                "👤 Bibliotecario: " + bibliotecario, 
+                "Préstamo ya Devuelto", 
+                JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
+        // Verificar que el préstamo esté en un estado válido para devolución
+        if (!"EN_CURSO".equals(estado) && !"PENDIENTE".equals(estado)) {
+            JOptionPane.showMessageDialog(internal, 
+                "⚠️ Este préstamo no puede ser devuelto en su estado actual.\n\n" +
+                "📚 Material: " + material + "\n" +
+                "📊 Estado actual: " + estado + "\n\n" +
+                "Solo se pueden devolver préstamos con estado EN_CURSO o PENDIENTE.", 
+                "Estado Inválido", 
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        // Mostrar información detallada del préstamo
+        String mensajeConfirmacion = "¿Desea procesar la devolución del siguiente préstamo?\n\n" +
+            "📚 Material: " + material + "\n" +
+            "👤 Lector: " + lector.getNombre() + "\n" +
+            "📅 Fecha de solicitud: " + fechaSolicitud + "\n" +
+            "📅 Fecha estimada de devolución: " + fechaDevolucion + "\n" +
+            "📊 Estado actual: " + estado + "\n" +
+            "👨‍💼 Bibliotecario: " + bibliotecario + "\n\n" +
+            "✅ El préstamo será marcado como DEVUELTO.";
+        
+        if (!ValidacionesUtil.confirmarAccion(internal, mensajeConfirmacion, "Confirmar Devolución")) {
+            return;
+        }
+        
+        try {
+            // Obtener el préstamo completo
+            Prestamo prestamo = prestamoService.obtenerPrestamoPorId(prestamoId);
+            if (prestamo == null) {
+                ValidacionesUtil.mostrarError(internal, "No se pudo encontrar el préstamo seleccionado.");
+                return;
+            }
+            
+            // Guardar el estado anterior para el mensaje
+            String estadoAnterior = prestamo.getEstado().toString();
+            
+            // Actualizar estado a DEVUELTO
+            prestamo.setEstado(edu.udelar.pap.domain.EstadoPrestamo.DEVUELTO);
+            prestamoService.actualizarPrestamo(prestamo);
+            
+            // Mostrar éxito con información detallada
+            String fechaActual = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            ValidacionesUtil.mostrarExito(internal, 
+                "✅ Devolución procesada exitosamente!\n\n" +
+                "📚 Material: " + material + "\n" +
+                "👤 Lector: " + lector.getNombre() + "\n" +
+                "📊 Estado anterior: " + estadoAnterior + " → DEVUELTO\n" +
+                "📅 Fecha de devolución: " + fechaActual + "\n" +
+                "👨‍💼 Procesado por: " + bibliotecario);
+            
+            // Actualizar la tabla
+            actualizarTablaPrestamos(internal, lector);
+            
+        } catch (Exception ex) {
+            ValidacionesUtil.mostrarError(internal, "Error al procesar la devolución: " + ex.getMessage());
+        }
+    }
+    
+    /**
+     * Actualiza la tabla de préstamos después de una devolución
+     */
+    private void actualizarTablaPrestamos(JInternalFrame internal, Lector lector) {
+        try {
+            List<Prestamo> prestamos = prestamoService.obtenerPrestamosPorLector(lector);
+            JTable table = (JTable) internal.getClientProperty("tablePrestamos");
+            
+            String[] columnNames = {"ID", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Bibliotecario"};
+            Object[][] data = new Object[prestamos.size()][6];
+            
+            for (int i = 0; i < prestamos.size(); i++) {
+                Prestamo prestamo = prestamos.get(i);
+                data[i][0] = prestamo.getId();
+                data[i][1] = prestamo.getMaterial().toString();
+                data[i][2] = prestamo.getFechaSolicitud().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                data[i][3] = prestamo.getFechaEstimadaDevolucion().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                data[i][4] = prestamo.getEstado().toString();
+                data[i][5] = prestamo.getBibliotecario().getNombre();
+            }
+            
+            table.setModel(new javax.swing.table.DefaultTableModel(data, columnNames) {
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    return false;
+                }
+            });
+            
+        } catch (Exception ex) {
+            ValidacionesUtil.mostrarError(internal, "Error al actualizar la tabla: " + ex.getMessage());
+        }
     }
     
 }
