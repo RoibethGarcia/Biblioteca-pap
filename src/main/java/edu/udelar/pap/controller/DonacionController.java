@@ -107,6 +107,7 @@ public class DonacionController {
         internal.putClientProperty("tfDescripcion", tfDescripcion);
         internal.putClientProperty("tfPeso", tfPeso);
         internal.putClientProperty("tfDimensiones", tfDimensiones);
+        internal.putClientProperty("panelCamposEspecificos", panelCamposEspecificos);
         
         // Función para mostrar/ocultar campos según el tipo seleccionado
         @SuppressWarnings("unchecked")
@@ -123,25 +124,8 @@ public class DonacionController {
      * Actualiza los campos específicos según el tipo de material seleccionado
      */
     private void actualizarCamposEspecificos(JInternalFrame internal) {
-        // Obtener el panel de campos específicos del content pane de forma segura
-        JPanel contentPane = (JPanel) internal.getContentPane();
-        JPanel panelCamposEspecificos = null;
-        
-        // Buscar el panel de campos específicos de forma segura
-        for (int i = 0; i < contentPane.getComponentCount(); i++) {
-            if (contentPane.getComponent(i) instanceof JPanel) {
-                JPanel panel = (JPanel) contentPane.getComponent(i);
-                if (panel.getBorder() != null && panel.getBorder().toString().contains("Detalles del Material")) {
-                    panelCamposEspecificos = panel;
-                    break;
-                }
-            }
-        }
-        
-        // Si no se encuentra, usar el segundo componente (índice 1) como fallback
-        if (panelCamposEspecificos == null && contentPane.getComponentCount() > 1) {
-            panelCamposEspecificos = (JPanel) contentPane.getComponent(1);
-        }
+        // Obtener el panel de campos específicos directamente de las referencias guardadas
+        JPanel panelCamposEspecificos = (JPanel) internal.getClientProperty("panelCamposEspecificos");
         
         if (panelCamposEspecificos == null) {
             System.err.println("Error: No se pudo encontrar el panel de campos específicos");

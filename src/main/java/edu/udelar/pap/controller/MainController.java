@@ -93,10 +93,13 @@ public class MainController {
         // Menú Préstamos
         JMenu menuPrestamos = new JMenu("Préstamos");
         JMenuItem miPrestamos = new JMenuItem("Gestionar Préstamos");
+        JMenuItem miAsentarDevolucion = new JMenuItem("Asentar Devolución");
         
         miPrestamos.addActionListener(e -> prestamoController.mostrarInterfazGestionPrestamos(desktop));
+        miAsentarDevolucion.addActionListener(e -> prestamoController.mostrarInterfazAsentarDevolucion(desktop));
         
         menuPrestamos.add(miPrestamos);
+        menuPrestamos.add(miAsentarDevolucion);
         
         // Agregar menús a la barra
         menuBar.add(menuUsuarios);
