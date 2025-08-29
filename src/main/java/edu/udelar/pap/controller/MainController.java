@@ -5,8 +5,6 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
 import edu.udelar.pap.domain.Lector;
-import edu.udelar.pap.domain.EstadoLector;
-import edu.udelar.pap.domain.Zona;
 
 /**
  * Controlador principal que coordina todos los controladores de la aplicación
@@ -473,19 +471,14 @@ public class MainController {
     /**
      * Guarda los cambios del usuario
      */
+    @SuppressWarnings("unchecked")
     private void guardarCambiosUsuario(JDialog dialog, JInternalFrame internal, 
                                      Long userId, JPanel fieldsPanel) {
         try {
             // Obtener valores actuales
-            JTextField tfNombre = (JTextField) fieldsPanel.getClientProperty("tfNombre");
-            JTextField tfEmail = (JTextField) fieldsPanel.getClientProperty("tfEmail");
-            JTextField tfDireccion = (JTextField) fieldsPanel.getClientProperty("tfDireccion");
             JComboBox<String> cbEstado = (JComboBox<String>) fieldsPanel.getClientProperty("cbEstado");
             JComboBox<String> cbZona = (JComboBox<String>) fieldsPanel.getClientProperty("cbZona");
             
-            String nombre = tfNombre.getText();
-            String email = tfEmail.getText();
-            String direccion = tfDireccion.getText();
             String nuevoEstado = (String) cbEstado.getSelectedItem();
             String nuevaZona = (String) cbZona.getSelectedItem();
             
@@ -557,7 +550,6 @@ public class MainController {
      * Actualiza la tabla de resultados después de la edición
      */
     private void actualizarTablaResultados(JInternalFrame internal) {
-        JTable table = (JTable) internal.getClientProperty("table");
         JTextField tfNombre = (JTextField) internal.getClientProperty("tfNombre");
         JTextField tfApellido = (JTextField) internal.getClientProperty("tfApellido");
         
