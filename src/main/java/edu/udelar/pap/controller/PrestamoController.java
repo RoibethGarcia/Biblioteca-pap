@@ -228,7 +228,7 @@ public class PrestamoController {
             prestamo.setBibliotecario(bibliotecarioSeleccionado);
             prestamo.setMaterial(materialSeleccionado.getMaterial());
             prestamo.setFechaSolicitud(LocalDate.now());
-            prestamo.setFechaEstimadaDevolucion(ValidacionesUtil.validarFechaDevolucion(fechaDevolucionStr));
+            prestamo.setFechaEstimadaDevolucion(ValidacionesUtil.validarFechaFutura(fechaDevolucionStr));
             prestamo.setEstado(estadoSeleccionado);
             
             // Guardar usando el servicio
@@ -268,7 +268,7 @@ public class PrestamoController {
         
         // Validación de fecha de devolución
         try {
-            LocalDate fechaDevolucion = ValidacionesUtil.validarFechaDevolucion(fechaDevolucionStr);
+            LocalDate fechaDevolucion = ValidacionesUtil.validarFechaFutura(fechaDevolucionStr);
             
             // Validar que la fecha de devolución sea futura
             if (fechaDevolucion.isBefore(LocalDate.now()) || fechaDevolucion.isEqual(LocalDate.now())) {

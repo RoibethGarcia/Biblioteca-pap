@@ -21,6 +21,9 @@ public class DonacionMaterial {
     @Column(nullable = false)
     private LocalDate fechaIngreso;
 
+    @Column(nullable = false, columnDefinition = "VARCHAR(255) DEFAULT 'Anónimo'")
+    private String donante;
+
     public Long getId() {
         return id;
     }
@@ -31,6 +34,14 @@ public class DonacionMaterial {
 
     public void setFechaIngreso(LocalDate fechaIngreso) {
         this.fechaIngreso = fechaIngreso;
+    }
+
+    public String getDonante() {
+        return donante;
+    }
+
+    public void setDonante(String donante) {
+        this.donante = donante;
     }
 }
 

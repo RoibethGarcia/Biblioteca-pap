@@ -209,4 +209,48 @@ public class DonacionService {
             return todasLasDonaciones;
         }
     }
+    
+    /**
+     * Obtiene todos los libros ordenados por fecha de ingreso (más reciente primero)
+     */
+    public List<Libro> obtenerTodosLosLibros() {
+        try (Session session = sessionFactory.openSession()) {
+            return session.createQuery("FROM Libro ORDER BY fechaIngreso DESC", Libro.class).list();
+        }
+    }
+    
+    /**
+     * Obtiene todos los artículos especiales ordenados por fecha de ingreso (más reciente primero)
+     */
+    public List<ArticuloEspecial> obtenerTodosLosArticulosEspeciales() {
+        try (Session session = sessionFactory.openSession()) {
+            return session.createQuery("FROM ArticuloEspecial ORDER BY fechaIngreso DESC", ArticuloEspecial.class).list();
+        }
+    }
+    
+    /**
+     * Busca libros por donante (case insensitive)
+     */
+    public List<Libro> buscarLibrosPorDonante(String donante) {
+        try (Session session = sessionFactory.openSession()) {
+            return session.createQuery(
+                "FROM Libro WHERE LOWER(donante) LIKE LOWER(:donante) ORDER BY fechaIngreso DESC", 
+                Libro.class)
+                .setParameter("donante", "%" + donante + "%")
+                .list();
+        }
+    }
+    
+    /**
+     * Busca artículos especiales por donante (case insensitive)
+     */
+    public List<ArticuloEspecial> buscarArticulosPorDonante(String donante) {
+        try (Session session = sessionFactory.openSession()) {
+            return session.createQuery(
+                "FROM ArticuloEspecial WHERE LOWER(donante) LIKE LOWER(:donante) ORDER BY fechaIngreso DESC", 
+                ArticuloEspecial.class)
+                .setParameter("donante", "%" + donante + "%")
+                .list();
+        }
+    }
 }

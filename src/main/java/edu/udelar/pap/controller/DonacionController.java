@@ -67,7 +67,8 @@ public class DonacionController {
         
         // Campo para donante
         JTextField tfDonante = new JTextField();
-        form.add(new JLabel("Donante:"));
+        tfDonante.setToolTipText("Deje vacío para usar 'Anónimo' como donante");
+        form.add(new JLabel("Donante (opcional):"));
         form.add(tfDonante);
         
         // Campo para tipo de material
@@ -209,10 +210,9 @@ public class DonacionController {
         String donante = tfDonante.getText().trim();
         String tipoMaterial = (String) cbTipoMaterial.getSelectedItem();
         
-        // Validación básica
-        if (!ValidacionesUtil.validarCamposObligatorios(donante)) {
-            ValidacionesUtil.mostrarErrorCamposRequeridos(internal);
-            return;
+        // Si el campo donante está vacío, usar "Anónimo" como valor por defecto
+        if (donante.isEmpty()) {
+            donante = "Anónimo";
         }
         
         try {
@@ -251,6 +251,7 @@ public class DonacionController {
         libro.setTitulo(titulo);
         libro.setPaginas(paginas);
         libro.setFechaIngreso(LocalDate.now());
+        libro.setDonante(donante);
         
         donacionService.guardarLibro(libro);
         
@@ -293,6 +294,7 @@ public class DonacionController {
         articulo.setPeso(peso);
         articulo.setDimensiones(dimensiones);
         articulo.setFechaIngreso(LocalDate.now());
+        articulo.setDonante(donante);
         
         donacionService.guardarArticuloEspecial(articulo);
         
