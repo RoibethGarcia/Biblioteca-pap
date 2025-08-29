@@ -96,6 +96,7 @@ public class PrestamoController {
         
         // Campo para estado del préstamo
         JComboBox<EstadoPrestamo> cbEstado = new JComboBox<>(EstadoPrestamo.values());
+        cbEstado.setSelectedItem(EstadoPrestamo.EN_CURSO); // Establecer EN_CURSO como estado por defecto
         form.add(new JLabel("Estado:"));
         form.add(cbEstado);
         
@@ -227,7 +228,7 @@ public class PrestamoController {
             prestamo.setBibliotecario(bibliotecarioSeleccionado);
             prestamo.setMaterial(materialSeleccionado.getMaterial());
             prestamo.setFechaSolicitud(LocalDate.now());
-            prestamo.setFechaEstimadaDevolucion(ValidacionesUtil.validarFecha(fechaDevolucionStr));
+            prestamo.setFechaEstimadaDevolucion(ValidacionesUtil.validarFechaDevolucion(fechaDevolucionStr));
             prestamo.setEstado(estadoSeleccionado);
             
             // Guardar usando el servicio
@@ -267,7 +268,7 @@ public class PrestamoController {
         
         // Validación de fecha de devolución
         try {
-            LocalDate fechaDevolucion = ValidacionesUtil.validarFecha(fechaDevolucionStr);
+            LocalDate fechaDevolucion = ValidacionesUtil.validarFechaDevolucion(fechaDevolucionStr);
             
             // Validar que la fecha de devolución sea futura
             if (fechaDevolucion.isBefore(LocalDate.now()) || fechaDevolucion.isEqual(LocalDate.now())) {

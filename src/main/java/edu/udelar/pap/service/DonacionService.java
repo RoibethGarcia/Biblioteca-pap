@@ -7,6 +7,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import java.util.List;
+import java.time.LocalDate;
 
 /**
  * Servicio para la gestión de donaciones
@@ -158,6 +159,54 @@ public class DonacionService {
                 Libro.class)
                 .setParameter("titulo", titulo)
                 .uniqueResult() != null;
+        }
+    }
+    
+    /**
+     * Obtiene todas las donaciones (libros y artículos especiales) ordenadas por fecha de ingreso
+     */
+    public List<Object> obtenerTodasLasDonaciones() {
+        try (Session session = sessionFactory.openSession()) {
+            // Obtener libros
+            List<Libro> libros = session.createQuery(
+                "FROM Libro ORDER BY fechaIngreso DESC", 
+                Libro.class).list();
+            
+            // Obtener artículos especiales
+            List<ArticuloEspecial> articulos = session.createQuery(
+                "FROM ArticuloEspecial ORDER BY fechaIngreso DESC", 
+                ArticuloEspecial.class).list();
+            
+            // Combinar y ordenar por fecha de ingreso
+            List<Object> todasLasDonaciones = new java.util.ArrayList<>();
+            todasLasDonaciones.addAll(libros);
+            todasLasDonaciones.addAll(articulos);
+            
+            // Ordenar por fecha de ingreso (más recientes primero)
+            todasLasDonaciones.sort((o1, o2) -> {
+                LocalDate fecha1 = null;
+                LocalDate fecha2 = null;
+                
+                if (o1 instanceof Libro) {
+                    fecha1 = ((Libro) o1).getFechaIngreso();
+                } else if (o1 instanceof ArticuloEspecial) {
+                    fecha1 = ((ArticuloEspecial) o1).getFechaIngreso();
+                }
+                
+                if (o2 instanceof Libro) {
+                    fecha2 = ((Libro) o2).getFechaIngreso();
+                } else if (o2 instanceof ArticuloEspecial) {
+                    fecha2 = ((ArticuloEspecial) o2).getFechaIngreso();
+                }
+                
+                if (fecha1 == null && fecha2 == null) return 0;
+                if (fecha1 == null) return 1;
+                if (fecha2 == null) return -1;
+                
+                return fecha2.compareTo(fecha1); // Orden descendente
+            });
+            
+            return todasLasDonaciones;
         }
     }
 }

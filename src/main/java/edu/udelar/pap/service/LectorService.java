@@ -172,4 +172,38 @@ public class LectorService {
             }
         }
     }
+
+    /**
+     * Busca lectores por nombre y apellido
+     * Nota: Como el modelo actual solo tiene un campo 'nombre', 
+     * se busca por nombre completo que puede contener nombre y apellido
+     */
+    public List<Lector> buscarLectoresPorNombreYApellido(String nombre, String apellido) {
+        try (Session session = sessionFactory.openSession()) {
+            String hql;
+            if (nombre != null && !nombre.trim().isEmpty() && apellido != null && !apellido.trim().isEmpty()) {
+                // Buscar por ambos términos en el campo nombre - case insensitive
+                hql = "FROM Lector WHERE LOWER(nombre) LIKE LOWER(:nombre) AND LOWER(nombre) LIKE LOWER(:apellido) ORDER BY nombre";
+                return session.createQuery(hql, Lector.class)
+                    .setParameter("nombre", "%" + nombre + "%")
+                    .setParameter("apellido", "%" + apellido + "%")
+                    .list();
+            } else if (nombre != null && !nombre.trim().isEmpty()) {
+                // Buscar solo por nombre - case insensitive
+                hql = "FROM Lector WHERE LOWER(nombre) LIKE LOWER(:nombre) ORDER BY nombre";
+                return session.createQuery(hql, Lector.class)
+                    .setParameter("nombre", "%" + nombre + "%")
+                    .list();
+            } else if (apellido != null && !apellido.trim().isEmpty()) {
+                // Buscar solo por apellido en el campo nombre - case insensitive
+                hql = "FROM Lector WHERE LOWER(nombre) LIKE LOWER(:apellido) ORDER BY nombre";
+                return session.createQuery(hql, Lector.class)
+                    .setParameter("apellido", "%" + apellido + "%")
+                    .list();
+            } else {
+                // Si no hay criterios, devolver todos
+                return obtenerTodosLosLectores();
+            }
+        }
+    }
 }

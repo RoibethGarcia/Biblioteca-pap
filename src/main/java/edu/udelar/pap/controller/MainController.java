@@ -53,7 +53,19 @@ public class MainController {
      * Crea el desktop pane para las ventanas internas
      */
     private JDesktopPane crearDesktopPane() {
-        return new JDesktopPane();
+        JDesktopPane desktop = new JDesktopPane();
+        
+        // Agregar mensaje de bienvenida
+        JLabel welcomeLabel = new JLabel("Sistema de gestión de Biblioteca comunitaria");
+        welcomeLabel.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 24));
+        welcomeLabel.setForeground(new java.awt.Color(51, 51, 51));
+        welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        // Centrar el mensaje en el desktop
+        welcomeLabel.setBounds(200, 250, 600, 50);
+        desktop.add(welcomeLabel);
+        
+        return desktop;
     }
     
     /**
@@ -78,11 +90,14 @@ public class MainController {
         
         // Menú Materiales
         JMenu menuMateriales = new JMenu("Materiales");
-        JMenuItem miDonaciones = new JMenuItem("Donaciones");
+        JMenuItem miDonaciones = new JMenuItem("Registrar Donación");
+        JMenuItem miConsultarDonaciones = new JMenuItem("Consultar Donaciones");
         
         miDonaciones.addActionListener(e -> donacionController.mostrarInterfazDonaciones(desktop));
+        miConsultarDonaciones.addActionListener(e -> donacionController.mostrarInterfazConsultaDonaciones(desktop));
         
         menuMateriales.add(miDonaciones);
+        menuMateriales.add(miConsultarDonaciones);
         
         // Menú Préstamos
         JMenu menuPrestamos = new JMenu("Préstamos");

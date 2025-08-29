@@ -8,6 +8,7 @@ import edu.udelar.pap.ui.DatabaseUtil;
 import edu.udelar.pap.ui.InterfaceUtil;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.time.LocalDate;
@@ -380,5 +381,172 @@ public class DonacionController {
      */
     public List<ArticuloEspecial> obtenerArticulosEspecialesDisponibles() {
         return donacionService.obtenerArticulosEspecialesDisponibles();
+    }
+    
+    /**
+     * Muestra la interfaz para consultar todas las donaciones registradas
+     */
+    public void mostrarInterfazConsultaDonaciones(JDesktopPane desktop) {
+        JInternalFrame internal = crearVentanaConsultaDonaciones();
+        JPanel panel = crearPanelConsultaDonaciones(internal);
+        internal.setContentPane(panel);
+        desktop.add(internal);
+        internal.toFront();
+    }
+    
+    /**
+     * Crea la ventana interna para consulta de donaciones
+     */
+    private JInternalFrame crearVentanaConsultaDonaciones() {
+        return InterfaceUtil.crearVentanaInterna("Consulta de Donaciones", 1000, 600);
+    }
+    
+    /**
+     * Crea el panel principal para la consulta de donaciones
+     */
+    private JPanel crearPanelConsultaDonaciones(JInternalFrame internal) {
+        JPanel panel = new JPanel(new BorderLayout());
+        
+        // Panel superior con título y botones
+        JPanel panelSuperior = crearPanelSuperior(internal);
+        
+        // Tabla de donaciones
+        JScrollPane scrollPane = crearTablaDonaciones(internal);
+        
+        panel.add(panelSuperior, BorderLayout.NORTH);
+        panel.add(scrollPane, BorderLayout.CENTER);
+        
+        return panel;
+    }
+    
+    /**
+     * Crea el panel superior con título y botones de acción
+     */
+    private JPanel crearPanelSuperior(JInternalFrame internal) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        // Título
+        JLabel lblTitulo = new JLabel("📚 Consulta de Todas las Donaciones Registradas");
+        lblTitulo.setFont(new Font("Arial", Font.BOLD, 16));
+        panel.add(lblTitulo, BorderLayout.WEST);
+        
+        // Panel de botones
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        
+        JButton btnActualizar = new JButton("🔄 Actualizar");
+        JButton btnCerrar = new JButton("❌ Cerrar");
+        
+        btnActualizar.addActionListener(e -> actualizarTablaDonaciones(internal));
+        btnCerrar.addActionListener(e -> internal.dispose());
+        
+        panelBotones.add(btnActualizar);
+        panelBotones.add(btnCerrar);
+        
+        panel.add(panelBotones, BorderLayout.EAST);
+        
+        return panel;
+    }
+    
+    /**
+     * Crea la tabla de donaciones
+     */
+    private JScrollPane crearTablaDonaciones(JInternalFrame internal) {
+        String[] columnas = {"ID", "Tipo", "Título/Descripción", "Detalles", "Fecha Ingreso"};
+        DefaultTableModel model = new DefaultTableModel(columnas, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Hacer la tabla de solo lectura
+            }
+        };
+        
+        JTable table = new JTable(model);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        table.getColumnModel().getColumn(0).setPreferredWidth(50);   // ID
+        table.getColumnModel().getColumn(1).setPreferredWidth(100);  // Tipo
+        table.getColumnModel().getColumn(2).setPreferredWidth(300);  // Título/Descripción
+        table.getColumnModel().getColumn(3).setPreferredWidth(200);  // Detalles
+        table.getColumnModel().getColumn(4).setPreferredWidth(120);  // Fecha Ingreso
+        
+        // Guardar referencia a la tabla
+        internal.putClientProperty("tablaDonaciones", table);
+        
+        // Cargar datos iniciales
+        cargarDatosDonaciones(internal);
+        
+        return new JScrollPane(table);
+    }
+    
+    /**
+     * Carga los datos de donaciones en la tabla
+     */
+    private void cargarDatosDonaciones(JInternalFrame internal) {
+        try {
+            JTable table = (JTable) internal.getClientProperty("tablaDonaciones");
+            DefaultTableModel model = (DefaultTableModel) table.getModel();
+            
+            // Limpiar tabla
+            model.setRowCount(0);
+            
+            // Obtener todas las donaciones
+            List<Object> donaciones = donacionService.obtenerTodasLasDonaciones();
+            
+            for (Object donacion : donaciones) {
+                if (donacion instanceof Libro) {
+                    Libro libro = (Libro) donacion;
+                    model.addRow(new Object[]{
+                        libro.getId(),
+                        "📖 Libro",
+                        libro.getTitulo(),
+                        "Páginas: " + libro.getPaginas(),
+                        libro.getFechaIngreso()
+                    });
+                } else if (donacion instanceof ArticuloEspecial) {
+                    ArticuloEspecial articulo = (ArticuloEspecial) donacion;
+                    model.addRow(new Object[]{
+                        articulo.getId(),
+                        "🎨 Artículo Especial",
+                        articulo.getDescripcion(),
+                        "Peso: " + articulo.getPeso() + " kg, Dim: " + articulo.getDimensiones(),
+                        articulo.getFechaIngreso()
+                    });
+                }
+            }
+            
+            // Mostrar estadísticas
+            mostrarEstadisticas(internal, donaciones.size());
+            
+        } catch (Exception e) {
+            String mensajeError = "Error al cargar las donaciones: " + e.getMessage();
+            ValidacionesUtil.mostrarError(internal, mensajeError);
+        }
+    }
+    
+    /**
+     * Actualiza la tabla de donaciones
+     */
+    private void actualizarTablaDonaciones(JInternalFrame internal) {
+        cargarDatosDonaciones(internal);
+    }
+    
+    /**
+     * Muestra estadísticas de las donaciones
+     */
+    private void mostrarEstadisticas(JInternalFrame internal, int totalDonaciones) {
+        try {
+            int totalLibros = donacionService.obtenerLibrosDisponibles().size();
+            int totalArticulos = donacionService.obtenerArticulosEspecialesDisponibles().size();
+            
+            String estadisticas = String.format(
+                "📊 Estadísticas: %d donaciones totales (%d libros, %d artículos especiales)",
+                totalDonaciones, totalLibros, totalArticulos
+            );
+            
+            // Actualizar el título de la ventana con las estadísticas
+            internal.setTitle("Consulta de Donaciones - " + estadisticas);
+            
+        } catch (Exception e) {
+            System.err.println("Error al calcular estadísticas: " + e.getMessage());
+        }
     }
 }

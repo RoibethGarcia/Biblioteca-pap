@@ -51,16 +51,26 @@ public class ValidacionesUtil {
     }
     
     /**
-     * Valida formato de fecha DD/MM/AAAA
+     * Valida formato de fecha DD/MM/AAAA (para fechas pasadas o presentes)
      */
     public static LocalDate validarFecha(String fechaStr) throws DateTimeParseException {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         LocalDate fecha = LocalDate.parse(fechaStr, formatter);
         
-        // Validar que la fecha no sea futura (permitir hasta 1 día en el futuro para zonas horarias)
-        if (fecha.isAfter(LocalDate.now().plusDays(1))) {
-            throw new DateTimeParseException("Fecha futura", fechaStr, 0);
+        // Validar que la fecha no sea muy antigua (más de 150 años)
+        if (fecha.isBefore(LocalDate.now().minusYears(150))) {
+            throw new DateTimeParseException("Fecha muy antigua", fechaStr, 0);
         }
+        
+        return fecha;
+    }
+    
+    /**
+     * Valida formato de fecha DD/MM/AAAA para fechas de devolución (futuras)
+     */
+    public static LocalDate validarFechaDevolucion(String fechaStr) throws DateTimeParseException {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        LocalDate fecha = LocalDate.parse(fechaStr, formatter);
         
         // Validar que la fecha no sea muy antigua (más de 150 años)
         if (fecha.isBefore(LocalDate.now().minusYears(150))) {
