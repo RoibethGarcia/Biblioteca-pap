@@ -101,15 +101,56 @@ SELECT * FROM PRESTAMO WHERE ESTADO = 'ACTIVO';
 
 ```
 biblioteca-pap/
-├── src/main/java/edu/udelar/pap/
-│   ├── domain/          # Entidades del dominio
-│   ├── persistence/     # Configuración Hibernate
-│   └── ui/             # Interfaz de usuario
-├── src/main/resources/
-│   ├── hibernate-h2.cfg.xml    # Config H2
-│   └── hibernate-mysql.cfg.xml # Config MySQL
-├── pom.xml             # Dependencias Maven
-└── README.md          # Este archivo
+├── �� src/main/java/edu/udelar/pap/
+│   ├── 🎮 controller/          # Controladores MVC
+│   │   ├── BibliotecarioController.java
+│   │   ├── DonacionController.java
+│   │   ├── LectorController.java
+│   │   ├── MainController.java
+│   │   └── PrestamoController.java
+│   │
+│   ├── 🏗️ domain/              # Modelos de dominio
+│   │   ├── ArticuloEspecial.java
+│   │   ├── Bibliotecario.java
+│   │   ├── DonacionMaterial.java
+│   │   ├── EstadoLector.java
+│   │   ├── EstadoPrestamo.java
+│   │   ├── Lector.java
+│   │   ├── Libro.java
+│   │   ├── Prestamo.java
+│   │   ├── Usuario.java
+│   │   └── Zona.java
+│   │
+│   ├── 💾 persistence/         # Capa de persistencia
+│   │   └── HibernateUtil.java
+│   │
+│   ├── ⚙️ service/             # Lógica de negocio
+│   │   ├── BibliotecarioService.java
+│   │   ├── DonacionService.java
+│   │   ├── LectorService.java
+│   │   └── PrestamoService.java
+│   │
+│   └── 🖥️ ui/                  # Interfaz de usuario
+│       ├── ConfigChecker.java
+│       ├── DatabaseTester.java
+│       ├── DatabaseUtil.java
+│       ├── DataViewer.java
+│       ├── DateTextField.java
+│       ├── InterfaceUtil.java
+│       ├── MainRefactored.java  # Punto de entrada
+│       ├── MaterialComboBoxItem.java
+│       ├── SchemaGenerator.java
+│       └── ValidacionesUtil.java
+│
+├── �� src/main/resources/      # Configuración
+│   ├── hibernate-h2.cfg.xml
+│   ├── hibernate-mysql-team.cfg.xml
+│   └── hibernate-mysql.cfg.xml
+│
+├── 📁 target/                  # Archivos compilados
+├── 📄 pom.xml                  # Configuración Maven
+├── 📄 README.md
+└── 🐚 *.sh                     # Scripts de ejecución
 ```
 
 ## 🔄 Control de Versiones
@@ -120,18 +161,42 @@ biblioteca-pap/
 
 ### Comandos Git útiles
 ```bash
-# Ver estado
+# 1️⃣ Ver el estado de tu repo
 git status
 
-# Ver historial
+# 2️⃣ Ver el historial resumido de commits
 git log --oneline
 
-# Crear nueva rama
-git checkout -b nueva-funcionalidad
+# 3️⃣ Actualizar tu rama principal (main) antes de crear nueva branch
+git checkout main
+git pull origin main
 
-# Subir cambios
+# 4️⃣ Crear una nueva branch para tu funcionalidad o cambio
+git checkout -b nueva-funcionalidad
+# 👈 Trabajás en esta branch sin tocar main
+
+# 5️⃣ Hacer cambios en el código...
+#    luego preparar los cambios para commit
 git add .
-git commit -m "Descripción del cambio"
+
+# 6️⃣ Guardar cambios con mensaje descriptivo
+git commit -m "Agregar nueva funcionalidad X"
+
+# 7️⃣ Subir la branch al remoto (no directamente a main)
+git push origin nueva-funcionalidad
+
+# 8️⃣ Abrir un Pull Request en GitHub desde 'nueva-funcionalidad' hacia 'main'
+#    - Esto permite que otros revisen y prueben antes de mergear
+
+# 9️⃣ Probar el código localmente si venís de un PR de otro colaborador
+git fetch origin pull/ID_DEL_PR/head:branch_prueba
+git checkout branch_prueba
+# 👈 probás el código sin afectar main
+
+# 🔟 Una vez revisado y aprobado, mergear PR en main
+git checkout main
+git pull origin main
+git merge nueva-funcionalidad  # o usar GitHub para merge vía PR
 git push origin main
 ```
 
@@ -153,10 +218,11 @@ git push origin main
 
 Este proyecto es parte del curso PAP (Programación Avanzada y Persistencia).
 
-## 👨‍💻 Autor
+## 👨‍💻 Autores
 
 Roibeth Garcia - [GitHub](https://github.com/RoibethGarcia)
+Lucas Machin -[GitHub](https://github.com/lmachin98)
 
 ---
 
-**Nota**: Este proyecto utiliza H2 como base de datos por defecto para facilitar el desarrollo. Para producción, se recomienda configurar MySQL.
+
