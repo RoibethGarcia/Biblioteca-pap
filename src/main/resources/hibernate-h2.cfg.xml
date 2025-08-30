@@ -20,7 +20,5 @@
         <mapping class="edu.udelar.pap.domain.Libro"/>
         <mapping class="edu.udelar.pap.domain.ArticuloEspecial"/>
         <mapping class="edu.udelar.pap.domain.Prestamo"/>
-        <mapping class="edu.udelar.pap.domain.EstadoLector"/>
-        <mapping class="edu.udelar.pap.domain.Zona"/>
     </session-factory>
 </hibernate-configuration>

@@ -7,6 +7,7 @@ Sistema de gestión de biblioteca desarrollado en Java con Hibernate y Swing par
 - **Gestión de Usuarios**: Lectores y Bibliotecarios
 - **Gestión de Materiales**: Libros y Artículos Especiales
 - **Sistema de Donaciones**: Registro de materiales donados
+- **Consulta de Donaciones**: Filtros por rango de fechas para trazabilidad
 - **Gestión de Préstamos**: Control de préstamos de materiales
 - **Base de Datos**: H2 (desarrollo) y MySQL (producción)
 
@@ -95,7 +96,33 @@ SELECT * FROM LIBRO;
 
 -- Ver préstamos activos
 SELECT * FROM PRESTAMO WHERE ESTADO = 'ACTIVO';
+
+-- Consultar donaciones por rango de fechas
+SELECT * FROM LIBRO WHERE FECHA_INGRESO BETWEEN '2024-01-01' AND '2024-12-31';
+SELECT * FROM ARTICULOS_ESPECIALES WHERE FECHA_INGRESO BETWEEN '2024-01-01' AND '2024-12-31';
 ```
+
+## 🆕 Nuevas Funcionalidades
+
+### 📅 Consulta de Donaciones por Rango de Fechas
+- **Acceso**: Menú → Materiales → Consultar Donaciones
+- **Funcionalidad**: Filtrar donaciones por período específico
+- **Formato**: DD/MM/AAAA (ejemplo: 01/01/2024 a 31/12/2024)
+- **Beneficios**: Trazabilidad temporal del inventario
+
+### ✏️ Edición Completa de Préstamos
+- **Acceso**: Menú → Préstamos → Gestionar Devoluciones
+- **Funcionalidad**: Editar cualquier campo de un préstamo existente
+- **Campos editables**: Lector, Bibliotecario, Material, Fecha devolución, Estado
+- **Beneficios**: Flexibilidad total en la gestión de préstamos
+
+### 📚 Préstamos Activos por Lector
+- **Acceso**: Menú → Préstamos → Préstamos por Lector
+- **Funcionalidad**: Consultar y gestionar préstamos activos de un lector específico
+- **Características**: Tabla detallada, estadísticas, acciones completas
+- **Beneficios**: Control granular y seguimiento de cumplimiento
+
+Para más detalles, ver: [FUNCIONALIDAD_RANGO_FECHAS.md](FUNCIONALIDAD_RANGO_FECHAS.md) | [FUNCIONALIDAD_EDICION_PRESTAMOS.md](FUNCIONALIDAD_EDICION_PRESTAMOS.md) | [FUNCIONALIDAD_PRESTAMOS_POR_LECTOR.md](FUNCIONALIDAD_PRESTAMOS_POR_LECTOR.md)
 
 ## 🏗️ Estructura del Proyecto
 

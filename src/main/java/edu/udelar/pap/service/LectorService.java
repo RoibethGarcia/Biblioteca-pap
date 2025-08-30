@@ -23,8 +23,36 @@ public class LectorService {
     
     /**
      * Guarda un nuevo lector en la base de datos
+     * Incluye validaciones de negocio
      */
-    public void guardarLector(Lector lector) {
+    public void guardarLector(Lector lector) throws IllegalStateException {
+        // Validaciones de negocio
+        if (lector == null) {
+            throw new IllegalStateException("El lector no puede ser nulo");
+        }
+        
+        if (lector.getNombre() == null || lector.getNombre().trim().isEmpty()) {
+            throw new IllegalStateException("El nombre del lector es obligatorio");
+        }
+        
+        if (lector.getEmail() == null || lector.getEmail().trim().isEmpty()) {
+            throw new IllegalStateException("El email del lector es obligatorio");
+        }
+        
+        if (lector.getDireccion() == null || lector.getDireccion().trim().isEmpty()) {
+            throw new IllegalStateException("La dirección del lector es obligatoria");
+        }
+        
+        // Verificar que el email no esté ya en uso
+        if (existeLectorConEmail(lector.getEmail())) {
+            throw new IllegalStateException("Ya existe un lector con el email: " + lector.getEmail());
+        }
+        
+        // Validar formato de email básico
+        if (!lector.getEmail().contains("@") || !lector.getEmail().contains(".")) {
+            throw new IllegalStateException("El formato del email no es válido");
+        }
+        
         try (Session session = sessionFactory.openSession()) {
             Transaction tx = session.beginTransaction();
             session.persist(lector);
@@ -68,7 +96,9 @@ public class LectorService {
      */
     public List<Lector> obtenerLectoresActivos() {
         try (Session session = sessionFactory.openSession()) {
-            return session.createQuery("FROM Lector WHERE estado = 'ACTIVO' ORDER BY nombre", Lector.class).list();
+            return session.createQuery("FROM Lector WHERE estado = :estado ORDER BY nombre", Lector.class)
+                .setParameter("estado", EstadoLector.ACTIVO)
+                .list();
         }
     }
     

@@ -12,16 +12,14 @@ import edu.udelar.pap.domain.Lector;
  */
 public class MainController {
     
-    private final LectorController lectorController;
-    private final BibliotecarioController bibliotecarioController;
-    private final DonacionController donacionController;
-    private final PrestamoController prestamoController;
+    private final ControllerFactory controllerFactory;
     
     public MainController() {
-        this.lectorController = new LectorController();
-        this.bibliotecarioController = new BibliotecarioController();
-        this.donacionController = new DonacionController();
-        this.prestamoController = new PrestamoController();
+        this.controllerFactory = ControllerFactory.getInstance();
+    }
+    
+    public MainController(ControllerFactory controllerFactory) {
+        this.controllerFactory = controllerFactory;
     }
     
     /**
@@ -85,9 +83,9 @@ public class MainController {
         JMenuItem miBibliotecarios = new JMenuItem("Gestionar Bibliotecarios");
         JMenuItem miEditarUsuario = new JMenuItem("Editar Usuario");
         
-        miLectores.addActionListener(e -> lectorController.mostrarInterfazGestionLectores(desktop));
-        miEditarLectores.addActionListener(e -> lectorController.mostrarInterfazGestionEdicionLectores(desktop));
-        miBibliotecarios.addActionListener(e -> bibliotecarioController.mostrarInterfazGestionBibliotecarios(desktop));
+        miLectores.addActionListener(e -> controllerFactory.getLectorController().mostrarInterfazGestionLectores(desktop));
+        miEditarLectores.addActionListener(e -> controllerFactory.getLectorController().mostrarInterfazGestionEdicionLectores(desktop));
+        miBibliotecarios.addActionListener(e -> controllerFactory.getBibliotecarioController().mostrarInterfazGestionBibliotecarios(desktop));
         miEditarUsuario.addActionListener(e -> mostrarInterfazEditarUsuario(desktop));
         
         menuUsuarios.add(miLectores);
@@ -100,8 +98,8 @@ public class MainController {
         JMenuItem miDonaciones = new JMenuItem("Registrar Donación");
         JMenuItem miConsultarDonaciones = new JMenuItem("Consultar Donaciones");
         
-        miDonaciones.addActionListener(e -> donacionController.mostrarInterfazDonaciones(desktop));
-        miConsultarDonaciones.addActionListener(e -> donacionController.mostrarInterfazConsultaDonaciones(desktop));
+        miDonaciones.addActionListener(e -> controllerFactory.getDonacionController().mostrarInterfazDonaciones(desktop));
+        miConsultarDonaciones.addActionListener(e -> controllerFactory.getDonacionController().mostrarInterfazConsultaDonaciones(desktop));
         
         menuMateriales.add(miDonaciones);
         menuMateriales.add(miConsultarDonaciones);
@@ -110,12 +108,15 @@ public class MainController {
         JMenu menuPrestamos = new JMenu("Préstamos");
         JMenuItem miPrestamos = new JMenuItem("Gestionar Préstamos");
         JMenuItem miDevoluciones = new JMenuItem("Gestionar Devoluciones");
+        JMenuItem miPrestamosPorLector = new JMenuItem("Préstamos por Lector");
         
-        miPrestamos.addActionListener(e -> prestamoController.mostrarInterfazGestionPrestamos(desktop));
-        miDevoluciones.addActionListener(e -> prestamoController.mostrarInterfazGestionDevoluciones(desktop));
+        miPrestamos.addActionListener(e -> controllerFactory.getPrestamoController().mostrarInterfazGestionPrestamos(desktop));
+        miDevoluciones.addActionListener(e -> controllerFactory.getPrestamoController().mostrarInterfazGestionDevoluciones(desktop));
+        miPrestamosPorLector.addActionListener(e -> controllerFactory.getPrestamoController().mostrarInterfazPrestamosPorLector(desktop));
         
         menuPrestamos.add(miPrestamos);
         menuPrestamos.add(miDevoluciones);
+        menuPrestamos.add(miPrestamosPorLector);
         
         // Agregar menús a la barra
         menuBar.add(menuUsuarios);
@@ -252,7 +253,7 @@ public class MainController {
      */
     private void realizarBusqueda(JInternalFrame internal, String nombre, String apellido) {
         try {
-            List<Lector> resultados = lectorController.buscarLectores(nombre, apellido);
+            List<Lector> resultados = controllerFactory.getLectorController().buscarLectores(nombre, apellido);
             mostrarResultados(internal, resultados);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(internal, 
@@ -483,7 +484,7 @@ public class MainController {
             String nuevaZona = (String) cbZona.getSelectedItem();
             
             // Obtener usuario actual de la base de datos
-            Lector lectorActual = lectorController.obtenerLectorPorId(userId);
+            Lector lectorActual = controllerFactory.getLectorController().obtenerLectorPorId(userId);
             if (lectorActual == null) {
                 JOptionPane.showMessageDialog(dialog, 
                     "No se pudo encontrar el usuario en la base de datos.", 
@@ -524,7 +525,7 @@ public class MainController {
                 lectorActual.setZona(edu.udelar.pap.domain.Zona.valueOf(nuevaZona));
                 
                 // Guardar en la base de datos
-                lectorController.actualizarLector(lectorActual);
+                controllerFactory.getLectorController().actualizarLector(lectorActual);
                 
                 // Mostrar éxito
                 JOptionPane.showMessageDialog(dialog, 
@@ -613,7 +614,7 @@ public class MainController {
      */
     private void verificarConexionBD(JFrame frame) {
         try {
-            if (lectorController.verificarConexion()) {
+            if (controllerFactory.getLectorController().verificarConexion()) {
                 System.out.println("Hibernate inicializado OK (" + (System.getProperty("db", "h2")) + ")");
             } else {
                 throw new Exception("No se pudo verificar la conexión a la base de datos");
@@ -628,27 +629,27 @@ public class MainController {
      * Obtiene el controlador de lectores
      */
     public LectorController getLectorController() {
-        return lectorController;
+        return controllerFactory.getLectorController();
     }
     
     /**
      * Obtiene el controlador de bibliotecarios
      */
     public BibliotecarioController getBibliotecarioController() {
-        return bibliotecarioController;
+        return controllerFactory.getBibliotecarioController();
     }
     
     /**
      * Obtiene el controlador de donaciones
      */
     public DonacionController getDonacionController() {
-        return donacionController;
+        return controllerFactory.getDonacionController();
     }
     
     /**
      * Obtiene el controlador de préstamos
      */
     public PrestamoController getPrestamoController() {
-        return prestamoController;
+        return controllerFactory.getPrestamoController();
     }
 }

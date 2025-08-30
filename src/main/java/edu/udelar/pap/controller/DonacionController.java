@@ -6,6 +6,7 @@ import edu.udelar.pap.service.DonacionService;
 import edu.udelar.pap.ui.ValidacionesUtil;
 import edu.udelar.pap.ui.DatabaseUtil;
 import edu.udelar.pap.ui.InterfaceUtil;
+import edu.udelar.pap.ui.DateTextField;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -422,26 +423,41 @@ public class DonacionController {
     }
     
     /**
-     * Crea el panel superior con título y botones de acción
+     * Crea el panel superior con título, filtros de fecha y botones de acción
      */
     private JPanel crearPanelSuperior(JInternalFrame internal) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
+        // Panel izquierdo con título y filtros
+        JPanel panelIzquierdo = new JPanel(new BorderLayout());
+        
         // Título
-        JLabel lblTitulo = new JLabel("📚 Consulta de Todas las Donaciones Registradas");
+        JLabel lblTitulo = new JLabel("📚 Consulta de Donaciones Registradas");
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 16));
-        panel.add(lblTitulo, BorderLayout.WEST);
+        panelIzquierdo.add(lblTitulo, BorderLayout.NORTH);
+        
+        // Panel de filtros de fecha
+        JPanel panelFiltros = crearPanelFiltrosFecha(internal);
+        panelIzquierdo.add(panelFiltros, BorderLayout.CENTER);
+        
+        panel.add(panelIzquierdo, BorderLayout.WEST);
         
         // Panel de botones
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         
+        JButton btnFiltrar = new JButton("🔍 Filtrar por Fechas");
+        JButton btnMostrarTodas = new JButton("📋 Mostrar Todas");
         JButton btnActualizar = new JButton("🔄 Actualizar");
         JButton btnCerrar = new JButton("❌ Cerrar");
         
+        btnFiltrar.addActionListener(e -> filtrarDonacionesPorFechas(internal));
+        btnMostrarTodas.addActionListener(e -> cargarDatosDonaciones(internal));
         btnActualizar.addActionListener(e -> actualizarTablaDonaciones(internal));
         btnCerrar.addActionListener(e -> internal.dispose());
         
+        panelBotones.add(btnFiltrar);
+        panelBotones.add(btnMostrarTodas);
         panelBotones.add(btnActualizar);
         panelBotones.add(btnCerrar);
         
@@ -532,6 +548,192 @@ public class DonacionController {
     }
     
     /**
+     * Crea el panel de filtros de fecha
+     */
+    private JPanel crearPanelFiltrosFecha(JInternalFrame internal) {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("📅 Filtro por Rango de Fechas"));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // Fecha de inicio
+        gbc.gridx = 0; gbc.gridy = 0;
+        panel.add(new JLabel("Fecha Inicio:"), gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        DateTextField tfFechaInicio = new DateTextField();
+        tfFechaInicio.setToolTipText("Formato: DD/MM/AAAA (ejemplo: 01/01/2024)");
+        panel.add(tfFechaInicio, gbc);
+        
+        // Fecha de fin
+        gbc.gridx = 0; gbc.gridy = 1;
+        gbc.weightx = 0.0;
+        panel.add(new JLabel("Fecha Fin:"), gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 1;
+        gbc.weightx = 1.0;
+        DateTextField tfFechaFin = new DateTextField();
+        tfFechaFin.setToolTipText("Formato: DD/MM/AAAA (ejemplo: 31/12/2024)");
+        panel.add(tfFechaFin, gbc);
+        
+        // Guardar referencias
+        internal.putClientProperty("tfFechaInicio", tfFechaInicio);
+        internal.putClientProperty("tfFechaFin", tfFechaFin);
+        
+        return panel;
+    }
+    
+    /**
+     * Filtra las donaciones por rango de fechas
+     */
+    private void filtrarDonacionesPorFechas(JInternalFrame internal) {
+        try {
+            DateTextField tfFechaInicio = (DateTextField) internal.getClientProperty("tfFechaInicio");
+            DateTextField tfFechaFin = (DateTextField) internal.getClientProperty("tfFechaFin");
+            
+            // Validar que las fechas no estén vacías
+            if (tfFechaInicio.getText().trim().isEmpty() || tfFechaFin.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(internal, 
+                    "Por favor complete ambas fechas para realizar el filtro.", 
+                    "Fechas Requeridas", 
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            
+            // Parsear las fechas
+            LocalDate fechaInicio = parsearFecha(tfFechaInicio.getText());
+            LocalDate fechaFin = parsearFecha(tfFechaFin.getText());
+            
+            if (fechaInicio == null || fechaFin == null) {
+                JOptionPane.showMessageDialog(internal, 
+                    "Por favor ingrese fechas válidas en formato DD/MM/AAAA.", 
+                    "Formato de Fecha Inválido", 
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Validar que la fecha de inicio no sea posterior a la fecha de fin
+            if (fechaInicio.isAfter(fechaFin)) {
+                JOptionPane.showMessageDialog(internal, 
+                    "La fecha de inicio no puede ser posterior a la fecha de fin.", 
+                    "Rango de Fechas Inválido", 
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Obtener donaciones en el rango de fechas
+            List<Object> donacionesEnRango = donacionService.obtenerDonacionesPorRangoFechas(fechaInicio, fechaFin);
+            
+            // Actualizar la tabla con los resultados filtrados
+            actualizarTablaConDonaciones(internal, donacionesEnRango, fechaInicio, fechaFin);
+            
+        } catch (Exception e) {
+            String mensajeError = "Error al filtrar donaciones por fechas: " + e.getMessage();
+            ValidacionesUtil.mostrarError(internal, mensajeError);
+        }
+    }
+    
+    /**
+     * Actualiza la tabla con las donaciones filtradas
+     */
+    private void actualizarTablaConDonaciones(JInternalFrame internal, List<Object> donaciones, LocalDate fechaInicio, LocalDate fechaFin) {
+        try {
+            JTable table = (JTable) internal.getClientProperty("tablaDonaciones");
+            DefaultTableModel model = (DefaultTableModel) table.getModel();
+            
+            // Limpiar tabla
+            model.setRowCount(0);
+            
+            // Agregar las donaciones filtradas
+            for (Object donacion : donaciones) {
+                if (donacion instanceof Libro) {
+                    Libro libro = (Libro) donacion;
+                    model.addRow(new Object[]{
+                        libro.getId(),
+                        "📖 Libro",
+                        libro.getTitulo(),
+                        "Páginas: " + libro.getPaginas(),
+                        libro.getFechaIngreso()
+                    });
+                } else if (donacion instanceof ArticuloEspecial) {
+                    ArticuloEspecial articulo = (ArticuloEspecial) donacion;
+                    model.addRow(new Object[]{
+                        articulo.getId(),
+                        "🎨 Artículo Especial",
+                        articulo.getDescripcion(),
+                        "Peso: " + articulo.getPeso() + " kg, Dim: " + articulo.getDimensiones(),
+                        articulo.getFechaIngreso()
+                    });
+                }
+            }
+            
+            // Mostrar estadísticas del filtro
+            mostrarEstadisticasFiltro(internal, donaciones.size(), fechaInicio, fechaFin);
+            
+            // Mostrar mensaje de éxito
+            String mensaje = String.format(
+                "Se encontraron %d donaciones entre %s y %s", 
+                donaciones.size(), 
+                fechaInicio.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                fechaFin.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+            );
+            
+            if (donaciones.isEmpty()) {
+                JOptionPane.showMessageDialog(internal, 
+                    "No se encontraron donaciones en el rango de fechas especificado.", 
+                    "Sin Resultados", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(internal, 
+                    mensaje, 
+                    "Filtro Aplicado", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+            
+        } catch (Exception e) {
+            String mensajeError = "Error al actualizar la tabla: " + e.getMessage();
+            ValidacionesUtil.mostrarError(internal, mensajeError);
+        }
+    }
+    
+    /**
+     * Muestra estadísticas del filtro aplicado
+     */
+    private void mostrarEstadisticasFiltro(JInternalFrame internal, int totalDonaciones, LocalDate fechaInicio, LocalDate fechaFin) {
+        try {
+            // Contar libros y artículos en el rango
+            int totalLibros = 0;
+            int totalArticulos = 0;
+            
+            List<Object> donacionesEnRango = donacionService.obtenerDonacionesPorRangoFechas(fechaInicio, fechaFin);
+            
+            for (Object donacion : donacionesEnRango) {
+                if (donacion instanceof Libro) {
+                    totalLibros++;
+                } else if (donacion instanceof ArticuloEspecial) {
+                    totalArticulos++;
+                }
+            }
+            
+            String estadisticas = String.format(
+                "📊 Filtro: %d donaciones (%d libros, %d artículos) del %s al %s",
+                totalDonaciones, totalLibros, totalArticulos,
+                fechaInicio.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                fechaFin.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+            );
+            
+            // Actualizar el título de la ventana con las estadísticas del filtro
+            internal.setTitle("Consulta de Donaciones - " + estadisticas);
+            
+        } catch (Exception e) {
+            System.err.println("Error al calcular estadísticas del filtro: " + e.getMessage());
+        }
+    }
+    
+    /**
      * Muestra estadísticas de las donaciones
      */
     private void mostrarEstadisticas(JInternalFrame internal, int totalDonaciones) {
@@ -549,6 +751,39 @@ public class DonacionController {
             
         } catch (Exception e) {
             System.err.println("Error al calcular estadísticas: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Parsea una fecha desde un string en formato DD/MM/AAAA
+     * @param fechaStr String con la fecha en formato DD/MM/AAAA
+     * @return LocalDate parseada o null si el formato es inválido
+     */
+    private LocalDate parsearFecha(String fechaStr) {
+        try {
+            if (fechaStr == null || fechaStr.trim().isEmpty()) {
+                return null;
+            }
+            
+            // Validar formato DD/MM/AAAA
+            if (!fechaStr.matches("\\d{2}/\\d{2}/\\d{4}")) {
+                return null;
+            }
+            
+            String[] partes = fechaStr.split("/");
+            int dia = Integer.parseInt(partes[0]);
+            int mes = Integer.parseInt(partes[1]);
+            int anio = Integer.parseInt(partes[2]);
+            
+            // Validar rangos de fecha
+            if (anio < 1900 || anio > 2100 || mes < 1 || mes > 12 || dia < 1 || dia > 31) {
+                return null;
+            }
+            
+            return LocalDate.of(anio, mes, dia);
+            
+        } catch (Exception e) {
+            return null;
         }
     }
 }

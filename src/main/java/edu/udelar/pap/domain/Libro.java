@@ -29,6 +29,11 @@ public class Libro extends DonacionMaterial {
     public void setPaginas(int paginas) {
         this.paginas = paginas;
     }
+    
+    @Override
+    public String toString() {
+        return "📖 " + titulo + " (" + paginas + " págs.)";
+    }
 }
 
 

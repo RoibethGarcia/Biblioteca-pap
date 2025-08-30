@@ -40,6 +40,11 @@ public class ArticuloEspecial extends DonacionMaterial {
     public void setDimensiones(String dimensiones) {
         this.dimensiones = dimensiones;
     }
+    
+    @Override
+    public String toString() {
+        return "🎨 " + descripcion + " (" + peso + " kg)";
+    }
 }
 
 

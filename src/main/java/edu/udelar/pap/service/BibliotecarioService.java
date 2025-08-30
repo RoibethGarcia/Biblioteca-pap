@@ -21,8 +21,46 @@ public class BibliotecarioService {
     
     /**
      * Guarda un nuevo bibliotecario en la base de datos
+     * Incluye validaciones de negocio
      */
-    public void guardarBibliotecario(Bibliotecario bibliotecario) {
+    public void guardarBibliotecario(Bibliotecario bibliotecario) throws IllegalStateException {
+        // Validaciones de negocio
+        if (bibliotecario == null) {
+            throw new IllegalStateException("El bibliotecario no puede ser nulo");
+        }
+        
+        if (bibliotecario.getNombre() == null || bibliotecario.getNombre().trim().isEmpty()) {
+            throw new IllegalStateException("El nombre del bibliotecario es obligatorio");
+        }
+        
+        if (bibliotecario.getEmail() == null || bibliotecario.getEmail().trim().isEmpty()) {
+            throw new IllegalStateException("El email del bibliotecario es obligatorio");
+        }
+        
+        if (bibliotecario.getNumeroEmpleado() == null || bibliotecario.getNumeroEmpleado().trim().isEmpty()) {
+            throw new IllegalStateException("El número de empleado es obligatorio");
+        }
+        
+        // Verificar que el email no esté ya en uso
+        if (existeBibliotecarioConEmail(bibliotecario.getEmail())) {
+            throw new IllegalStateException("Ya existe un bibliotecario con el email: " + bibliotecario.getEmail());
+        }
+        
+        // Verificar que el número de empleado no esté ya en uso
+        if (existeBibliotecarioConNumeroEmpleado(bibliotecario.getNumeroEmpleado())) {
+            throw new IllegalStateException("Ya existe un bibliotecario con el número de empleado: " + bibliotecario.getNumeroEmpleado());
+        }
+        
+        // Validar formato de email básico
+        if (!bibliotecario.getEmail().contains("@") || !bibliotecario.getEmail().contains(".")) {
+            throw new IllegalStateException("El formato del email no es válido");
+        }
+        
+        // Validar formato de número de empleado (solo letras y números)
+        if (!bibliotecario.getNumeroEmpleado().matches("^[a-zA-Z0-9]+$")) {
+            throw new IllegalStateException("El número de empleado solo puede contener letras y números");
+        }
+        
         try (Session session = sessionFactory.openSession()) {
             Transaction tx = session.beginTransaction();
             session.persist(bibliotecario);
