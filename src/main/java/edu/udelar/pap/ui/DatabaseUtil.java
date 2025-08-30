@@ -85,9 +85,7 @@ public class DatabaseUtil {
     public static boolean verificarConexion() {
         try {
             SessionFactory sf = HibernateUtil.getSessionFactory();
-            try (Session session = sf.openSession()) {
-                return true;
-            }
+            return sf != null && !sf.isClosed();
         } catch (Exception e) {
             return false;
         }

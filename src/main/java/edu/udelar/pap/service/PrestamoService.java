@@ -5,6 +5,7 @@ import edu.udelar.pap.domain.Lector;
 import edu.udelar.pap.domain.Bibliotecario;
 import edu.udelar.pap.domain.Libro;
 import edu.udelar.pap.domain.ArticuloEspecial;
+import edu.udelar.pap.domain.Zona;
 import edu.udelar.pap.persistence.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -147,6 +148,61 @@ public class PrestamoService {
                 "FROM Prestamo WHERE bibliotecario = :bibliotecario ORDER BY fechaSolicitud DESC", 
                 Prestamo.class)
                 .setParameter("bibliotecario", bibliotecario)
+                .list();
+        }
+    }
+    
+    /**
+     * Obtiene préstamos por zona del lector
+     */
+    public List<Prestamo> obtenerPrestamosPorZona(Zona zona) {
+        try (Session session = sessionFactory.openSession()) {
+            return session.createQuery(
+                "SELECT DISTINCT p FROM Prestamo p " +
+                "LEFT JOIN FETCH p.lector " +
+                "LEFT JOIN FETCH p.bibliotecario " +
+                "LEFT JOIN FETCH p.material " +
+                "WHERE p.lector.zona = :zona " +
+                "ORDER BY p.fechaSolicitud DESC", 
+                Prestamo.class)
+                .setParameter("zona", zona)
+                .list();
+        }
+    }
+    
+    /**
+     * Obtiene materiales con préstamos pendientes ordenados por cantidad
+     */
+    public List<Object[]> obtenerMaterialesConPrestamosPendientes() {
+        try (Session session = sessionFactory.openSession()) {
+            return session.createQuery(
+                "SELECT p.material, COUNT(p) as cantidadPendientes, " +
+                "MIN(p.fechaSolicitud) as fechaPrimerPrestamo, " +
+                "MAX(p.fechaSolicitud) as fechaUltimoPrestamo " +
+                "FROM Prestamo p " +
+                "WHERE p.estado = :estadoPendiente " +
+                "GROUP BY p.material " +
+                "ORDER BY cantidadPendientes DESC, fechaPrimerPrestamo ASC", 
+                Object[].class)
+                .setParameter("estadoPendiente", EstadoPrestamo.PENDIENTE)
+                .list();
+        }
+    }
+    
+    /**
+     * Obtiene todos los préstamos pendientes de un material específico
+     */
+    public List<Prestamo> obtenerPrestamosPendientesPorMaterial(Object material) {
+        try (Session session = sessionFactory.openSession()) {
+            return session.createQuery(
+                "SELECT DISTINCT p FROM Prestamo p " +
+                "LEFT JOIN FETCH p.lector " +
+                "LEFT JOIN FETCH p.bibliotecario " +
+                "WHERE p.material = :material AND p.estado = :estadoPendiente " +
+                "ORDER BY p.fechaSolicitud ASC", 
+                Prestamo.class)
+                .setParameter("material", material)
+                .setParameter("estadoPendiente", EstadoPrestamo.PENDIENTE)
                 .list();
         }
     }

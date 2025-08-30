@@ -11,7 +11,7 @@ public class ControllerFactory {
     private LectorController lectorController;
     private BibliotecarioController bibliotecarioController;
     private DonacionController donacionController;
-    private PrestamoController prestamoController;
+    private PrestamoControllerUltraRefactored prestamoController;
     private MainController mainController;
     
     private ControllerFactory() {
@@ -46,9 +46,9 @@ public class ControllerFactory {
         return donacionController;
     }
     
-    public PrestamoController getPrestamoController() {
+    public PrestamoControllerUltraRefactored getPrestamoController() {
         if (prestamoController == null) {
-            prestamoController = new PrestamoController(this);
+            prestamoController = new PrestamoControllerUltraRefactored(this);
         }
         return prestamoController;
     }

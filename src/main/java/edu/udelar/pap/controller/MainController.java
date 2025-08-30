@@ -63,9 +63,15 @@ public class MainController {
         welcomeLabel.setForeground(new java.awt.Color(51, 51, 51));
         welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
         
-        // Centrar el mensaje en el desktop
-        welcomeLabel.setBounds(200, 250, 600, 50);
-        desktop.add(welcomeLabel);
+        // Usar un layout manager para centrar el mensaje dinámicamente
+        desktop.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.anchor = GridBagConstraints.CENTER;
+        desktop.add(welcomeLabel, gbc);
         
         return desktop;
     }
@@ -83,10 +89,10 @@ public class MainController {
         JMenuItem miBibliotecarios = new JMenuItem("Gestionar Bibliotecarios");
         JMenuItem miEditarUsuario = new JMenuItem("Editar Usuario");
         
-        miLectores.addActionListener(e -> controllerFactory.getLectorController().mostrarInterfazGestionLectores(desktop));
-        miEditarLectores.addActionListener(e -> controllerFactory.getLectorController().mostrarInterfazGestionEdicionLectores(desktop));
-        miBibliotecarios.addActionListener(e -> controllerFactory.getBibliotecarioController().mostrarInterfazGestionBibliotecarios(desktop));
-        miEditarUsuario.addActionListener(e -> mostrarInterfazEditarUsuario(desktop));
+        miLectores.addActionListener(_ -> controllerFactory.getLectorController().mostrarInterfazGestionLectores(desktop));
+        miEditarLectores.addActionListener(_ -> controllerFactory.getLectorController().mostrarInterfazGestionEdicionLectores(desktop));
+        miBibliotecarios.addActionListener(_ -> controllerFactory.getBibliotecarioController().mostrarInterfazGestionBibliotecarios(desktop));
+        miEditarUsuario.addActionListener(_ -> mostrarInterfazEditarUsuario(desktop));
         
         menuUsuarios.add(miLectores);
         menuUsuarios.add(miEditarLectores);
@@ -98,8 +104,8 @@ public class MainController {
         JMenuItem miDonaciones = new JMenuItem("Registrar Donación");
         JMenuItem miConsultarDonaciones = new JMenuItem("Consultar Donaciones");
         
-        miDonaciones.addActionListener(e -> controllerFactory.getDonacionController().mostrarInterfazDonaciones(desktop));
-        miConsultarDonaciones.addActionListener(e -> controllerFactory.getDonacionController().mostrarInterfazConsultaDonaciones(desktop));
+        miDonaciones.addActionListener(_ -> controllerFactory.getDonacionController().mostrarInterfazDonaciones(desktop));
+        miConsultarDonaciones.addActionListener(_ -> controllerFactory.getDonacionController().mostrarInterfazConsultaDonaciones(desktop));
         
         menuMateriales.add(miDonaciones);
         menuMateriales.add(miConsultarDonaciones);
@@ -109,14 +115,23 @@ public class MainController {
         JMenuItem miPrestamos = new JMenuItem("Gestionar Préstamos");
         JMenuItem miDevoluciones = new JMenuItem("Gestionar Devoluciones");
         JMenuItem miPrestamosPorLector = new JMenuItem("Préstamos por Lector");
+        JMenuItem miHistorialPorBibliotecario = new JMenuItem("Historial por Bibliotecario");
+        JMenuItem miReportePorZona = new JMenuItem("Reporte por Zona");
+        JMenuItem miMaterialesPendientes = new JMenuItem("Materiales Pendientes");
         
-        miPrestamos.addActionListener(e -> controllerFactory.getPrestamoController().mostrarInterfazGestionPrestamos(desktop));
-        miDevoluciones.addActionListener(e -> controllerFactory.getPrestamoController().mostrarInterfazGestionDevoluciones(desktop));
-        miPrestamosPorLector.addActionListener(e -> controllerFactory.getPrestamoController().mostrarInterfazPrestamosPorLector(desktop));
+        miPrestamos.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazGestionPrestamos(desktop));
+        miDevoluciones.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazGestionDevoluciones(desktop));
+        miPrestamosPorLector.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazPrestamosPorLector(desktop));
+        miHistorialPorBibliotecario.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazHistorialPorBibliotecario(desktop));
+        miReportePorZona.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazReportePorZona(desktop));
+        miMaterialesPendientes.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazMaterialesPendientes(desktop));
         
         menuPrestamos.add(miPrestamos);
         menuPrestamos.add(miDevoluciones);
         menuPrestamos.add(miPrestamosPorLector);
+        menuPrestamos.add(miHistorialPorBibliotecario);
+        menuPrestamos.add(miReportePorZona);
+        menuPrestamos.add(miMaterialesPendientes);
         
         // Agregar menús a la barra
         menuBar.add(menuUsuarios);
@@ -201,7 +216,7 @@ public class MainController {
         gbc.weightx = 0.0;
         gbc.fill = GridBagConstraints.NONE;
         JButton btnBuscar = new JButton("Buscar");
-        btnBuscar.addActionListener(e -> realizarBusqueda(internal, tfNombre.getText(), tfApellido.getText()));
+        btnBuscar.addActionListener(_ -> realizarBusqueda(internal, tfNombre.getText(), tfApellido.getText()));
         searchPanel.add(btnBuscar, gbc);
         
         // Guardar referencias
@@ -232,9 +247,9 @@ public class MainController {
         JButton btnEliminar = new JButton("Eliminar Seleccionado");
         JButton btnLimpiar = new JButton("Limpiar Búsqueda");
         
-        btnEditar.addActionListener(e -> editarUsuarioSeleccionado(internal, table));
-        btnEliminar.addActionListener(e -> eliminarUsuarioSeleccionado(internal, table));
-        btnLimpiar.addActionListener(e -> limpiarBusqueda(internal));
+        btnEditar.addActionListener(_ -> editarUsuarioSeleccionado(internal, table));
+        btnEliminar.addActionListener(_ -> eliminarUsuarioSeleccionado(internal, table));
+        btnLimpiar.addActionListener(_ -> limpiarBusqueda(internal));
         
         buttonPanel.add(btnEditar);
         buttonPanel.add(btnEliminar);
@@ -460,8 +475,8 @@ public class MainController {
         JButton btnGuardar = new JButton("Guardar Cambios");
         JButton btnCancelar = new JButton("Cancelar");
         
-        btnGuardar.addActionListener(e -> guardarCambiosUsuario(dialog, internal, userId, fieldsPanel));
-        btnCancelar.addActionListener(e -> dialog.dispose());
+        btnGuardar.addActionListener(_ -> guardarCambiosUsuario(dialog, internal, userId, fieldsPanel));
+        btnCancelar.addActionListener(_ -> dialog.dispose());
         
         panel.add(btnGuardar);
         panel.add(btnCancelar);
@@ -649,7 +664,7 @@ public class MainController {
     /**
      * Obtiene el controlador de préstamos
      */
-    public PrestamoController getPrestamoController() {
+    public PrestamoControllerUltraRefactored getPrestamoController() {
         return controllerFactory.getPrestamoController();
     }
 }
