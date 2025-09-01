@@ -4,7 +4,12 @@ import edu.udelar.pap.domain.Lector;
 import edu.udelar.pap.domain.EstadoLector;
 import edu.udelar.pap.domain.Zona;
 import edu.udelar.pap.service.LectorService;
-import edu.udelar.pap.ui.*;
+import edu.udelar.pap.ui.DateTextField;
+import edu.udelar.pap.ui.LectorUIUtil;
+import edu.udelar.pap.util.ControllerUtil;
+import edu.udelar.pap.util.InterfaceUtil;
+import edu.udelar.pap.util.ValidacionesUtil;
+import edu.udelar.pap.util.DatabaseUtil;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;

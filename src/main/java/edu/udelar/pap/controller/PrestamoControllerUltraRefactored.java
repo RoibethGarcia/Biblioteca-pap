@@ -2,7 +2,12 @@ package edu.udelar.pap.controller;
 
 import edu.udelar.pap.domain.*;
 import edu.udelar.pap.service.PrestamoService;
-import edu.udelar.pap.ui.*;
+import edu.udelar.pap.ui.PrestamoUIUtil;
+import edu.udelar.pap.ui.MaterialComboBoxItem;
+import edu.udelar.pap.ui.DateTextField;
+import edu.udelar.pap.util.InterfaceUtil;
+import edu.udelar.pap.util.ValidacionesUtil;
+import edu.udelar.pap.util.DatabaseUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,6 +21,17 @@ import java.util.List;
 public class PrestamoControllerUltraRefactored {
     
     private final PrestamoService prestamoService;
+    
+    // ==================== CONSTANTES PARA COLUMNAS ====================
+    private static final String[] COLUMNAS_PRESTAMOS_BASICAS = {"ID", "Lector", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Bibliotecario"};
+    private static final String[] COLUMNAS_PRESTAMOS_POR_LECTOR = {"ID", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Bibliotecario", "Días Restantes"};
+    private static final String[] COLUMNAS_HISTORIAL_BIBLIOTECARIO = {"ID", "Lector", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Días Duración"};
+    private static final String[] COLUMNAS_MATERIALES_PENDIENTES = {"Posición", "Material", "Tipo", "Cantidad Pendientes", "Primer Solicitud", "Última Solicitud", "Prioridad"};
+    
+    // ==================== CONSTANTES PARA ANCHOS DE COLUMNAS ====================
+    private static final int[] ANCHOS_PRESTAMOS_POR_LECTOR = {50, 300, 120, 120, 100, 150, 100};
+    private static final int[] ANCHOS_HISTORIAL_BIBLIOTECARIO = {50, 200, 300, 120, 120, 100, 100};
+    private static final int[] ANCHOS_MATERIALES_PENDIENTES = {80, 300, 100, 150, 120, 120, 100};
     
     public PrestamoControllerUltraRefactored() {
         this.prestamoService = new PrestamoService();
@@ -246,65 +262,21 @@ public class PrestamoControllerUltraRefactored {
     // ==================== PANELES DE TABLAS ====================
     
     private JPanel crearPanelTablaPrestamos(JInternalFrame internal) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Préstamos Activos"));
+        JTable tabla = new JTable(new Object[][]{}, COLUMNAS_PRESTAMOS_BASICAS);
         
-        String[] columnas = {"ID", "Lector", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Bibliotecario"};
-        JTable tabla = new JTable(new Object[][]{}, columnas);
-        JScrollPane scrollPane = new JScrollPane(tabla);
-        
-        panel.add(scrollPane, BorderLayout.CENTER);
-        internal.putClientProperty("tablaPrestamos", tabla);
-        
-        return panel;
+        return PrestamoUIUtil.crearPanelTablaGenerico("Préstamos Activos", tabla, "tablaPrestamos", internal);
     }
     
     private JPanel crearPanelTablaPrestamosPorLector(JInternalFrame internal) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Préstamos Activos del Lector"));
+        JTable tabla = PrestamoUIUtil.crearTablaGenerica(COLUMNAS_PRESTAMOS_POR_LECTOR, ANCHOS_PRESTAMOS_POR_LECTOR, "tablaPrestamosPorLector");
         
-        String[] columnas = {"ID", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Bibliotecario", "Días Restantes"};
-        JTable tabla = new JTable(new Object[][]{}, columnas);
-        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        
-        // Configurar anchos de columnas
-        tabla.getColumnModel().getColumn(0).setPreferredWidth(50);
-        tabla.getColumnModel().getColumn(1).setPreferredWidth(300);
-        tabla.getColumnModel().getColumn(2).setPreferredWidth(120);
-        tabla.getColumnModel().getColumn(3).setPreferredWidth(120);
-        tabla.getColumnModel().getColumn(4).setPreferredWidth(100);
-        tabla.getColumnModel().getColumn(5).setPreferredWidth(150);
-        tabla.getColumnModel().getColumn(6).setPreferredWidth(100);
-        
-        JScrollPane scrollPane = new JScrollPane(tabla);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        internal.putClientProperty("tablaPrestamosPorLector", tabla);
-        
-        return panel;
+        return PrestamoUIUtil.crearPanelTablaGenerico("Préstamos Activos del Lector", tabla, "tablaPrestamosPorLector", internal);
     }
     
     private JPanel crearPanelTablaHistorialPorBibliotecario(JInternalFrame internal) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Historial de Préstamos del Bibliotecario"));
+        JTable tabla = PrestamoUIUtil.crearTablaGenerica(COLUMNAS_HISTORIAL_BIBLIOTECARIO, ANCHOS_HISTORIAL_BIBLIOTECARIO, "tablaHistorialPorBibliotecario");
         
-        String[] columnas = {"ID", "Lector", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Días Duración"};
-        JTable tabla = new JTable(new Object[][]{}, columnas);
-        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        
-        // Configurar anchos de columnas
-        tabla.getColumnModel().getColumn(0).setPreferredWidth(50);
-        tabla.getColumnModel().getColumn(1).setPreferredWidth(200);
-        tabla.getColumnModel().getColumn(2).setPreferredWidth(300);
-        tabla.getColumnModel().getColumn(3).setPreferredWidth(120);
-        tabla.getColumnModel().getColumn(4).setPreferredWidth(120);
-        tabla.getColumnModel().getColumn(5).setPreferredWidth(100);
-        tabla.getColumnModel().getColumn(6).setPreferredWidth(100);
-        
-        JScrollPane scrollPane = new JScrollPane(tabla);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        internal.putClientProperty("tablaHistorialPorBibliotecario", tabla);
-        
-        return panel;
+        return PrestamoUIUtil.crearPanelTablaGenerico("Historial de Préstamos del Bibliotecario", tabla, "tablaHistorialPorBibliotecario", internal);
     }
     
     // ==================== MÉTODOS DE CONSULTA ====================
@@ -370,13 +342,11 @@ public class PrestamoControllerUltraRefactored {
     // ==================== MÉTODOS DE ACTUALIZACIÓN DE TABLAS ====================
     
     private void actualizarTablaPrestamos(JInternalFrame internal, List<Prestamo> prestamos) {
-        String[] columnas = {"ID", "Lector", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Bibliotecario"};
-        
         PrestamoUIUtil.actualizarTablaGenerica(
             internal, 
             prestamos, 
             "tablaPrestamos", 
-            columnas,
+            COLUMNAS_PRESTAMOS_BASICAS,
             prestamo -> new Object[]{
                 prestamo.getId(),
                 prestamo.getLector().getNombre(),
@@ -390,13 +360,11 @@ public class PrestamoControllerUltraRefactored {
     }
     
     private void actualizarTablaPrestamosPorLector(JInternalFrame internal, List<Prestamo> prestamos, Lector lector) {
-        String[] columnas = {"ID", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Bibliotecario", "Días Restantes"};
-        
         PrestamoUIUtil.actualizarTablaGenerica(
             internal, 
             prestamos, 
             "tablaPrestamosPorLector", 
-            columnas,
+            COLUMNAS_PRESTAMOS_POR_LECTOR,
             prestamo -> new Object[]{
                 prestamo.getId(),
                 PrestamoUIUtil.obtenerNombreMaterial(prestamo.getMaterial()),
@@ -418,16 +386,14 @@ public class PrestamoControllerUltraRefactored {
     }
     
     private void actualizarTablaHistorialPorBibliotecario(JInternalFrame internal, List<Prestamo> prestamos, Bibliotecario bibliotecario) {
-        String[] columnas = {"ID", "Lector", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Días Duración"};
-        
         PrestamoUIUtil.actualizarTablaGenerica(
             internal, 
             prestamos, 
             "tablaHistorialPorBibliotecario", 
-            columnas,
+            COLUMNAS_HISTORIAL_BIBLIOTECARIO,
             prestamo -> new Object[]{
                 prestamo.getId(),
-                prestamo.getLector().getNombre() + " (" + prestamo.getLector().getEmail() + ")",
+                prestamo.getLector().getNombre() + " (" + prestamo.getLector().getNombre() + ")",
                 PrestamoUIUtil.obtenerNombreMaterial(prestamo.getMaterial()),
                 PrestamoUIUtil.formatearFecha(prestamo.getFechaSolicitud()),
                 PrestamoUIUtil.formatearFecha(prestamo.getFechaEstimadaDevolucion()),
@@ -448,27 +414,23 @@ public class PrestamoControllerUltraRefactored {
     // ==================== MÉTODOS DE LIMPIEZA ====================
     
     private void limpiarConsultaPrestamosPorLector(JInternalFrame internal) {
-        String[] columnas = {"ID", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Bibliotecario", "Días Restantes"};
-        
         PrestamoUIUtil.limpiarInterfazGenerica(
             internal,
             "cbLector",
             "tablaPrestamosPorLector",
             "lblEstadisticas",
-            columnas,
+            COLUMNAS_PRESTAMOS_POR_LECTOR,
             "Seleccione un lector para ver sus préstamos activos"
         );
     }
     
     private void limpiarHistorialPorBibliotecario(JInternalFrame internal) {
-        String[] columnas = {"ID", "Lector", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Días Duración"};
-        
         PrestamoUIUtil.limpiarInterfazGenerica(
             internal,
             "cbBibliotecario",
             "tablaHistorialPorBibliotecario",
             "lblEstadisticas",
-            columnas,
+            COLUMNAS_HISTORIAL_BIBLIOTECARIO,
             "Seleccione un bibliotecario para ver su historial de préstamos"
         );
     }
@@ -840,7 +802,7 @@ public class PrestamoControllerUltraRefactored {
         }
         
         // Actualizar tabla
-        tabla.setModel(new javax.swing.table.DefaultTableModel(datos, columnas));
+        tabla.setModel(new javax.swing.table.DefaultTableModel(datos, COLUMNAS_PRESTAMOS_BASICAS));
         
         // Mostrar mensaje de resultados
         if (prestamos.isEmpty()) {
@@ -983,30 +945,9 @@ public class PrestamoControllerUltraRefactored {
      * Crea el panel de la tabla de materiales pendientes
      */
     private JPanel crearPanelTablaMaterialesPendientes(JInternalFrame internal) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Ranking de Materiales con Préstamos Pendientes"));
+        JTable tabla = PrestamoUIUtil.crearTablaGenerica(COLUMNAS_MATERIALES_PENDIENTES, ANCHOS_MATERIALES_PENDIENTES, "tablaMaterialesPendientes");
         
-        // Crear tabla
-        String[] columnas = {"Posición", "Material", "Tipo", "Cantidad Pendientes", "Primer Solicitud", "Última Solicitud", "Prioridad"};
-        Object[][] datos = {};
-        
-        JTable tabla = new JTable(datos, columnas);
-        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        tabla.getColumnModel().getColumn(0).setPreferredWidth(80);   // Posición
-        tabla.getColumnModel().getColumn(1).setPreferredWidth(300);  // Material
-        tabla.getColumnModel().getColumn(2).setPreferredWidth(100);  // Tipo
-        tabla.getColumnModel().getColumn(3).setPreferredWidth(150);  // Cantidad Pendientes
-        tabla.getColumnModel().getColumn(4).setPreferredWidth(120);  // Primer Solicitud
-        tabla.getColumnModel().getColumn(5).setPreferredWidth(120);  // Última Solicitud
-        tabla.getColumnModel().getColumn(6).setPreferredWidth(100);  // Prioridad
-        
-        JScrollPane scrollPane = new JScrollPane(tabla);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        
-        // Guardar referencia
-        internal.putClientProperty("tablaMaterialesPendientes", tabla);
-        
-        return panel;
+        return PrestamoUIUtil.crearPanelTablaGenerico("Ranking de Materiales con Préstamos Pendientes", tabla, "tablaMaterialesPendientes", internal);
     }
     
     /**
@@ -1030,8 +971,7 @@ public class PrestamoControllerUltraRefactored {
         JTable tabla = (JTable) internal.getClientProperty("tablaMaterialesPendientes");
         
         // Crear modelo de datos
-        String[] columnas = {"Posición", "Material", "Tipo", "Cantidad Pendientes", "Primer Solicitud", "Última Solicitud", "Prioridad"};
-        Object[][] datos = new Object[resultados.size()][columnas.length];
+        Object[][] datos = new Object[resultados.size()][COLUMNAS_MATERIALES_PENDIENTES.length];
         
         for (int i = 0; i < resultados.size(); i++) {
             Object[] resultado = resultados.get(i);
@@ -1062,7 +1002,7 @@ public class PrestamoControllerUltraRefactored {
         }
         
         // Actualizar tabla
-        tabla.setModel(new javax.swing.table.DefaultTableModel(datos, columnas));
+        tabla.setModel(new javax.swing.table.DefaultTableModel(datos, COLUMNAS_MATERIALES_PENDIENTES));
         
         // Mostrar mensaje de resultados
         if (resultados.isEmpty()) {
@@ -1143,9 +1083,8 @@ public class PrestamoControllerUltraRefactored {
         JLabel lblEstadisticas = (JLabel) internal.getClientProperty("lblEstadisticas");
         
         // Limpiar tabla
-        String[] columnas = {"Posición", "Material", "Tipo", "Cantidad Pendientes", "Primer Solicitud", "Última Solicitud", "Prioridad"};
         Object[][] datos = {};
-        tabla.setModel(new javax.swing.table.DefaultTableModel(datos, columnas));
+        tabla.setModel(new javax.swing.table.DefaultTableModel(datos, COLUMNAS_MATERIALES_PENDIENTES));
         
         // Limpiar estadísticas
         lblEstadisticas.setText("Haga clic en 'Consultar' para ver los materiales con préstamos pendientes");

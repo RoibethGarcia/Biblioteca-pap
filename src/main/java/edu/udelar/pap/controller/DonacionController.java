@@ -3,9 +3,9 @@ package edu.udelar.pap.controller;
 import edu.udelar.pap.domain.Libro;
 import edu.udelar.pap.domain.ArticuloEspecial;
 import edu.udelar.pap.service.DonacionService;
-import edu.udelar.pap.ui.ValidacionesUtil;
-import edu.udelar.pap.ui.DatabaseUtil;
-import edu.udelar.pap.ui.InterfaceUtil;
+import edu.udelar.pap.util.ValidacionesUtil;
+import edu.udelar.pap.util.DatabaseUtil;
+import edu.udelar.pap.util.InterfaceUtil;
 import edu.udelar.pap.ui.DateTextField;
 
 import javax.swing.*;

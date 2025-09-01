@@ -2,6 +2,7 @@ package edu.udelar.pap.ui;
 
 import edu.udelar.pap.domain.Lector;
 import edu.udelar.pap.domain.Zona;
+import edu.udelar.pap.util.ValidacionesUtil;
 
 import javax.swing.*;
 import java.util.function.Function;

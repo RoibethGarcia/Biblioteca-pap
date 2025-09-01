@@ -3,6 +3,8 @@ package edu.udelar.pap.ui;
 import edu.udelar.pap.domain.*;
 import edu.udelar.pap.controller.ControllerFactory;
 import edu.udelar.pap.service.PrestamoService;
+import edu.udelar.pap.util.ValidacionesUtil;
+import edu.udelar.pap.util.InterfaceUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -457,6 +459,157 @@ public class PrestamoUIUtil {
         panel.add(comboBox);
         panel.add(btnConsultar);
         panel.add(btnLimpiar);
+        
+        return panel;
+    }
+    
+    // ==================== MÉTODOS GENÉRICOS ADICIONALES ====================
+    
+    /**
+     * Crea un panel principal genérico con estructura estándar
+     */
+    public static JPanel crearPanelPrincipalGenerico(JInternalFrame internal,
+                                                    JPanel panelSuperior,
+                                                    JPanel panelTabla,
+                                                    boolean incluirVerDetalles,
+                                                    boolean incluirEditar,
+                                                    boolean incluirMarcarDevuelto,
+                                                    boolean incluirExportar) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(panelSuperior, BorderLayout.NORTH);
+        panel.add(panelTabla, BorderLayout.CENTER);
+        panel.add(crearPanelAccionesComun(internal, incluirVerDetalles, incluirEditar, incluirMarcarDevuelto, incluirExportar), BorderLayout.SOUTH);
+        return panel;
+    }
+    
+    /**
+     * Crea un panel superior genérico con título y panel de selección
+     */
+    public static JPanel crearPanelSuperiorGenerico(String titulo,
+                                                   JPanel panelSeleccion,
+                                                   String mensajeEstadisticas) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        // Panel izquierdo con título
+        JPanel panelIzquierdo = new JPanel(new BorderLayout());
+        
+        JLabel lblTitulo = new JLabel(titulo);
+        lblTitulo.setFont(new Font("Arial", Font.BOLD, 16));
+        panelIzquierdo.add(lblTitulo, BorderLayout.NORTH);
+        panelIzquierdo.add(panelSeleccion, BorderLayout.CENTER);
+        
+        panel.add(panelIzquierdo, BorderLayout.WEST);
+        
+        // Panel derecho con estadísticas
+        JPanel panelEstadisticas = crearPanelEstadisticasGenerico("📊 Estadísticas", mensajeEstadisticas);
+        panel.add(panelEstadisticas, BorderLayout.EAST);
+        
+        return panel;
+    }
+    
+    /**
+     * Crea una tabla genérica con configuración estándar
+     */
+    public static JTable crearTablaGenerica(String[] columnas, int[] anchosColumnas, String nombreTabla) {
+        JTable tabla = new JTable(new Object[][]{}, columnas);
+        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        
+        // Configurar anchos de columnas si se proporcionan
+        if (anchosColumnas != null) {
+            for (int i = 0; i < anchosColumnas.length && i < columnas.length; i++) {
+                tabla.getColumnModel().getColumn(i).setPreferredWidth(anchosColumnas[i]);
+            }
+        }
+        
+        return tabla;
+    }
+    
+    /**
+     * Crea un panel de tabla genérico
+     */
+    public static JPanel crearPanelTablaGenerico(String titulo, JTable tabla, String nombreTabla, JInternalFrame internal) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createTitledBorder(titulo));
+        
+        JScrollPane scrollPane = new JScrollPane(tabla);
+        panel.add(scrollPane, BorderLayout.CENTER);
+        
+        internal.putClientProperty(nombreTabla, tabla);
+        return panel;
+    }
+    
+    /**
+     * Actualiza estadísticas de manera genérica
+     */
+    public static void actualizarEstadisticasGenerico(JInternalFrame internal,
+                                                     String nombreEstadisticas,
+                                                     String titulo,
+                                                     String[] metricas,
+                                                     Color colorTexto) {
+        JLabel lblEstadisticas = (JLabel) internal.getClientProperty(nombreEstadisticas);
+        if (lblEstadisticas != null) {
+            StringBuilder html = new StringBuilder("<html><b>").append(titulo).append("</b><br>");
+            for (String metrica : metricas) {
+                html.append(metrica).append("<br>");
+            }
+            html.append("</html>");
+            
+            lblEstadisticas.setText(html.toString());
+            lblEstadisticas.setForeground(colorTexto);
+        }
+    }
+    
+    /**
+     * Limpia una tabla de manera genérica
+     */
+    public static void limpiarTablaGenerica(JInternalFrame internal, String nombreTabla, String[] columnas) {
+        JTable tabla = (JTable) internal.getClientProperty(nombreTabla);
+        if (tabla != null) {
+            Object[][] datos = {};
+            tabla.setModel(new javax.swing.table.DefaultTableModel(datos, columnas));
+        }
+    }
+    
+    /**
+     * Ejecuta una consulta con manejo de errores genérico
+     */
+    public static <T> void ejecutarConsultaConManejoErrores(JInternalFrame internal,
+                                                           String mensajeError,
+                                                           java.util.function.Supplier<T> consulta,
+                                                           java.util.function.Consumer<T> procesadorResultados) {
+        try {
+            T resultado = consulta.get();
+            procesadorResultados.accept(resultado);
+        } catch (Exception e) {
+            ValidacionesUtil.mostrarError(internal, mensajeError + ": " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Crea un panel de acciones simple genérico
+     */
+    public static JPanel crearPanelAccionesSimple(JButton... botones) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        panel.setBorder(BorderFactory.createTitledBorder("Acciones"));
+        
+        for (JButton boton : botones) {
+            panel.add(boton);
+        }
+        
+        return panel;
+    }
+    
+    /**
+     * Crea un panel de filtros genérico
+     */
+    public static JPanel crearPanelFiltrosGenerico(String titulo, JComponent... componentes) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        panel.setBorder(BorderFactory.createTitledBorder(titulo));
+        
+        for (JComponent componente : componentes) {
+            panel.add(componente);
+        }
         
         return panel;
     }

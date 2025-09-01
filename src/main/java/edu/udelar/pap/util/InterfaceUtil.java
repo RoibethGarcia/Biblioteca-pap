@@ -1,4 +1,4 @@
-package edu.udelar.pap.ui;
+package edu.udelar.pap.util;
 
 import javax.swing.*;
 import java.awt.*;

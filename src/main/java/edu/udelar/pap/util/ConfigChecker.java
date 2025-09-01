@@ -1,4 +1,4 @@
-package edu.udelar.pap.ui;
+package edu.udelar.pap.util;
 
 import edu.udelar.pap.persistence.HibernateUtil;
 import org.hibernate.Session;

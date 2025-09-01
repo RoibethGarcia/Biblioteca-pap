@@ -2,8 +2,8 @@ package edu.udelar.pap.controller;
 
 import edu.udelar.pap.domain.Bibliotecario;
 import edu.udelar.pap.service.BibliotecarioService;
-import edu.udelar.pap.ui.ValidacionesUtil;
-import edu.udelar.pap.ui.DatabaseUtil;
+import edu.udelar.pap.util.ValidacionesUtil;
+import edu.udelar.pap.util.DatabaseUtil;
 
 import javax.swing.*;
 import java.awt.*;
