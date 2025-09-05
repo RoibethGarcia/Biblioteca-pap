@@ -33,3 +33,4 @@ echo "   ✅ Mensajes informativos de resultados"
 echo ""
 
 java -cp "target/classes:target/dependency/*" edu.udelar.pap.ui.Main
+

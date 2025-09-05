@@ -39,3 +39,4 @@ echo "   ✅ Campos no editables (ID y fecha de solicitud)"
 echo ""
 
 java -cp "target/classes:target/dependency/*" edu.udelar.pap.ui.Main
+

@@ -55,3 +55,4 @@ echo "   ✅ Reportes administrativos por ubicación geográfica"
 echo ""
 
 java -cp "target/classes:target/dependency/*" edu.udelar.pap.ui.Main
+

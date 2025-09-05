@@ -29,16 +29,45 @@ public class InterfaceUtil {
     }
     
     /**
-     * Crea una ventana interna
+     * Crea una ventana interna con tamaño dinámico
      */
     public static JInternalFrame crearVentanaInterna(String titulo, int ancho, int alto) {
         JInternalFrame internal = new JInternalFrame(titulo, true, true, true, true);
+        
+        // Hacer la ventana responsive
         internal.setSize(ancho, alto);
+        internal.setMinimumSize(new Dimension(600, 400)); // Tamaño mínimo para evitar que desaparezcan controles
         
         // Centrar la ventana en el desktop
         internal.setLocation(50, 50);
         
-        // Evitar que se superpongan las ventanas
+        // Configurar propiedades de redimensionamiento
+        internal.setResizable(true);
+        internal.setMaximizable(true);
+        internal.setIconifiable(true);
+        internal.setClosable(true);
+        
+        internal.setVisible(true);
+        return internal;
+    }
+    
+    /**
+     * Crea una ventana interna adaptativa que se ajusta al contenido
+     */
+    public static JInternalFrame crearVentanaInternaAdaptativa(String titulo, int anchoMinimo, int altoMinimo) {
+        JInternalFrame internal = new JInternalFrame(titulo, true, true, true, true);
+        
+        // Configurar tamaño mínimo pero permitir expansión
+        internal.setMinimumSize(new Dimension(anchoMinimo, altoMinimo));
+        internal.setPreferredSize(new Dimension(anchoMinimo, altoMinimo));
+        
+        // Permitir que la ventana se ajuste al contenido
+        internal.pack();
+        
+        // Centrar la ventana en el desktop
+        internal.setLocation(50, 50);
+        
+        // Configurar propiedades de redimensionamiento
         internal.setResizable(true);
         internal.setMaximizable(true);
         internal.setIconifiable(true);
@@ -69,3 +98,4 @@ public class InterfaceUtil {
         return false;
     }
 }
+

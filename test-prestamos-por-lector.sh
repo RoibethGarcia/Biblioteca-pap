@@ -38,3 +38,4 @@ echo "   ✅ Interfaz intuitiva con filtros y acciones"
 echo ""
 
 java -cp "target/classes:target/dependency/*" edu.udelar.pap.ui.Main
+

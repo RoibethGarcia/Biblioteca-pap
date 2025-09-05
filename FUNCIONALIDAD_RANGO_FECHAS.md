@@ -127,3 +127,4 @@ Menú Principal → Materiales → Consultar Donaciones
 ---
 
 **✅ Implementación Completada - Funcionalidad Opcional Agregada**
+

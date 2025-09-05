@@ -246,44 +246,79 @@ public class PrestamoUIUtil {
     }
     
     /**
-     * Crea un panel de acciones común
+     * Crea un panel de acciones común con layout responsivo
      */
     public static JPanel crearPanelAccionesComun(JInternalFrame internal, 
                                                 boolean incluirVerDetalles, 
                                                 boolean incluirEditar, 
                                                 boolean incluirMarcarDevuelto,
                                                 boolean incluirExportar) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        return crearPanelAccionesPersonalizado(internal, incluirVerDetalles, incluirEditar, 
+                                              incluirMarcarDevuelto, incluirExportar, null, null);
+    }
+    
+    /**
+     * Crea un panel de acciones personalizado con callbacks específicos
+     */
+    public static JPanel crearPanelAccionesPersonalizado(JInternalFrame internal, 
+                                                        boolean incluirVerDetalles, 
+                                                        boolean incluirEditar, 
+                                                        boolean incluirMarcarDevuelto,
+                                                        boolean incluirExportar,
+                                                        Runnable callbackVerDetalles,
+                                                        Runnable callbackExportar) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createTitledBorder("Acciones"));
+        
+        // Panel principal de botones con FlowLayout que se ajusta
+        JPanel botonesPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
         
         if (incluirVerDetalles) {
             JButton btnVerDetalles = new JButton("👁️ Ver Detalles");
-            btnVerDetalles.addActionListener(_ -> verDetallesPrestamoComun(internal));
-            panel.add(btnVerDetalles);
+            if (callbackVerDetalles != null) {
+                btnVerDetalles.addActionListener(_ -> callbackVerDetalles.run());
+            } else {
+                btnVerDetalles.addActionListener(_ -> verDetallesPrestamoComun(internal));
+            }
+            btnVerDetalles.setPreferredSize(new Dimension(140, 30));
+            botonesPanel.add(btnVerDetalles);
         }
         
         if (incluirEditar) {
             JButton btnEditarPrestamo = new JButton("✏️ Editar Préstamo");
             btnEditarPrestamo.addActionListener(_ -> editarPrestamoComun(internal));
-            panel.add(btnEditarPrestamo);
+            btnEditarPrestamo.setPreferredSize(new Dimension(140, 30));
+            botonesPanel.add(btnEditarPrestamo);
         }
         
         if (incluirMarcarDevuelto) {
             JButton btnMarcarDevuelto = new JButton("✅ Marcar como Devuelto");
             btnMarcarDevuelto.addActionListener(_ -> marcarDevueltoComun(internal));
-            panel.add(btnMarcarDevuelto);
+            btnMarcarDevuelto.setPreferredSize(new Dimension(180, 30));
+            botonesPanel.add(btnMarcarDevuelto);
         }
         
         if (incluirExportar) {
             JButton btnExportar = new JButton("📄 Exportar Reporte");
-            btnExportar.addActionListener(_ -> exportarReporteComun(internal));
-            panel.add(btnExportar);
+            if (callbackExportar != null) {
+                btnExportar.addActionListener(_ -> callbackExportar.run());
+            } else {
+                btnExportar.addActionListener(_ -> exportarReporteComun(internal));
+            }
+            btnExportar.setPreferredSize(new Dimension(150, 30));
+            botonesPanel.add(btnExportar);
         }
         
-        // Botón para cerrar
+        // Botón para cerrar en una línea separada si hay muchos botones
+        JPanel cerrarPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton btnCerrar = new JButton("❌ Cerrar");
         btnCerrar.addActionListener(_ -> internal.dispose());
-        panel.add(btnCerrar);
+        btnCerrar.setPreferredSize(new Dimension(100, 30));
+        cerrarPanel.add(btnCerrar);
+        
+        panel.add(botonesPanel);
+        panel.add(cerrarPanel);
         
         return panel;
     }
@@ -323,7 +358,7 @@ public class PrestamoUIUtil {
     // ==================== MÉTODOS PARA ELIMINAR DUPLICACIÓN RESTANTE ====================
     
     /**
-     * Crea y muestra una interfaz interna de manera genérica
+     * Crea y muestra una interfaz interna de manera genérica con tamaño responsivo
      */
     public static void mostrarInterfazGenerica(JDesktopPane desktop, 
                                              String titulo, 
@@ -332,7 +367,46 @@ public class PrestamoUIUtil {
                                              java.util.function.Function<JInternalFrame, JPanel> creadorPanel) {
         JInternalFrame internal = InterfaceUtil.crearVentanaInterna(titulo, ancho, alto);
         JPanel panel = creadorPanel.apply(internal);
-        internal.setContentPane(panel);
+        
+        // Agregar scroll pane para manejar contenido que no cabe
+        JScrollPane scrollPane = new JScrollPane(panel);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16); // Scroll más suave
+        scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
+        
+        internal.setContentPane(scrollPane);
+        desktop.add(internal);
+        internal.toFront();
+        
+        // Ajustar tamaño después de agregar contenido si es necesario
+        SwingUtilities.invokeLater(() -> {
+            if (internal.getSize().width < internal.getMinimumSize().width || 
+                internal.getSize().height < internal.getMinimumSize().height) {
+                internal.pack();
+            }
+        });
+    }
+    
+    /**
+     * Crea y muestra una interfaz interna adaptativa que se ajusta al contenido
+     */
+    public static void mostrarInterfazAdaptativa(JDesktopPane desktop, 
+                                               String titulo, 
+                                               int anchoMinimo, 
+                                               int altoMinimo,
+                                               java.util.function.Function<JInternalFrame, JPanel> creadorPanel) {
+        JInternalFrame internal = InterfaceUtil.crearVentanaInternaAdaptativa(titulo, anchoMinimo, altoMinimo);
+        JPanel panel = creadorPanel.apply(internal);
+        
+        // Agregar scroll pane para manejar contenido que no cabe
+        JScrollPane scrollPane = new JScrollPane(panel);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
+        
+        internal.setContentPane(scrollPane);
         desktop.add(internal);
         internal.toFront();
     }
@@ -587,30 +661,63 @@ public class PrestamoUIUtil {
     }
     
     /**
-     * Crea un panel de acciones simple genérico
+     * Crea un panel de acciones simple genérico responsivo
      */
     public static JPanel crearPanelAccionesSimple(JButton... botones) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createTitledBorder("Acciones"));
         
+        // Panel con FlowLayout que se ajusta automáticamente
+        JPanel botonesPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        
         for (JButton boton : botones) {
-            panel.add(boton);
+            // Establecer un tamaño mínimo consistente para los botones
+            if (boton.getPreferredSize().width < 120) {
+                boton.setPreferredSize(new Dimension(120, 30));
+            }
+            botonesPanel.add(boton);
         }
+        
+        panel.add(botonesPanel);
         
         return panel;
     }
     
     /**
-     * Crea un panel de filtros genérico
+     * Crea un panel de filtros genérico responsivo
      */
     public static JPanel crearPanelFiltrosGenerico(String titulo, JComponent... componentes) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createTitledBorder(titulo));
         
+        // Panel principal con FlowLayout que permite wrap
+        JPanel componentesPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        
         for (JComponent componente : componentes) {
-            panel.add(componente);
+            componentesPanel.add(componente);
         }
         
+        panel.add(componentesPanel);
+        
         return panel;
+    }
+    
+    /**
+     * Crea un panel de filtros con scroll si es necesario
+     */
+    public static JPanel crearPanelFiltrosConScroll(String titulo, JComponent... componentes) {
+        JPanel panel = crearPanelFiltrosGenerico(titulo, componentes);
+        
+        JScrollPane scrollPane = new JScrollPane(panel);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setBorder(null);
+        
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.add(scrollPane, BorderLayout.CENTER);
+        
+        return wrapperPanel;
     }
 }

@@ -49,3 +49,4 @@ echo "   ✅ Auditoría de actividad del personal"
 echo ""
 
 java -cp "target/classes:target/dependency/*" edu.udelar.pap.ui.Main
+

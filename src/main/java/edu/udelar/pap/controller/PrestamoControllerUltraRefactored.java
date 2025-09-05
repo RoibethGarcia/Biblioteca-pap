@@ -44,27 +44,27 @@ public class PrestamoControllerUltraRefactored {
     // ==================== MÉTODOS PÚBLICOS PRINCIPALES ====================
     
     public void mostrarInterfazGestionPrestamos(JDesktopPane desktop) {
-        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Gestión de Préstamos", 800, 600, this::crearPanelPrestamo);
+        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Gestión de Préstamos", 700, 500, this::crearPanelPrestamo);
     }
     
     public void mostrarInterfazPrestamosPorLector(JDesktopPane desktop) {
-        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Préstamos Activos por Lector", 1000, 700, this::crearPanelPrestamosPorLector);
+        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Préstamos Activos por Lector", 800, 600, this::crearPanelPrestamosPorLector);
     }
     
     public void mostrarInterfazHistorialPorBibliotecario(JDesktopPane desktop) {
-        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Historial de Préstamos por Bibliotecario", 1200, 800, this::crearPanelHistorialPorBibliotecario);
+        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Historial de Préstamos por Bibliotecario", 900, 650, this::crearPanelHistorialPorBibliotecario);
     }
     
     public void mostrarInterfazReportePorZona(JDesktopPane desktop) {
-        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Reporte de Préstamos por Zona", 1200, 800, this::crearPanelReportePorZona);
+        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Reporte de Préstamos por Zona", 900, 650, this::crearPanelReportePorZona);
     }
     
     public void mostrarInterfazMaterialesPendientes(JDesktopPane desktop) {
-        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Materiales con Préstamos Pendientes", 1200, 800, this::crearPanelMaterialesPendientes);
+        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Materiales con Préstamos Pendientes", 900, 650, this::crearPanelMaterialesPendientes);
     }
     
     public void mostrarInterfazGestionDevoluciones(JDesktopPane desktop) {
-        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Gestión de Devoluciones", 900, 700, this::crearPanelDevoluciones);
+        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Gestión de Devoluciones", 800, 600, this::crearPanelDevoluciones);
     }
     
     // ==================== PANELES PRINCIPALES ====================
@@ -96,7 +96,19 @@ public class PrestamoControllerUltraRefactored {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(crearPanelSuperiorHistorialPorBibliotecario(internal), BorderLayout.NORTH);
         panel.add(crearPanelTablaHistorialPorBibliotecario(internal), BorderLayout.CENTER);
-        panel.add(PrestamoUIUtil.crearPanelAccionesComun(internal, true, false, false, true), BorderLayout.SOUTH);
+        
+        // Panel de acciones personalizado con callbacks específicos
+        JPanel panelAcciones = PrestamoUIUtil.crearPanelAccionesPersonalizado(
+            internal, 
+            true,  // incluirVerDetalles
+            false, // incluirEditar
+            false, // incluirMarcarDevuelto
+            true,  // incluirExportar
+            () -> verDetallesHistorialBibliotecario(internal),  // callback ver detalles
+            () -> exportarReporteHistorialBibliotecario(internal) // callback exportar
+        );
+        
+        panel.add(panelAcciones, BorderLayout.SOUTH);
         return panel;
     }
     
@@ -1089,5 +1101,332 @@ public class PrestamoControllerUltraRefactored {
         // Limpiar estadísticas
         lblEstadisticas.setText("Haga clic en 'Consultar' para ver los materiales con préstamos pendientes");
         lblEstadisticas.setForeground(Color.GRAY);
+    }
+    
+    // ==================== MÉTODOS ESPECÍFICOS PARA HISTORIAL POR BIBLIOTECARIO ====================
+    
+    /**
+     * Muestra detalles específicos del historial de préstamos de un bibliotecario
+     */
+    private void verDetallesHistorialBibliotecario(JInternalFrame internal) {
+        // Obtener la tabla del historial
+        JTable tabla = (JTable) internal.getClientProperty("tablaHistorialPorBibliotecario");
+        
+        if (!PrestamoUIUtil.verificarFilaSeleccionada(tabla, internal, 
+            "Por favor seleccione un préstamo de la tabla para ver sus detalles.")) {
+            return;
+        }
+        
+        try {
+            // Obtener ID del préstamo seleccionado
+            Long prestamoId = (Long) tabla.getValueAt(tabla.getSelectedRow(), 0);
+            
+            // Buscar el préstamo completo
+            Prestamo prestamo = prestamoService.obtenerPrestamoPorId(prestamoId);
+            
+            if (prestamo != null) {
+                mostrarDetallesExtendidosHistorial(internal, prestamo);
+            } else {
+                JOptionPane.showMessageDialog(internal, 
+                    "No se pudo encontrar el préstamo seleccionado.", 
+                    "Préstamo No Encontrado", 
+                    JOptionPane.WARNING_MESSAGE);
+            }
+            
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(internal, 
+                "Error al cargar los detalles del préstamo: " + e.getMessage(), 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
+     * Muestra detalles extendidos específicos para el historial
+     */
+    private void mostrarDetallesExtendidosHistorial(JInternalFrame internal, Prestamo prestamo) {
+        String detalles = construirDetallesHistorial(prestamo);
+        
+        // Crear ventana de detalles con scroll
+        JTextArea textArea = new JTextArea(detalles);
+        textArea.setEditable(false);
+        textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        textArea.setMargin(new Insets(10, 10, 10, 10));
+        
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(500, 400));
+        
+        JOptionPane.showMessageDialog(
+            internal,
+            scrollPane,
+            "Detalles del Préstamo - Historial",
+            JOptionPane.INFORMATION_MESSAGE
+        );
+    }
+    
+    /**
+     * Construye el texto detallado para el historial
+     */
+    private String construirDetallesHistorial(Prestamo prestamo) {
+        StringBuilder sb = new StringBuilder();
+        
+        sb.append("═══════════════════════════════════════════════════════════════\n");
+        sb.append("               DETALLES DEL PRÉSTAMO - HISTORIAL               \n");
+        sb.append("═══════════════════════════════════════════════════════════════\n\n");
+        
+        // Información básica del préstamo
+        sb.append("📋 INFORMACIÓN GENERAL\n");
+        sb.append("   ID del Préstamo: ").append(prestamo.getId()).append("\n");
+        sb.append("   Estado: ").append(prestamo.getEstado()).append("\n");
+        sb.append("   Fecha de Solicitud: ").append(PrestamoUIUtil.formatearFecha(prestamo.getFechaSolicitud())).append("\n");
+        sb.append("   Fecha Est. Devolución: ").append(PrestamoUIUtil.formatearFecha(prestamo.getFechaEstimadaDevolucion())).append("\n");
+        
+        // Calcular duración
+        long dias = PrestamoUIUtil.calcularDiasDuracion(prestamo);
+        sb.append("   Duración: ").append(dias).append(" días\n\n");
+        
+        // Información del lector
+        sb.append("👤 INFORMACIÓN DEL LECTOR\n");
+        sb.append("   Nombre: ").append(prestamo.getLector().getNombre()).append("\n");
+        sb.append("   Email: ").append(prestamo.getLector().getEmail()).append("\n");
+        sb.append("   Dirección: ").append(prestamo.getLector().getDireccion()).append("\n");
+        sb.append("   Zona: ").append(prestamo.getLector().getZona()).append("\n");
+        sb.append("   Estado del Lector: ").append(prestamo.getLector().getEstado()).append("\n\n");
+        
+        // Información del material
+        sb.append("📚 INFORMACIÓN DEL MATERIAL\n");
+        String tipoMaterial = prestamo.getMaterial().getClass().getSimpleName();
+        sb.append("   Tipo: ").append(tipoMaterial).append("\n");
+        
+        if (prestamo.getMaterial() instanceof Libro) {
+            Libro libro = (Libro) prestamo.getMaterial();
+            sb.append("   Título: ").append(libro.getTitulo()).append("\n");
+            sb.append("   Páginas: ").append(libro.getPaginas()).append("\n");
+        } else if (prestamo.getMaterial() instanceof ArticuloEspecial) {
+            ArticuloEspecial articulo = (ArticuloEspecial) prestamo.getMaterial();
+            sb.append("   Descripción: ").append(articulo.getDescripcion()).append("\n");
+            sb.append("   Peso: ").append(articulo.getPeso()).append(" kg\n");
+            sb.append("   Dimensiones: ").append(articulo.getDimensiones()).append("\n");
+        }
+        sb.append("\n");
+        
+        // Información del bibliotecario (contexto del historial)
+        sb.append("👨‍💼 BIBLIOTECARIO RESPONSABLE\n");
+        sb.append("   Nombre: ").append(prestamo.getBibliotecario().getNombre()).append("\n");
+        sb.append("   Email: ").append(prestamo.getBibliotecario().getEmail()).append("\n");
+        sb.append("   Número de Empleado: ").append(prestamo.getBibliotecario().getNumeroEmpleado()).append("\n\n");
+        
+        // Análisis temporal
+        sb.append("⏰ ANÁLISIS TEMPORAL\n");
+        LocalDate fechaActual = LocalDate.now();
+        long diasDesdeSolicitud = java.time.temporal.ChronoUnit.DAYS.between(prestamo.getFechaSolicitud(), fechaActual);
+        sb.append("   Días desde solicitud: ").append(diasDesdeSolicitud).append("\n");
+        
+        if (prestamo.getEstado() == EstadoPrestamo.DEVUELTO) {
+            sb.append("   Estado: ✅ DEVUELTO\n");
+        } else {
+            long diasRestantes = java.time.temporal.ChronoUnit.DAYS.between(fechaActual, prestamo.getFechaEstimadaDevolucion());
+            if (diasRestantes >= 0) {
+                sb.append("   Días restantes: ").append(diasRestantes).append("\n");
+                sb.append("   Estado: ⏳ EN CURSO\n");
+            } else {
+                sb.append("   Días de retraso: ").append(Math.abs(diasRestantes)).append("\n");
+                sb.append("   Estado: ⚠️ VENCIDO\n");
+            }
+        }
+        
+        sb.append("\n═══════════════════════════════════════════════════════════════");
+        
+        return sb.toString();
+    }
+    
+    /**
+     * Exporta el reporte del historial por bibliotecario
+     */
+    private void exportarReporteHistorialBibliotecario(JInternalFrame internal) {
+        try {
+            // Obtener el bibliotecario seleccionado
+            @SuppressWarnings("unchecked")
+            JComboBox<Bibliotecario> cbBibliotecario = (JComboBox<Bibliotecario>) internal.getClientProperty("cbBibliotecario");
+            Bibliotecario bibliotecario = (Bibliotecario) cbBibliotecario.getSelectedItem();
+            
+            if (bibliotecario == null) {
+                JOptionPane.showMessageDialog(internal, 
+                    "Por favor seleccione un bibliotecario para exportar su historial.", 
+                    "Selección Requerida", 
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            
+            // Obtener los préstamos del bibliotecario
+            List<Prestamo> prestamos = prestamoService.obtenerPrestamosPorBibliotecario(bibliotecario);
+            
+            if (prestamos.isEmpty()) {
+                JOptionPane.showMessageDialog(internal, 
+                    "No hay préstamos para exportar del bibliotecario seleccionado.", 
+                    "Sin Datos", 
+                    JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            
+            // Mostrar opciones de exportación
+            String[] opciones = {"📄 Texto (.txt)", "📊 CSV (.csv)", "📋 Reporte Detallado (.txt)", "❌ Cancelar"};
+            int seleccion = JOptionPane.showOptionDialog(
+                internal,
+                "Seleccione el formato de exportación:",
+                "Exportar Historial - " + bibliotecario.getNombre(),
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                opciones,
+                opciones[0]
+            );
+            
+            switch (seleccion) {
+                case 0 -> exportarTextoSimple(internal, prestamos, bibliotecario);
+                case 1 -> exportarCSV(internal, prestamos, bibliotecario);
+                case 2 -> exportarReporteDetallado(internal, prestamos, bibliotecario);
+                default -> { /* Cancelado */ }
+            }
+            
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(internal, 
+                "Error al exportar el reporte: " + e.getMessage(), 
+                "Error de Exportación", 
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
+     * Exporta como texto simple
+     */
+    private void exportarTextoSimple(JInternalFrame internal, List<Prestamo> prestamos, Bibliotecario bibliotecario) {
+        StringBuilder contenido = new StringBuilder();
+        contenido.append("HISTORIAL DE PRÉSTAMOS - ").append(bibliotecario.getNombre().toUpperCase()).append("\n");
+        contenido.append("Fecha de generación: ").append(LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("\n");
+        contenido.append("Total de préstamos: ").append(prestamos.size()).append("\n\n");
+        
+        contenido.append(String.format("%-8s %-25s %-30s %-12s %-12s %-10s %-10s%n", 
+            "ID", "Lector", "Material", "F.Solicitud", "F.Devolución", "Estado", "Duración"));
+        contenido.append("─".repeat(120)).append("\n");
+        
+        for (Prestamo prestamo : prestamos) {
+            contenido.append(String.format("%-8d %-25s %-30s %-12s %-12s %-10s %-10s%n",
+                prestamo.getId(),
+                prestamo.getLector().getNombre().substring(0, Math.min(24, prestamo.getLector().getNombre().length())),
+                PrestamoUIUtil.obtenerNombreMaterial(prestamo.getMaterial()).substring(0, Math.min(29, PrestamoUIUtil.obtenerNombreMaterial(prestamo.getMaterial()).length())),
+                PrestamoUIUtil.formatearFecha(prestamo.getFechaSolicitud()),
+                PrestamoUIUtil.formatearFecha(prestamo.getFechaEstimadaDevolucion()),
+                prestamo.getEstado().toString(),
+                PrestamoUIUtil.calcularDiasDuracion(prestamo) + "d"
+            ));
+        }
+        
+        mostrarContenidoParaExportar(internal, contenido.toString(), "historial_" + bibliotecario.getNombre().replace(" ", "_") + ".txt");
+    }
+    
+    /**
+     * Exporta como CSV
+     */
+    private void exportarCSV(JInternalFrame internal, List<Prestamo> prestamos, Bibliotecario bibliotecario) {
+        StringBuilder csv = new StringBuilder();
+        csv.append("ID,Lector,Email_Lector,Material,Tipo_Material,Fecha_Solicitud,Fecha_Devolucion,Estado,Duracion_Dias,Bibliotecario\n");
+        
+        for (Prestamo prestamo : prestamos) {
+            csv.append(prestamo.getId()).append(",")
+               .append("\"").append(prestamo.getLector().getNombre()).append("\",")
+               .append("\"").append(prestamo.getLector().getEmail()).append("\",")
+               .append("\"").append(PrestamoUIUtil.obtenerNombreMaterial(prestamo.getMaterial())).append("\",")
+               .append("\"").append(prestamo.getMaterial().getClass().getSimpleName()).append("\",")
+               .append(PrestamoUIUtil.formatearFecha(prestamo.getFechaSolicitud())).append(",")
+               .append(PrestamoUIUtil.formatearFecha(prestamo.getFechaEstimadaDevolucion())).append(",")
+               .append(prestamo.getEstado()).append(",")
+               .append(PrestamoUIUtil.calcularDiasDuracion(prestamo)).append(",")
+               .append("\"").append(bibliotecario.getNombre()).append("\"")
+               .append("\n");
+        }
+        
+        mostrarContenidoParaExportar(internal, csv.toString(), "historial_" + bibliotecario.getNombre().replace(" ", "_") + ".csv");
+    }
+    
+    /**
+     * Exporta reporte detallado
+     */
+    private void exportarReporteDetallado(JInternalFrame internal, List<Prestamo> prestamos, Bibliotecario bibliotecario) {
+        StringBuilder reporte = new StringBuilder();
+        
+        // Encabezado
+        reporte.append("═══════════════════════════════════════════════════════════════════════════════\n");
+        reporte.append("                    REPORTE DETALLADO DE HISTORIAL DE PRÉSTAMOS                \n");
+        reporte.append("═══════════════════════════════════════════════════════════════════════════════\n\n");
+        
+        reporte.append("👨‍💼 BIBLIOTECARIO: ").append(bibliotecario.getNombre()).append("\n");
+        reporte.append("📧 Email: ").append(bibliotecario.getEmail()).append("\n");
+        reporte.append("🆔 Número de Empleado: ").append(bibliotecario.getNumeroEmpleado()).append("\n");
+        reporte.append("📅 Fecha del reporte: ").append(LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("\n\n");
+        
+        // Estadísticas generales
+        long prestamosActivos = prestamos.stream().mapToLong(p -> p.getEstado() == EstadoPrestamo.EN_CURSO ? 1 : 0).sum();
+        long prestamosDevueltos = prestamos.stream().mapToLong(p -> p.getEstado() == EstadoPrestamo.DEVUELTO ? 1 : 0).sum();
+        double promedioDuracion = prestamos.stream().mapToLong(PrestamoUIUtil::calcularDiasDuracion).average().orElse(0.0);
+        
+        reporte.append("📊 ESTADÍSTICAS GENERALES\n");
+        reporte.append("   Total de préstamos gestionados: ").append(prestamos.size()).append("\n");
+        reporte.append("   Préstamos activos: ").append(prestamosActivos).append("\n");
+        reporte.append("   Préstamos devueltos: ").append(prestamosDevueltos).append("\n");
+        reporte.append("   Promedio de duración: ").append(String.format("%.1f días", promedioDuracion)).append("\n\n");
+        
+        // Detalle por préstamo
+        reporte.append("📋 DETALLE DE PRÉSTAMOS\n");
+        reporte.append("─".repeat(100)).append("\n");
+        
+        for (int i = 0; i < prestamos.size(); i++) {
+            Prestamo prestamo = prestamos.get(i);
+            reporte.append("Préstamo #").append(i + 1).append(" (ID: ").append(prestamo.getId()).append(")\n");
+            reporte.append("   Lector: ").append(prestamo.getLector().getNombre()).append(" (").append(prestamo.getLector().getEmail()).append(")\n");
+            reporte.append("   Material: ").append(PrestamoUIUtil.obtenerNombreMaterial(prestamo.getMaterial())).append("\n");
+            reporte.append("   Fechas: ").append(PrestamoUIUtil.formatearFecha(prestamo.getFechaSolicitud())).append(" → ").append(PrestamoUIUtil.formatearFecha(prestamo.getFechaEstimadaDevolucion())).append("\n");
+            reporte.append("   Estado: ").append(prestamo.getEstado()).append(" (").append(PrestamoUIUtil.calcularDiasDuracion(prestamo)).append(" días)\n\n");
+        }
+        
+        reporte.append("═══════════════════════════════════════════════════════════════════════════════\n");
+        reporte.append("Reporte generado automáticamente por el Sistema de Biblioteca\n");
+        
+        mostrarContenidoParaExportar(internal, reporte.toString(), "reporte_detallado_" + bibliotecario.getNombre().replace(" ", "_") + ".txt");
+    }
+    
+    /**
+     * Muestra el contenido para que el usuario lo copie o guarde
+     */
+    private void mostrarContenidoParaExportar(JInternalFrame internal, String contenido, String nombreSugerido) {
+        JTextArea textArea = new JTextArea(contenido);
+        textArea.setEditable(false);
+        textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
+        textArea.setCaretPosition(0);
+        
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(800, 600));
+        
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(new JLabel("📄 Contenido del archivo: " + nombreSugerido), BorderLayout.NORTH);
+        panel.add(scrollPane, BorderLayout.CENTER);
+        
+        JPanel botonesPanel = new JPanel(new FlowLayout());
+        JButton btnCopiar = new JButton("📋 Copiar al Portapapeles");
+        btnCopiar.addActionListener(_ -> {
+            java.awt.datatransfer.StringSelection stringSelection = new java.awt.datatransfer.StringSelection(contenido);
+            java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
+            JOptionPane.showMessageDialog(internal, "Contenido copiado al portapapeles", "Copiado", JOptionPane.INFORMATION_MESSAGE);
+        });
+        
+        botonesPanel.add(btnCopiar);
+        panel.add(botonesPanel, BorderLayout.SOUTH);
+        
+        JOptionPane.showMessageDialog(
+            internal,
+            panel,
+            "Exportar - " + nombreSugerido,
+            JOptionPane.PLAIN_MESSAGE
+        );
     }
 }

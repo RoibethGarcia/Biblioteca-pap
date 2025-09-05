@@ -49,3 +49,4 @@ echo "   ✅ Priorización de devoluciones y reposiciones"
 echo ""
 
 java -cp "target/classes:target/dependency/*" edu.udelar.pap.ui.Main
+
