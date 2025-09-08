@@ -29,23 +29,26 @@ public class InterfaceUtil {
     }
     
     /**
-     * Crea una ventana interna con tamaño dinámico
+     * Crea una ventana interna con tamaño fijo
      */
     public static JInternalFrame crearVentanaInterna(String titulo, int ancho, int alto) {
         JInternalFrame internal = new JInternalFrame(titulo, true, true, true, true);
         
-        // Hacer la ventana responsive
+        // Configurar tamaño fijo
         internal.setSize(ancho, alto);
-        internal.setMinimumSize(new Dimension(600, 400)); // Tamaño mínimo para evitar que desaparezcan controles
         
         // Centrar la ventana en el desktop
         internal.setLocation(50, 50);
         
-        // Configurar propiedades de redimensionamiento
+        // Configurar propiedades de redimensionamiento y movimiento
         internal.setResizable(true);
         internal.setMaximizable(true);
         internal.setIconifiable(true);
         internal.setClosable(true);
+        
+        
+        // Deshabilitar cualquier ajuste automático de tamaño
+        internal.setAutoscrolls(false);
         
         internal.setVisible(true);
         return internal;
@@ -57,21 +60,21 @@ public class InterfaceUtil {
     public static JInternalFrame crearVentanaInternaAdaptativa(String titulo, int anchoMinimo, int altoMinimo) {
         JInternalFrame internal = new JInternalFrame(titulo, true, true, true, true);
         
-        // Configurar tamaño mínimo pero permitir expansión
-        internal.setMinimumSize(new Dimension(anchoMinimo, altoMinimo));
-        internal.setPreferredSize(new Dimension(anchoMinimo, altoMinimo));
-        
-        // Permitir que la ventana se ajuste al contenido
-        internal.pack();
+        // Configurar tamaño fijo basado en los parámetros
+        internal.setSize(anchoMinimo, altoMinimo);
         
         // Centrar la ventana en el desktop
         internal.setLocation(50, 50);
         
-        // Configurar propiedades de redimensionamiento
+        // Configurar propiedades de redimensionamiento y movimiento
         internal.setResizable(true);
         internal.setMaximizable(true);
         internal.setIconifiable(true);
         internal.setClosable(true);
+        
+        
+        // Deshabilitar cualquier ajuste automático de tamaño
+        internal.setAutoscrolls(false);
         
         internal.setVisible(true);
         return internal;

@@ -2,6 +2,7 @@ package edu.udelar.pap.ui;
 
 import edu.udelar.pap.domain.*;
 import edu.udelar.pap.controller.ControllerFactory;
+import edu.udelar.pap.controller.PrestamoControllerUltraRefactored;
 import edu.udelar.pap.service.PrestamoService;
 import edu.udelar.pap.util.ValidacionesUtil;
 import edu.udelar.pap.util.InterfaceUtil;
@@ -267,12 +268,8 @@ public class PrestamoUIUtil {
                                                         boolean incluirExportar,
                                                         Runnable callbackVerDetalles,
                                                         Runnable callbackExportar) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         panel.setBorder(BorderFactory.createTitledBorder("Acciones"));
-        
-        // Panel principal de botones con FlowLayout que se ajusta
-        JPanel botonesPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
         
         if (incluirVerDetalles) {
             JButton btnVerDetalles = new JButton("👁️ Ver Detalles");
@@ -282,21 +279,21 @@ public class PrestamoUIUtil {
                 btnVerDetalles.addActionListener(_ -> verDetallesPrestamoComun(internal));
             }
             btnVerDetalles.setPreferredSize(new Dimension(140, 30));
-            botonesPanel.add(btnVerDetalles);
+            panel.add(btnVerDetalles);
         }
         
         if (incluirEditar) {
             JButton btnEditarPrestamo = new JButton("✏️ Editar Préstamo");
             btnEditarPrestamo.addActionListener(_ -> editarPrestamoComun(internal));
             btnEditarPrestamo.setPreferredSize(new Dimension(140, 30));
-            botonesPanel.add(btnEditarPrestamo);
+            panel.add(btnEditarPrestamo);
         }
         
         if (incluirMarcarDevuelto) {
             JButton btnMarcarDevuelto = new JButton("✅ Marcar como Devuelto");
             btnMarcarDevuelto.addActionListener(_ -> marcarDevueltoComun(internal));
             btnMarcarDevuelto.setPreferredSize(new Dimension(180, 30));
-            botonesPanel.add(btnMarcarDevuelto);
+            panel.add(btnMarcarDevuelto);
         }
         
         if (incluirExportar) {
@@ -307,18 +304,14 @@ public class PrestamoUIUtil {
                 btnExportar.addActionListener(_ -> exportarReporteComun(internal));
             }
             btnExportar.setPreferredSize(new Dimension(150, 30));
-            botonesPanel.add(btnExportar);
+            panel.add(btnExportar);
         }
         
-        // Botón para cerrar en una línea separada si hay muchos botones
-        JPanel cerrarPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        // Botón para cerrar
         JButton btnCerrar = new JButton("❌ Cerrar");
         btnCerrar.addActionListener(_ -> internal.dispose());
         btnCerrar.setPreferredSize(new Dimension(100, 30));
-        cerrarPanel.add(btnCerrar);
-        
-        panel.add(botonesPanel);
-        panel.add(cerrarPanel);
+        panel.add(btnCerrar);
         
         return panel;
     }
@@ -335,16 +328,384 @@ public class PrestamoUIUtil {
      * Método común para editar préstamo (placeholder - debe ser implementado en el controlador)
      */
     private static void editarPrestamoComun(JInternalFrame internal) {
-        // Este método debe ser sobrescrito o implementado en el controlador
-        System.out.println("Editar préstamo común - implementar en controlador");
+        // Obtener la tabla de préstamos
+        JTable tabla = obtenerTablaPrestamos(internal);
+        if (tabla == null) {
+            ValidacionesUtil.mostrarError(internal, "No se pudo encontrar la tabla de préstamos");
+            return;
+        }
+        
+        // Verificar que hay una fila seleccionada
+        if (!verificarFilaSeleccionada(tabla, internal, "Por favor seleccione un préstamo para editar")) {
+            return;
+        }
+        
+        // Obtener el ID del préstamo seleccionado
+        Long prestamoId = (Long) tabla.getValueAt(tabla.getSelectedRow(), 0);
+        
+        try {
+            // Obtener el préstamo completo
+            Prestamo prestamo = prestamoService.obtenerPrestamoPorId(prestamoId);
+            if (prestamo == null) {
+                ValidacionesUtil.mostrarError(internal, "No se pudo encontrar el préstamo seleccionado");
+                return;
+            }
+            
+            // Mostrar diálogo de edición
+            mostrarDialogoEdicionPrestamo(internal, prestamo);
+            
+        } catch (Exception e) {
+            ValidacionesUtil.mostrarError(internal, "Error al cargar el préstamo: " + e.getMessage());
+        }
     }
     
     /**
-     * Método común para marcar como devuelto (placeholder - debe ser implementado en el controlador)
+     * Obtiene la tabla de préstamos desde el internal frame
+     */
+    private static JTable obtenerTablaPrestamos(JInternalFrame internal) {
+        // Intentar obtener diferentes tipos de tablas
+        JTable tabla = (JTable) internal.getClientProperty("tablaPrestamos");
+        if (tabla == null) {
+            tabla = (JTable) internal.getClientProperty("tablaPrestamosPorLector");
+        }
+        if (tabla == null) {
+            tabla = (JTable) internal.getClientProperty("tablaReportePorZona");
+        }
+        return tabla;
+    }
+    
+    /**
+     * Muestra el diálogo de edición de préstamo
+     */
+    private static void mostrarDialogoEdicionPrestamo(JInternalFrame internal, Prestamo prestamo) {
+        // Crear ventana de edición
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(internal), 
+                                   "Editar Préstamo - ID: " + prestamo.getId(), true);
+        dialog.setLayout(new BorderLayout());
+        dialog.setSize(650, 550);
+        dialog.setLocationRelativeTo(internal);
+        
+        // Panel principal
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        
+        // Panel de campos editables
+        JPanel fieldsPanel = crearPanelCamposEdicionPrestamo(prestamo);
+        mainPanel.add(fieldsPanel, BorderLayout.CENTER);
+        
+        // Panel de botones
+        JPanel buttonsPanel = crearPanelBotonesEdicionPrestamo(dialog, internal, prestamo, fieldsPanel);
+        mainPanel.add(buttonsPanel, BorderLayout.SOUTH);
+        
+        dialog.add(mainPanel);
+        dialog.setVisible(true);
+    }
+    
+    /**
+     * Método común para marcar como devuelto
      */
     private static void marcarDevueltoComun(JInternalFrame internal) {
-        // Este método debe ser sobrescrito o implementado en el controlador
-        System.out.println("Marcar devuelto común - implementar en controlador");
+        // Obtener la tabla de préstamos
+        JTable tabla = obtenerTablaPrestamos(internal);
+        if (tabla == null) {
+            ValidacionesUtil.mostrarError(internal, "No se pudo encontrar la tabla de préstamos");
+            return;
+        }
+        
+        // Verificar que hay una fila seleccionada
+        if (!verificarFilaSeleccionada(tabla, internal, "Por favor seleccione un préstamo para marcar como devuelto")) {
+            return;
+        }
+        
+        // Obtener el ID del préstamo seleccionado
+        Long prestamoId = (Long) tabla.getValueAt(tabla.getSelectedRow(), 0);
+        
+        // Obtener información del material para mostrar en la confirmación
+        String materialNombre = "Material desconocido";
+        try {
+            Object materialValue = tabla.getValueAt(tabla.getSelectedRow(), 2); // Columna del material
+            if (materialValue != null) {
+                materialNombre = materialValue.toString();
+            }
+        } catch (Exception e) {
+            // Si no se puede obtener el nombre del material, usar el ID
+            materialNombre = "ID: " + prestamoId;
+        }
+        
+        // Marcar como devuelto usando el método existente
+        boolean exito = marcarPrestamoComoDevuelto(prestamoId, materialNombre, internal);
+        
+        if (exito) {
+            // Actualizar la tabla después de marcar como devuelto
+            actualizarTablaDespuesDeAccion(internal);
+        }
+    }
+    
+    /**
+     * Actualiza la tabla después de realizar una acción (como marcar como devuelto)
+     */
+    private static void actualizarTablaDespuesDeAccion(JInternalFrame internal) {
+        // Obtener la tabla
+        JTable tabla = obtenerTablaPrestamos(internal);
+        if (tabla == null) {
+            return;
+        }
+        
+        // Determinar qué tipo de tabla es y actualizarla apropiadamente
+        if (internal.getClientProperty("tablaPrestamos") != null) {
+            // Es la tabla de gestión de devoluciones - recargar préstamos activos
+            actualizarTablaDevoluciones(internal);
+        } else if (internal.getClientProperty("tablaPrestamosPorLector") != null) {
+            // Es la tabla de préstamos por lector - recargar préstamos del lector
+            actualizarTablaPrestamosPorLector(internal);
+        }
+        // Para otras tablas, no hacer nada ya que no necesitan actualización
+    }
+    
+    /**
+     * Actualiza la tabla de devoluciones
+     */
+    private static void actualizarTablaDevoluciones(JInternalFrame internal) {
+        // Obtener el controlador desde las propiedades del internal frame
+        PrestamoControllerUltraRefactored controller = (PrestamoControllerUltraRefactored) internal.getClientProperty("controller");
+        if (controller != null) {
+            controller.actualizarTablaDevoluciones(internal);
+        } else {
+            System.out.println("No se pudo encontrar el controlador para actualizar tabla de devoluciones");
+        }
+    }
+    
+    /**
+     * Actualiza la tabla de préstamos por lector
+     */
+    private static void actualizarTablaPrestamosPorLector(JInternalFrame internal) {
+        // Obtener el controlador desde las propiedades del internal frame
+        PrestamoControllerUltraRefactored controller = (PrestamoControllerUltraRefactored) internal.getClientProperty("controller");
+        if (controller != null) {
+            controller.actualizarTablaPrestamosPorLector(internal);
+        } else {
+            System.out.println("No se pudo encontrar el controlador para actualizar tabla de préstamos por lector");
+        }
+    }
+    
+    /**
+     * Crea el panel con los campos editables del préstamo
+     */
+    private static JPanel crearPanelCamposEdicionPrestamo(Prestamo prestamo) {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("Información del Préstamo"));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.WEST;
+        
+        // Lector
+        gbc.gridx = 0; gbc.gridy = 0;
+        panel.add(new JLabel("Lector:"), gbc);
+        gbc.gridx = 1;
+        JComboBox<Lector> cbLector = new JComboBox<>();
+        cargarLectores(cbLector, prestamo.getLector());
+        cbLector.setPreferredSize(new Dimension(250, 25));
+        cbLector.setMinimumSize(new Dimension(250, 25));
+        panel.add(cbLector, gbc);
+        
+        // Bibliotecario
+        gbc.gridx = 0; gbc.gridy = 1;
+        panel.add(new JLabel("Bibliotecario:"), gbc);
+        gbc.gridx = 1;
+        JComboBox<Bibliotecario> cbBibliotecario = new JComboBox<>();
+        cargarBibliotecarios(cbBibliotecario, prestamo.getBibliotecario());
+        cbBibliotecario.setPreferredSize(new Dimension(250, 25));
+        cbBibliotecario.setMinimumSize(new Dimension(250, 25));
+        panel.add(cbBibliotecario, gbc);
+        
+        // Material
+        gbc.gridx = 0; gbc.gridy = 2;
+        panel.add(new JLabel("Material:"), gbc);
+        gbc.gridx = 1;
+        JComboBox<MaterialComboBoxItem> cbMaterial = new JComboBox<>();
+        cargarMateriales(cbMaterial, prestamo.getMaterial());
+        cbMaterial.setPreferredSize(new Dimension(250, 25));
+        cbMaterial.setMinimumSize(new Dimension(250, 25));
+        panel.add(cbMaterial, gbc);
+        
+        // Fecha de Solicitud (solo lectura)
+        gbc.gridx = 0; gbc.gridy = 3;
+        panel.add(new JLabel("Fecha de Solicitud:"), gbc);
+        gbc.gridx = 1;
+        JTextField tfFechaSolicitud = new JTextField(formatearFecha(prestamo.getFechaSolicitud()));
+        tfFechaSolicitud.setEditable(false);
+        tfFechaSolicitud.setBackground(Color.LIGHT_GRAY);
+        tfFechaSolicitud.setPreferredSize(new Dimension(150, 25));
+        tfFechaSolicitud.setMinimumSize(new Dimension(150, 25));
+        panel.add(tfFechaSolicitud, gbc);
+        
+        // Fecha Estimada de Devolución
+        gbc.gridx = 0; gbc.gridy = 4;
+        panel.add(new JLabel("Fecha Estimada de Devolución:"), gbc);
+        gbc.gridx = 1;
+        DateTextField tfFechaDevolucion = new DateTextField();
+        tfFechaDevolucion.setText(formatearFecha(prestamo.getFechaEstimadaDevolucion()));
+        tfFechaDevolucion.setToolTipText("Formato: DD/MM/AAAA (ejemplo: 15/12/2024)");
+        tfFechaDevolucion.setPreferredSize(new Dimension(150, 25));
+        tfFechaDevolucion.setMinimumSize(new Dimension(150, 25));
+        panel.add(tfFechaDevolucion, gbc);
+        
+        // Estado
+        gbc.gridx = 0; gbc.gridy = 5;
+        panel.add(new JLabel("Estado:"), gbc);
+        gbc.gridx = 1;
+        JComboBox<EstadoPrestamo> cbEstado = new JComboBox<>(EstadoPrestamo.values());
+        cbEstado.setSelectedItem(prestamo.getEstado());
+        cbEstado.setPreferredSize(new Dimension(150, 25));
+        cbEstado.setMinimumSize(new Dimension(150, 25));
+        panel.add(cbEstado, gbc);
+        
+        // Guardar referencias en el panel para acceso posterior
+        panel.putClientProperty("cbLector", cbLector);
+        panel.putClientProperty("cbBibliotecario", cbBibliotecario);
+        panel.putClientProperty("cbMaterial", cbMaterial);
+        panel.putClientProperty("tfFechaDevolucion", tfFechaDevolucion);
+        panel.putClientProperty("cbEstado", cbEstado);
+        
+        return panel;
+    }
+    
+    /**
+     * Crea el panel de botones para la edición
+     */
+    private static JPanel crearPanelBotonesEdicionPrestamo(JDialog dialog, JInternalFrame internal, 
+                                                         Prestamo prestamo, JPanel fieldsPanel) {
+        JPanel panel = new JPanel(new FlowLayout());
+        
+        JButton btnGuardar = new JButton("💾 Guardar Cambios");
+        JButton btnCancelar = new JButton("❌ Cancelar");
+        
+        btnGuardar.addActionListener(_ -> guardarCambiosPrestamo(dialog, internal, prestamo, fieldsPanel));
+        btnCancelar.addActionListener(_ -> dialog.dispose());
+        
+        panel.add(btnGuardar);
+        panel.add(btnCancelar);
+        
+        return panel;
+    }
+    
+    /**
+     * Guarda los cambios del préstamo
+     */
+    private static void guardarCambiosPrestamo(JDialog dialog, JInternalFrame internal, 
+                                             Prestamo prestamo, JPanel fieldsPanel) {
+        try {
+            // Obtener los valores de los campos
+            @SuppressWarnings("unchecked")
+            JComboBox<Lector> cbLector = (JComboBox<Lector>) fieldsPanel.getClientProperty("cbLector");
+            @SuppressWarnings("unchecked")
+            JComboBox<Bibliotecario> cbBibliotecario = (JComboBox<Bibliotecario>) fieldsPanel.getClientProperty("cbBibliotecario");
+            @SuppressWarnings("unchecked")
+            JComboBox<MaterialComboBoxItem> cbMaterial = (JComboBox<MaterialComboBoxItem>) fieldsPanel.getClientProperty("cbMaterial");
+            DateTextField tfFechaDevolucion = (DateTextField) fieldsPanel.getClientProperty("tfFechaDevolucion");
+            @SuppressWarnings("unchecked")
+            JComboBox<EstadoPrestamo> cbEstado = (JComboBox<EstadoPrestamo>) fieldsPanel.getClientProperty("cbEstado");
+            
+            // Obtener valores
+            Lector nuevoLector = (Lector) cbLector.getSelectedItem();
+            Bibliotecario nuevoBibliotecario = (Bibliotecario) cbBibliotecario.getSelectedItem();
+            MaterialComboBoxItem nuevoMaterialItem = (MaterialComboBoxItem) cbMaterial.getSelectedItem();
+            String fechaDevolucionStr = tfFechaDevolucion.getText().trim();
+            EstadoPrestamo nuevoEstado = (EstadoPrestamo) cbEstado.getSelectedItem();
+            
+            // Validaciones
+            if (!validarDatosEdicionPrestamo(nuevoLector, nuevoBibliotecario, nuevoMaterialItem, 
+                                           fechaDevolucionStr, internal)) {
+                return;
+            }
+            
+            // Convertir fecha
+            LocalDate nuevaFechaDevolucion = ValidacionesUtil.validarFechaFutura(fechaDevolucionStr);
+            
+            // Confirmar cambios
+            String mensajeConfirmacion = "¿Desea guardar los siguientes cambios?\n\n" +
+                "Lector: " + nuevoLector.getNombre() + "\n" +
+                "Bibliotecario: " + nuevoBibliotecario.getNombre() + "\n" +
+                "Material: " + nuevoMaterialItem.toString() + "\n" +
+                "Fecha de Devolución: " + fechaDevolucionStr + "\n" +
+                "Estado: " + nuevoEstado;
+            
+            if (!ValidacionesUtil.confirmarAccion(internal, mensajeConfirmacion, "Confirmar cambios")) {
+                return;
+            }
+            
+            // Actualizar préstamo usando el servicio
+            boolean exito = prestamoService.actualizarPrestamoCompleto(
+                prestamo.getId(),
+                nuevoLector,
+                nuevoBibliotecario,
+                nuevoMaterialItem.getMaterial(),
+                nuevaFechaDevolucion,
+                nuevoEstado
+            );
+            
+            if (exito) {
+                ValidacionesUtil.mostrarExito(internal, 
+                    "Préstamo actualizado exitosamente:\n" +
+                    "ID: " + prestamo.getId() + "\n" +
+                    "Lector: " + nuevoLector.getNombre() + "\n" +
+                    "Material: " + nuevoMaterialItem.toString() + "\n" +
+                    "Estado: " + nuevoEstado);
+                
+                dialog.dispose();
+                
+                // Refrescar la tabla si es posible
+                refrescarTablaPrestamos(internal);
+                
+            } else {
+                ValidacionesUtil.mostrarError(internal, "No se pudo actualizar el préstamo");
+            }
+            
+        } catch (Exception e) {
+            ValidacionesUtil.mostrarError(internal, "Error al guardar cambios: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Valida los datos de edición del préstamo
+     */
+    private static boolean validarDatosEdicionPrestamo(Lector lector, Bibliotecario bibliotecario, 
+                                                     MaterialComboBoxItem material, String fechaDevolucionStr, 
+                                                     JInternalFrame internal) {
+        // Validación básica
+        if (lector == null || bibliotecario == null || material == null || 
+            !ValidacionesUtil.validarCamposObligatorios(fechaDevolucionStr)) {
+            ValidacionesUtil.mostrarErrorCamposRequeridos(internal);
+            return false;
+        }
+        
+        // Validación de fecha de devolución
+        try {
+            LocalDate fechaDevolucion = ValidacionesUtil.validarFechaFutura(fechaDevolucionStr);
+            
+            if (fechaDevolucion.isBefore(LocalDate.now())) {
+                ValidacionesUtil.mostrarError(internal, "La fecha de devolución debe ser futura o igual a hoy");
+                return false;
+            }
+        } catch (Exception ex) {
+            ValidacionesUtil.mostrarErrorFecha(internal, 
+                "Formato de fecha inválido. Use DD/MM/AAAA\n" +
+                "Ejemplo: 15/12/2024");
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Intenta refrescar la tabla de préstamos
+     */
+    private static void refrescarTablaPrestamos(JInternalFrame internal) {
+        // Este método podría ser mejorado para refrescar automáticamente la tabla
+        // Por ahora, solo mostramos un mensaje informativo
+        JOptionPane.showMessageDialog(internal, 
+            "Los cambios se han guardado. Puede ser necesario refrescar la vista manualmente.", 
+            "Cambios Guardados", 
+            JOptionPane.INFORMATION_MESSAGE);
     }
     
     /**
@@ -365,27 +726,27 @@ public class PrestamoUIUtil {
                                              int ancho, 
                                              int alto,
                                              java.util.function.Function<JInternalFrame, JPanel> creadorPanel) {
+        mostrarInterfazGenerica(desktop, titulo, ancho, alto, creadorPanel, null);
+    }
+    
+    public static void mostrarInterfazGenerica(JDesktopPane desktop, 
+                                             String titulo, 
+                                             int ancho, 
+                                             int alto,
+                                             java.util.function.Function<JInternalFrame, JPanel> creadorPanel,
+                                             Object controller) {
         JInternalFrame internal = InterfaceUtil.crearVentanaInterna(titulo, ancho, alto);
+        
+        // Guardar referencia del controlador si se proporciona
+        if (controller != null) {
+            internal.putClientProperty("controller", controller);
+        }
+        
         JPanel panel = creadorPanel.apply(internal);
         
-        // Agregar scroll pane para manejar contenido que no cabe
-        JScrollPane scrollPane = new JScrollPane(panel);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16); // Scroll más suave
-        scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
-        
-        internal.setContentPane(scrollPane);
+        internal.setContentPane(panel);
         desktop.add(internal);
         internal.toFront();
-        
-        // Ajustar tamaño después de agregar contenido si es necesario
-        SwingUtilities.invokeLater(() -> {
-            if (internal.getSize().width < internal.getMinimumSize().width || 
-                internal.getSize().height < internal.getMinimumSize().height) {
-                internal.pack();
-            }
-        });
     }
     
     /**
@@ -399,14 +760,7 @@ public class PrestamoUIUtil {
         JInternalFrame internal = InterfaceUtil.crearVentanaInternaAdaptativa(titulo, anchoMinimo, altoMinimo);
         JPanel panel = creadorPanel.apply(internal);
         
-        // Agregar scroll pane para manejar contenido que no cabe
-        JScrollPane scrollPane = new JScrollPane(panel);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
-        
-        internal.setContentPane(scrollPane);
+        internal.setContentPane(panel);
         desktop.add(internal);
         internal.toFront();
     }
@@ -664,22 +1018,16 @@ public class PrestamoUIUtil {
      * Crea un panel de acciones simple genérico responsivo
      */
     public static JPanel crearPanelAccionesSimple(JButton... botones) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         panel.setBorder(BorderFactory.createTitledBorder("Acciones"));
-        
-        // Panel con FlowLayout que se ajusta automáticamente
-        JPanel botonesPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
         
         for (JButton boton : botones) {
             // Establecer un tamaño mínimo consistente para los botones
             if (boton.getPreferredSize().width < 120) {
                 boton.setPreferredSize(new Dimension(120, 30));
             }
-            botonesPanel.add(boton);
+            panel.add(boton);
         }
-        
-        panel.add(botonesPanel);
         
         return panel;
     }
@@ -688,18 +1036,12 @@ public class PrestamoUIUtil {
      * Crea un panel de filtros genérico responsivo
      */
     public static JPanel crearPanelFiltrosGenerico(String titulo, JComponent... componentes) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         panel.setBorder(BorderFactory.createTitledBorder(titulo));
         
-        // Panel principal con FlowLayout que permite wrap
-        JPanel componentesPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-        
         for (JComponent componente : componentes) {
-            componentesPanel.add(componente);
+            panel.add(componente);
         }
-        
-        panel.add(componentesPanel);
         
         return panel;
     }
@@ -708,16 +1050,6 @@ public class PrestamoUIUtil {
      * Crea un panel de filtros con scroll si es necesario
      */
     public static JPanel crearPanelFiltrosConScroll(String titulo, JComponent... componentes) {
-        JPanel panel = crearPanelFiltrosGenerico(titulo, componentes);
-        
-        JScrollPane scrollPane = new JScrollPane(panel);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setBorder(null);
-        
-        JPanel wrapperPanel = new JPanel(new BorderLayout());
-        wrapperPanel.add(scrollPane, BorderLayout.CENTER);
-        
-        return wrapperPanel;
+        return crearPanelFiltrosGenerico(titulo, componentes);
     }
 }

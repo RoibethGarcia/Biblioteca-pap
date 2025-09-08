@@ -48,7 +48,7 @@ public class PrestamoControllerUltraRefactored {
     }
     
     public void mostrarInterfazPrestamosPorLector(JDesktopPane desktop) {
-        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Préstamos Activos por Lector", 800, 600, this::crearPanelPrestamosPorLector);
+        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Préstamos Activos por Lector", 800, 600, this::crearPanelPrestamosPorLector, this);
     }
     
     public void mostrarInterfazHistorialPorBibliotecario(JDesktopPane desktop) {
@@ -64,7 +64,7 @@ public class PrestamoControllerUltraRefactored {
     }
     
     public void mostrarInterfazGestionDevoluciones(JDesktopPane desktop) {
-        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Gestión de Devoluciones", 800, 600, this::crearPanelDevoluciones);
+        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Gestión de Devoluciones", 800, 600, this::crearPanelDevoluciones, this);
     }
     
     // ==================== PANELES PRINCIPALES ====================
@@ -80,7 +80,7 @@ public class PrestamoControllerUltraRefactored {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(crearPanelFiltros(internal), BorderLayout.NORTH);
         panel.add(crearPanelTablaPrestamos(internal), BorderLayout.CENTER);
-        panel.add(PrestamoUIUtil.crearPanelAccionesComun(internal, true, true, true, false), BorderLayout.SOUTH);
+        panel.add(PrestamoUIUtil.crearPanelAccionesComun(internal, false, true, true, false), BorderLayout.SOUTH);
         return panel;
     }
     
@@ -88,7 +88,7 @@ public class PrestamoControllerUltraRefactored {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(crearPanelSuperiorPrestamosPorLector(internal), BorderLayout.NORTH);
         panel.add(crearPanelTablaPrestamosPorLector(internal), BorderLayout.CENTER);
-        panel.add(PrestamoUIUtil.crearPanelAccionesComun(internal, true, true, true, false), BorderLayout.SOUTH);
+        panel.add(PrestamoUIUtil.crearPanelAccionesComun(internal, false, true, true, false), BorderLayout.SOUTH);
         return panel;
     }
     
@@ -116,7 +116,7 @@ public class PrestamoControllerUltraRefactored {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(crearPanelSuperiorReportePorZona(internal), BorderLayout.NORTH);
         panel.add(crearPanelTablaReportePorZona(internal), BorderLayout.CENTER);
-        panel.add(PrestamoUIUtil.crearPanelAccionesComun(internal, true, false, false, true), BorderLayout.SOUTH);
+        panel.add(PrestamoUIUtil.crearPanelAccionesComun(internal, false, false, false, false), BorderLayout.SOUTH);
         return panel;
     }
     
@@ -124,7 +124,7 @@ public class PrestamoControllerUltraRefactored {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(crearPanelSuperiorMaterialesPendientes(internal), BorderLayout.NORTH);
         panel.add(crearPanelTablaMaterialesPendientes(internal), BorderLayout.CENTER);
-        panel.add(PrestamoUIUtil.crearPanelAccionesComun(internal, true, false, false, true), BorderLayout.SOUTH);
+        panel.add(PrestamoUIUtil.crearPanelAccionesComun(internal, false, false, false, false), BorderLayout.SOUTH);
         return panel;
     }
     
@@ -352,6 +352,25 @@ public class PrestamoControllerUltraRefactored {
     }
     
     // ==================== MÉTODOS DE ACTUALIZACIÓN DE TABLAS ====================
+    
+    /**
+     * Método público para actualizar la tabla de devoluciones desde PrestamoUIUtil
+     */
+    public void actualizarTablaDevoluciones(JInternalFrame internal) {
+        mostrarTodosLosPrestamosActivos(internal);
+    }
+    
+    /**
+     * Método público para actualizar la tabla de préstamos por lector desde PrestamoUIUtil
+     */
+    @SuppressWarnings("unchecked")
+    public void actualizarTablaPrestamosPorLector(JInternalFrame internal) {
+        // Obtener el lector seleccionado del combo box
+        JComboBox<Lector> comboBox = (JComboBox<Lector>) internal.getClientProperty("comboBoxLectores");
+        if (comboBox != null && comboBox.getSelectedItem() != null) {
+            consultarPrestamosPorLector(internal);
+        }
+    }
     
     private void actualizarTablaPrestamos(JInternalFrame internal, List<Prestamo> prestamos) {
         PrestamoUIUtil.actualizarTablaGenerica(

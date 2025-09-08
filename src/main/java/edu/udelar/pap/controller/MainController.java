@@ -57,6 +57,9 @@ public class MainController {
     private JDesktopPane crearDesktopPane() {
         JDesktopPane desktop = new JDesktopPane();
         
+        // Configurar el desktop pane para permitir movimiento libre de ventanas
+        desktop.setDragMode(JDesktopPane.OUTLINE_DRAG_MODE);
+        
         // Agregar mensaje de bienvenida
         JLabel welcomeLabel = new JLabel("Sistema de gestión de Biblioteca comunitaria");
         welcomeLabel.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 24));
