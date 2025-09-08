@@ -36,6 +36,8 @@ public class InterfaceUtil {
         
         // Configurar tamaño fijo
         internal.setSize(ancho, alto);
+        internal.setPreferredSize(new java.awt.Dimension(ancho, alto));
+        internal.setMinimumSize(new java.awt.Dimension(ancho, alto));
         
         // Centrar la ventana en el desktop
         internal.setLocation(50, 50);
@@ -46,10 +48,14 @@ public class InterfaceUtil {
         internal.setIconifiable(true);
         internal.setClosable(true);
         
+        // Configurar el layout del content pane
+        internal.getContentPane().setLayout(new java.awt.BorderLayout());
         
         // Deshabilitar cualquier ajuste automático de tamaño
         internal.setAutoscrolls(false);
         
+        // Asegurar que el frame sea visible y tenga el tamaño correcto
+        internal.validate();
         internal.setVisible(true);
         return internal;
     }

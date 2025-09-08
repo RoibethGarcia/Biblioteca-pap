@@ -117,6 +117,7 @@ public class MainController {
         JMenu menuPrestamos = new JMenu("Préstamos");
         JMenuItem miPrestamos = new JMenuItem("Gestionar Préstamos");
         JMenuItem miDevoluciones = new JMenuItem("Gestionar Devoluciones");
+        JMenuItem miAprovarPrestamos = new JMenuItem("Aprovar Préstamos");
         JMenuItem miPrestamosPorLector = new JMenuItem("Préstamos por Lector");
         JMenuItem miHistorialPorBibliotecario = new JMenuItem("Historial por Bibliotecario");
         JMenuItem miReportePorZona = new JMenuItem("Reporte por Zona");
@@ -124,6 +125,7 @@ public class MainController {
         
         miPrestamos.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazGestionPrestamos(desktop));
         miDevoluciones.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazGestionDevoluciones(desktop));
+        miAprovarPrestamos.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazAprovarPrestamos(desktop));
         miPrestamosPorLector.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazPrestamosPorLector(desktop));
         miHistorialPorBibliotecario.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazHistorialPorBibliotecario(desktop));
         miReportePorZona.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazReportePorZona(desktop));
@@ -131,6 +133,7 @@ public class MainController {
         
         menuPrestamos.add(miPrestamos);
         menuPrestamos.add(miDevoluciones);
+        menuPrestamos.add(miAprovarPrestamos);
         menuPrestamos.add(miPrestamosPorLector);
         menuPrestamos.add(miHistorialPorBibliotecario);
         menuPrestamos.add(miReportePorZona);

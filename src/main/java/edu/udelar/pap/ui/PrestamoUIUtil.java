@@ -744,7 +744,21 @@ public class PrestamoUIUtil {
         
         JPanel panel = creadorPanel.apply(internal);
         
+        // Configurar el panel para que llene todo el espacio disponible
+        panel.setPreferredSize(new java.awt.Dimension(ancho - 20, alto - 40)); // Restar espacio para bordes y título
+        panel.setMinimumSize(new java.awt.Dimension(ancho - 20, alto - 40));
+        panel.setMaximumSize(new java.awt.Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        
         internal.setContentPane(panel);
+        
+        // Forzar el reajuste del layout
+        internal.pack();
+        internal.setSize(ancho, alto); // Restaurar el tamaño deseado después del pack
+        
+        // Asegurar que el internal frame sea visible y tenga el tamaño correcto
+        internal.validate();
+        internal.repaint();
+        
         desktop.add(internal);
         internal.toFront();
     }
@@ -960,7 +974,16 @@ public class PrestamoUIUtil {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder(titulo));
         
+        // Configurar la tabla para que se expanda
+        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        tabla.setRowHeight(25);
+        tabla.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        
         JScrollPane scrollPane = new JScrollPane(tabla);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setPreferredSize(new java.awt.Dimension(800, 400));
+        
         panel.add(scrollPane, BorderLayout.CENTER);
         
         internal.putClientProperty(nombreTabla, tabla);
