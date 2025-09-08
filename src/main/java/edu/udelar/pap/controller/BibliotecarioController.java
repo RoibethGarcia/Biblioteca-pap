@@ -249,4 +249,18 @@ public class BibliotecarioController {
     public List<Bibliotecario> obtenerBibliotecarios() {
         return bibliotecarioService.obtenerTodosLosBibliotecarios();
     }
+    
+    /**
+     * Obtiene un bibliotecario por ID
+     */
+    public Bibliotecario obtenerBibliotecarioPorId(Long id) {
+        return bibliotecarioService.obtenerBibliotecarioPorId(id);
+    }
+    
+    /**
+     * Actualiza un bibliotecario existente
+     */
+    public void actualizarBibliotecario(Bibliotecario bibliotecario) {
+        bibliotecarioService.actualizarBibliotecario(bibliotecario);
+    }
 }

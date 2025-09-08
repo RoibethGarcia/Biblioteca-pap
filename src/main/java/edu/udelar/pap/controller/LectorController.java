@@ -465,6 +465,13 @@ public class LectorController {
     }
     
     /**
+     * Obtiene todos los lectores
+     */
+    public List<Lector> obtenerTodosLectores() {
+        return lectorService.obtenerTodosLosLectores();
+    }
+    
+    /**
      * Obtiene un lector por ID
      */
     public Lector obtenerLectorPorId(Long id) {

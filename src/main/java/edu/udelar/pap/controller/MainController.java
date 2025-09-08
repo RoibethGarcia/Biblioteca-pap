@@ -5,6 +5,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
 import edu.udelar.pap.domain.Lector;
+import edu.udelar.pap.domain.Bibliotecario;
 
 /**
  * Controlador principal que coordina todos los controladores de la aplicación
@@ -222,6 +223,15 @@ public class MainController {
         btnBuscar.addActionListener(_ -> realizarBusqueda(internal, tfNombre.getText(), tfApellido.getText()));
         searchPanel.add(btnBuscar, gbc);
         
+        // Botón Mostrar Todos
+        gbc.gridx = 3; gbc.gridy = 0;
+        gbc.gridheight = 2;
+        gbc.weightx = 0.0;
+        gbc.fill = GridBagConstraints.NONE;
+        JButton btnMostrarTodos = new JButton("Mostrar Todos");
+        btnMostrarTodos.addActionListener(_ -> mostrarTodosUsuarios(internal));
+        searchPanel.add(btnMostrarTodos, gbc);
+        
         // Guardar referencias
         internal.putClientProperty("tfNombre", tfNombre);
         internal.putClientProperty("tfApellido", tfApellido);
@@ -247,15 +257,12 @@ public class MainController {
         // Panel de botones
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton btnEditar = new JButton("Editar Seleccionado");
-        JButton btnEliminar = new JButton("Eliminar Seleccionado");
         JButton btnLimpiar = new JButton("Limpiar Búsqueda");
         
         btnEditar.addActionListener(_ -> editarUsuarioSeleccionado(internal, table));
-        btnEliminar.addActionListener(_ -> eliminarUsuarioSeleccionado(internal, table));
         btnLimpiar.addActionListener(_ -> limpiarBusqueda(internal));
         
         buttonPanel.add(btnEditar);
-        buttonPanel.add(btnEliminar);
         buttonPanel.add(btnLimpiar);
         
         resultsPanel.add(buttonPanel, BorderLayout.SOUTH);
@@ -276,6 +283,35 @@ public class MainController {
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(internal, 
                 "Error al realizar la búsqueda: " + ex.getMessage(), 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
+     * Muestra todos los usuarios sin filtros (lectores y bibliotecarios)
+     */
+    private void mostrarTodosUsuarios(JInternalFrame internal) {
+        try {
+            // Obtener lectores y bibliotecarios
+            List<Lector> lectores = controllerFactory.getLectorController().obtenerTodosLectores();
+            List<Bibliotecario> bibliotecarios = controllerFactory.getBibliotecarioController().obtenerBibliotecarios();
+            
+            // Mostrar resultados combinados
+            mostrarResultadosCombinados(internal, lectores, bibliotecarios);
+            
+            // Mostrar mensaje informativo
+            int totalUsuarios = lectores.size() + bibliotecarios.size();
+            JOptionPane.showMessageDialog(internal, 
+                "Se muestran todos los usuarios registrados:\n" +
+                "• " + lectores.size() + " lectores\n" +
+                "• " + bibliotecarios.size() + " bibliotecarios\n" +
+                "• Total: " + totalUsuarios + " usuarios", 
+                "Todos los Usuarios", 
+                JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(internal, 
+                "Error al obtener todos los usuarios: " + ex.getMessage(), 
                 "Error", 
                 JOptionPane.ERROR_MESSAGE);
         }
@@ -311,6 +347,48 @@ public class MainController {
     }
     
     /**
+     * Muestra los resultados combinados de lectores y bibliotecarios
+     */
+    private void mostrarResultadosCombinados(JInternalFrame internal, List<Lector> lectores, List<Bibliotecario> bibliotecarios) {
+        JTable table = (JTable) internal.getClientProperty("table");
+        
+        String[] columnNames = {"ID", "Tipo", "Nombre", "Email", "Información Adicional"};
+        int totalUsuarios = lectores.size() + bibliotecarios.size();
+        Object[][] data = new Object[totalUsuarios][5];
+        
+        int index = 0;
+        
+        // Agregar lectores
+        for (Lector lector : lectores) {
+            data[index][0] = lector.getId();
+            data[index][1] = "👤 Lector";
+            data[index][2] = lector.getNombre();
+            data[index][3] = lector.getEmail();
+            data[index][4] = lector.getDireccion() + " | " + lector.getEstado() + " | " + lector.getZona();
+            index++;
+        }
+        
+        // Agregar bibliotecarios
+        for (Bibliotecario bibliotecario : bibliotecarios) {
+            data[index][0] = bibliotecario.getId();
+            data[index][1] = "👨‍💼 Bibliotecario";
+            data[index][2] = bibliotecario.getNombre();
+            data[index][3] = bibliotecario.getEmail();
+            data[index][4] = "Empleado #" + bibliotecario.getNumeroEmpleado();
+            index++;
+        }
+        
+        table.setModel(new DefaultTableModel(data, columnNames));
+        
+        if (totalUsuarios == 0) {
+            JOptionPane.showMessageDialog(internal, 
+                "No se encontraron usuarios registrados.", 
+                "Sin Resultados", 
+                JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+    
+    /**
      * Edita el usuario seleccionado
      */
     private void editarUsuarioSeleccionado(JInternalFrame internal, JTable table) {
@@ -334,24 +412,21 @@ public class MainController {
         
         // Obtener datos del usuario seleccionado
         Long userId = (Long) table.getValueAt(selectedRow, 0);
-        String nombre = (String) table.getValueAt(selectedRow, 1);
-        String email = (String) table.getValueAt(selectedRow, 2);
-        String direccion = (String) table.getValueAt(selectedRow, 3);
-        String estadoActual = (String) table.getValueAt(selectedRow, 4);
-        String zonaActual = (String) table.getValueAt(selectedRow, 5);
+        String tipoUsuario = (String) table.getValueAt(selectedRow, 1);
+        String nombre = (String) table.getValueAt(selectedRow, 2);
+        String email = (String) table.getValueAt(selectedRow, 3);
+        String informacionAdicional = (String) table.getValueAt(selectedRow, 4);
         
         // Debug: Mostrar los valores obtenidos
         System.out.println("DEBUG - Valores de la tabla:");
         System.out.println("  ID: " + userId);
+        System.out.println("  Tipo: " + tipoUsuario);
         System.out.println("  Nombre: " + nombre);
         System.out.println("  Email: " + email);
-        System.out.println("  Dirección: " + direccion);
-        System.out.println("  Estado: " + estadoActual);
-        System.out.println("  Zona: " + zonaActual);
+        System.out.println("  Información: " + informacionAdicional);
         
         // Validar que los datos sean válidos
-        if (userId == null || nombre == null || email == null || direccion == null || 
-            estadoActual == null || zonaActual == null) {
+        if (userId == null || tipoUsuario == null || nombre == null || email == null) {
             JOptionPane.showMessageDialog(internal, 
                 "Error: Datos del usuario incompletos o inválidos.", 
                 "Error de Datos", 
@@ -359,15 +434,67 @@ public class MainController {
             return;
         }
         
-        // Mostrar diálogo de edición
-        mostrarDialogoEdicion(internal, userId, nombre, email, direccion, estadoActual, zonaActual);
+        // Determinar el tipo de usuario y mostrar el diálogo apropiado
+        if (tipoUsuario.contains("Lector")) {
+            mostrarDialogoEdicionLector(internal, userId, nombre, email, informacionAdicional);
+        } else if (tipoUsuario.contains("Bibliotecario")) {
+            mostrarDialogoEdicionBibliotecario(internal, userId, nombre, email, informacionAdicional);
+        } else {
+            JOptionPane.showMessageDialog(internal, 
+                "Tipo de usuario no reconocido: " + tipoUsuario, 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
     }
     
     /**
-     * Muestra el diálogo de edición de usuario
+     * Muestra el diálogo de edición de lector
      */
-    private void mostrarDialogoEdicion(JInternalFrame internal, Long userId, String nombre, 
-                                     String email, String direccion, String estadoActual, String zonaActual) {
+    private void mostrarDialogoEdicionLector(JInternalFrame internal, Long userId, String nombre, 
+                                           String email, String informacionAdicional) {
+        // Parsear la información adicional para obtener dirección, estado y zona
+        String[] partes = informacionAdicional.split(" \\| ");
+        String direccion = partes.length > 0 ? partes[0] : "";
+        String estadoActual = partes.length > 1 ? partes[1] : "";
+        String zonaActual = partes.length > 2 ? partes[2] : "";
+        
+        mostrarDialogoEdicionLectorCompleto(internal, userId, nombre, email, direccion, estadoActual, zonaActual);
+    }
+    
+    /**
+     * Muestra el diálogo de edición de bibliotecario
+     */
+    private void mostrarDialogoEdicionBibliotecario(JInternalFrame internal, Long userId, String nombre, 
+                                                  String email, String informacionAdicional) {
+        // Parsear la información adicional para obtener número de empleado
+        String numeroEmpleado = informacionAdicional.replace("Empleado #", "");
+        
+        // Crear ventana de edición
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(internal), "Editar Bibliotecario", true);
+        dialog.setLayout(new BorderLayout());
+        dialog.setSize(500, 300);
+        dialog.setLocationRelativeTo(internal);
+        
+        // Panel principal
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        
+        // Panel de campos editables
+        JPanel fieldsPanel = crearPanelCamposEdicionBibliotecario(nombre, email, numeroEmpleado);
+        mainPanel.add(fieldsPanel, BorderLayout.CENTER);
+        
+        // Panel de botones
+        JPanel buttonsPanel = crearPanelBotonesEdicionBibliotecario(dialog, internal, userId, fieldsPanel);
+        mainPanel.add(buttonsPanel, BorderLayout.SOUTH);
+        
+        dialog.add(mainPanel);
+        dialog.setVisible(true);
+    }
+    
+    /**
+     * Muestra el diálogo de edición de lector (método original)
+     */
+    private void mostrarDialogoEdicionLectorCompleto(JInternalFrame internal, Long userId, String nombre, 
+                                                    String email, String direccion, String estadoActual, String zonaActual) {
         // Crear ventana de edición
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(internal), "Editar Usuario", true);
         dialog.setLayout(new BorderLayout());
@@ -488,6 +615,75 @@ public class MainController {
     }
     
     /**
+     * Crea el panel con los campos editables para bibliotecario
+     */
+    private JPanel crearPanelCamposEdicionBibliotecario(String nombre, String email, String numeroEmpleado) {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("Datos del Bibliotecario"));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // Campo Nombre (no editable)
+        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.weightx = 0.0;
+        panel.add(new JLabel("Nombre:"), gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        JTextField tfNombre = new JTextField(nombre);
+        tfNombre.setEditable(false);
+        panel.add(tfNombre, gbc);
+        
+        // Campo Email (editable)
+        gbc.gridx = 0; gbc.gridy = 1;
+        gbc.weightx = 0.0;
+        panel.add(new JLabel("Email:"), gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 1;
+        gbc.weightx = 1.0;
+        JTextField tfEmail = new JTextField(email);
+        panel.add(tfEmail, gbc);
+        
+        // Campo Número de Empleado (editable)
+        gbc.gridx = 0; gbc.gridy = 2;
+        gbc.weightx = 0.0;
+        panel.add(new JLabel("Número de Empleado:"), gbc);
+        
+        gbc.gridx = 1; gbc.gridy = 2;
+        gbc.weightx = 1.0;
+        JTextField tfNumeroEmpleado = new JTextField(numeroEmpleado);
+        panel.add(tfNumeroEmpleado, gbc);
+        
+        // Guardar referencias
+        panel.putClientProperty("tfNombre", tfNombre);
+        panel.putClientProperty("tfEmail", tfEmail);
+        panel.putClientProperty("tfNumeroEmpleado", tfNumeroEmpleado);
+        
+        return panel;
+    }
+    
+    /**
+     * Crea el panel de botones para la edición de bibliotecario
+     */
+    private JPanel crearPanelBotonesEdicionBibliotecario(JDialog dialog, JInternalFrame internal, 
+                                                        Long userId, JPanel fieldsPanel) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        
+        JButton btnGuardar = new JButton("Guardar Cambios");
+        JButton btnCancelar = new JButton("Cancelar");
+        
+        btnGuardar.addActionListener(_ -> guardarCambiosBibliotecario(dialog, internal, userId, fieldsPanel));
+        btnCancelar.addActionListener(_ -> dialog.dispose());
+        
+        panel.add(btnGuardar);
+        panel.add(btnCancelar);
+        
+        return panel;
+    }
+    
+    /**
      * Guarda los cambios del usuario
      */
     @SuppressWarnings("unchecked")
@@ -566,6 +762,88 @@ public class MainController {
     }
     
     /**
+     * Guarda los cambios del bibliotecario
+     */
+    private void guardarCambiosBibliotecario(JDialog dialog, JInternalFrame internal, 
+                                           Long userId, JPanel fieldsPanel) {
+        try {
+            // Obtener valores actuales
+            JTextField tfEmail = (JTextField) fieldsPanel.getClientProperty("tfEmail");
+            JTextField tfNumeroEmpleado = (JTextField) fieldsPanel.getClientProperty("tfNumeroEmpleado");
+            
+            String nuevoEmail = tfEmail.getText().trim();
+            String nuevoNumeroEmpleado = tfNumeroEmpleado.getText().trim();
+            
+            // Validaciones básicas
+            if (nuevoEmail.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, 
+                    "El email no puede estar vacío.", 
+                    "Error de Validación", 
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            if (nuevoNumeroEmpleado.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, 
+                    "El número de empleado no puede estar vacío.", 
+                    "Error de Validación", 
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Obtener bibliotecario actual
+            Bibliotecario bibliotecarioActual = controllerFactory.getBibliotecarioController().obtenerBibliotecarioPorId(userId);
+            if (bibliotecarioActual == null) {
+                JOptionPane.showMessageDialog(dialog, 
+                    "No se encontró el bibliotecario seleccionado.", 
+                    "Error", 
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Mostrar confirmación
+            String mensajeConfirmacion = "¿Confirma los siguientes cambios?\n\n" +
+                "EMAIL:\n" +
+                "  Antes: " + bibliotecarioActual.getEmail() + "\n" +
+                "  Después: " + nuevoEmail + "\n\n" +
+                "NÚMERO DE EMPLEADO:\n" +
+                "  Antes: " + bibliotecarioActual.getNumeroEmpleado() + "\n" +
+                "  Después: " + nuevoNumeroEmpleado;
+            
+            int confirmacion = JOptionPane.showConfirmDialog(dialog, 
+                mensajeConfirmacion, 
+                "Confirmar Cambios", 
+                JOptionPane.YES_NO_OPTION);
+            
+            if (confirmacion == JOptionPane.YES_OPTION) {
+                // Aplicar cambios
+                bibliotecarioActual.setEmail(nuevoEmail);
+                bibliotecarioActual.setNumeroEmpleado(nuevoNumeroEmpleado);
+                
+                // Guardar en la base de datos
+                controllerFactory.getBibliotecarioController().actualizarBibliotecario(bibliotecarioActual);
+                
+                // Mostrar éxito
+                JOptionPane.showMessageDialog(dialog, 
+                    "Bibliotecario actualizado exitosamente.", 
+                    "Éxito", 
+                    JOptionPane.INFORMATION_MESSAGE);
+                
+                // Cerrar diálogo y actualizar tabla
+                dialog.dispose();
+                actualizarTablaResultadosCombinados(internal);
+                
+            }
+            
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(dialog, 
+                "Error al guardar los cambios: " + ex.getMessage(), 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
      * Actualiza la tabla de resultados después de la edición
      */
     private void actualizarTablaResultados(JInternalFrame internal) {
@@ -579,34 +857,13 @@ public class MainController {
     }
     
     /**
-     * Elimina el usuario seleccionado
+     * Actualiza la tabla de resultados combinados después de la edición
      */
-    private void eliminarUsuarioSeleccionado(JInternalFrame internal, JTable table) {
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(internal, 
-                "Por favor seleccione un usuario para eliminar.", 
-                "Sin Selección", 
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        Long userId = (Long) table.getValueAt(selectedRow, 0);
-        String nombre = (String) table.getValueAt(selectedRow, 1);
-        
-        int confirmacion = JOptionPane.showConfirmDialog(internal, 
-            "¿Está seguro de que desea eliminar al usuario:\n" + nombre + " (ID: " + userId + ")?", 
-            "Confirmar Eliminación", 
-            JOptionPane.YES_NO_OPTION);
-        
-        if (confirmacion == JOptionPane.YES_OPTION) {
-            // TODO: Implementar la eliminación del usuario
-            JOptionPane.showMessageDialog(internal, 
-                "Funcionalidad de eliminación en desarrollo.", 
-                "Eliminar Usuario", 
-                JOptionPane.INFORMATION_MESSAGE);
-        }
+    private void actualizarTablaResultadosCombinados(JInternalFrame internal) {
+        // Mostrar todos los usuarios nuevamente
+        mostrarTodosUsuarios(internal);
     }
+    
     
     /**
      * Limpia la búsqueda

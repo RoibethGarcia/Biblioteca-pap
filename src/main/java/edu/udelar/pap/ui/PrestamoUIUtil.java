@@ -504,7 +504,6 @@ public class PrestamoUIUtil {
         JComboBox<Lector> cbLector = new JComboBox<>();
         cargarLectores(cbLector, prestamo.getLector());
         cbLector.setPreferredSize(new Dimension(250, 25));
-        cbLector.setMinimumSize(new Dimension(250, 25));
         panel.add(cbLector, gbc);
         
         // Bibliotecario
@@ -514,7 +513,6 @@ public class PrestamoUIUtil {
         JComboBox<Bibliotecario> cbBibliotecario = new JComboBox<>();
         cargarBibliotecarios(cbBibliotecario, prestamo.getBibliotecario());
         cbBibliotecario.setPreferredSize(new Dimension(250, 25));
-        cbBibliotecario.setMinimumSize(new Dimension(250, 25));
         panel.add(cbBibliotecario, gbc);
         
         // Material
@@ -524,7 +522,6 @@ public class PrestamoUIUtil {
         JComboBox<MaterialComboBoxItem> cbMaterial = new JComboBox<>();
         cargarMateriales(cbMaterial, prestamo.getMaterial());
         cbMaterial.setPreferredSize(new Dimension(250, 25));
-        cbMaterial.setMinimumSize(new Dimension(250, 25));
         panel.add(cbMaterial, gbc);
         
         // Fecha de Solicitud (solo lectura)
@@ -535,7 +532,6 @@ public class PrestamoUIUtil {
         tfFechaSolicitud.setEditable(false);
         tfFechaSolicitud.setBackground(Color.LIGHT_GRAY);
         tfFechaSolicitud.setPreferredSize(new Dimension(150, 25));
-        tfFechaSolicitud.setMinimumSize(new Dimension(150, 25));
         panel.add(tfFechaSolicitud, gbc);
         
         // Fecha Estimada de Devolución
@@ -546,7 +542,6 @@ public class PrestamoUIUtil {
         tfFechaDevolucion.setText(formatearFecha(prestamo.getFechaEstimadaDevolucion()));
         tfFechaDevolucion.setToolTipText("Formato: DD/MM/AAAA (ejemplo: 15/12/2024)");
         tfFechaDevolucion.setPreferredSize(new Dimension(150, 25));
-        tfFechaDevolucion.setMinimumSize(new Dimension(150, 25));
         panel.add(tfFechaDevolucion, gbc);
         
         // Estado
@@ -556,7 +551,6 @@ public class PrestamoUIUtil {
         JComboBox<EstadoPrestamo> cbEstado = new JComboBox<>(EstadoPrestamo.values());
         cbEstado.setSelectedItem(prestamo.getEstado());
         cbEstado.setPreferredSize(new Dimension(150, 25));
-        cbEstado.setMinimumSize(new Dimension(150, 25));
         panel.add(cbEstado, gbc);
         
         // Guardar referencias en el panel para acceso posterior

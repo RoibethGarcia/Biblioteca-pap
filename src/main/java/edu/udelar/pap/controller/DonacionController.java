@@ -176,8 +176,6 @@ public class DonacionController {
             panelCamposEspecificos.add(tfDimensiones);
         }
         
-        panelCamposEspecificos.revalidate();
-        panelCamposEspecificos.repaint();
     }
     
     /**
