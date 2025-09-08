@@ -250,15 +250,15 @@ public class MainController {
         // Panel de botones
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton btnEditar = new JButton("Editar Seleccionado");
-        JButton btnEliminar = new JButton("Eliminar Seleccionado");
+        // JButton btnEliminar = new JButton("Eliminar Seleccionado"); // Removed to prevent unwanted changes
         JButton btnLimpiar = new JButton("Limpiar Búsqueda");
         
         btnEditar.addActionListener(_ -> editarUsuarioSeleccionado(internal, table));
-        btnEliminar.addActionListener(_ -> eliminarUsuarioSeleccionado(internal, table));
+        // btnEliminar.addActionListener(_ -> eliminarUsuarioSeleccionado(internal, table)); // Removed
         btnLimpiar.addActionListener(_ -> limpiarBusqueda(internal));
         
         buttonPanel.add(btnEditar);
-        buttonPanel.add(btnEliminar);
+        // buttonPanel.add(btnEliminar); // Removed
         buttonPanel.add(btnLimpiar);
         
         resultsPanel.add(buttonPanel, BorderLayout.SOUTH);
