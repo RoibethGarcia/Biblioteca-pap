@@ -47,7 +47,7 @@ public class DataViewer {
             JButton btnRefresh = new JButton("🔄 Actualizar Datos");
             JButton btnClose = new JButton("❌ Cerrar");
             
-            btnRefresh.addActionListener(e -> {
+            btnRefresh.addActionListener(_ -> {
                 tabbedPane.removeAll();
                 tabbedPane.addTab("👥 Lectores", crearTablaLectores());
                 tabbedPane.addTab("👨‍💼 Bibliotecarios", crearTablaBibliotecarios());
@@ -56,7 +56,7 @@ public class DataViewer {
                 tabbedPane.addTab("📋 Préstamos", crearTablaPrestamos());
             });
             
-            btnClose.addActionListener(e -> frame.dispose());
+            btnClose.addActionListener(_ -> frame.dispose());
             
             buttonPanel.add(btnRefresh);
             buttonPanel.add(btnClose);

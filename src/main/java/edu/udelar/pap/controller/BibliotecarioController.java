@@ -110,8 +110,8 @@ public class BibliotecarioController {
         JButton btnAceptar = new JButton("Aceptar");
         JButton btnCancelar = new JButton("Cancelar");
         
-        btnAceptar.addActionListener(e -> crearBibliotecario(internal));
-        btnCancelar.addActionListener(e -> cancelarCreacion(internal));
+        btnAceptar.addActionListener(_ -> crearBibliotecario(internal));
+        btnCancelar.addActionListener(_ -> cancelarCreacion(internal));
         
         actions.add(btnAceptar);
         actions.add(btnCancelar);

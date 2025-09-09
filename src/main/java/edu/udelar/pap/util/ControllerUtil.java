@@ -71,7 +71,7 @@ public class ControllerUtil {
         for (int i = 0; i < textosBotones.length; i++) {
             JButton boton = new JButton(textosBotones[i]);
             final int index = i;
-            boton.addActionListener(e -> actionListeners[index].accept(internal));
+            boton.addActionListener(_ -> actionListeners[index].accept(internal));
             actions.add(boton);
         }
         

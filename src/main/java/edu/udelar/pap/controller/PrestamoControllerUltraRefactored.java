@@ -176,8 +176,8 @@ public class PrestamoControllerUltraRefactored {
         JButton btnAceptar = new JButton("Crear Préstamo");
         JButton btnCancelar = new JButton("Cancelar");
         
-        btnAceptar.addActionListener(e -> crearPrestamo(internal));
-        btnCancelar.addActionListener(e -> cancelarCreacion(internal));
+        btnAceptar.addActionListener(_ -> crearPrestamo(internal));
+        btnCancelar.addActionListener(_ -> cancelarCreacion(internal));
         
         return InterfaceUtil.crearPanelAcciones(btnAceptar, btnCancelar);
     }
@@ -195,8 +195,8 @@ public class PrestamoControllerUltraRefactored {
         JButton btnFiltrar = new JButton("Filtrar Préstamos Activos");
         JButton btnMostrarTodos = new JButton("Mostrar Todos");
         
-        btnFiltrar.addActionListener(e -> filtrarPrestamosActivos(internal));
-        btnMostrarTodos.addActionListener(e -> mostrarTodosLosPrestamosActivos(internal));
+        btnFiltrar.addActionListener(_ -> filtrarPrestamosActivos(internal));
+        btnMostrarTodos.addActionListener(_ -> mostrarTodosLosPrestamosActivos(internal));
         
         panel.add(new JLabel("Lector:"));
         panel.add(cbLector);
@@ -225,8 +225,8 @@ public class PrestamoControllerUltraRefactored {
         JButton btnConsultar = new JButton("🔍 Consultar Préstamos");
         JButton btnLimpiar = new JButton("🔄 Limpiar");
         
-        btnConsultar.addActionListener(e -> consultarPrestamosPorLector(internal));
-        btnLimpiar.addActionListener(e -> limpiarConsultaPrestamosPorLector(internal));
+        btnConsultar.addActionListener(_ -> consultarPrestamosPorLector(internal));
+        btnLimpiar.addActionListener(_ -> limpiarConsultaPrestamosPorLector(internal));
         
         JPanel panelSeleccion = PrestamoUIUtil.crearPanelSeleccionGenerico(
             "Seleccionar Lector", new JLabel("Lector:"), cbLector, btnConsultar, btnLimpiar);
@@ -264,8 +264,8 @@ public class PrestamoControllerUltraRefactored {
         JButton btnConsultar = new JButton("🔍 Consultar Historial");
         JButton btnLimpiar = new JButton("🔄 Limpiar");
         
-        btnConsultar.addActionListener(e -> consultarHistorialPorBibliotecario(internal));
-        btnLimpiar.addActionListener(e -> limpiarHistorialPorBibliotecario(internal));
+        btnConsultar.addActionListener(_ -> consultarHistorialPorBibliotecario(internal));
+        btnLimpiar.addActionListener(_ -> limpiarHistorialPorBibliotecario(internal));
         
         JPanel panelSeleccion = PrestamoUIUtil.crearPanelSeleccionGenerico(
             "Seleccionar Bibliotecario", new JLabel("Bibliotecario:"), cbBibliotecario, btnConsultar, btnLimpiar);
@@ -738,8 +738,8 @@ public class PrestamoControllerUltraRefactored {
         JButton btnConsultar = new JButton("🔍 Consultar Reporte");
         JButton btnLimpiar = new JButton("🔄 Limpiar");
         
-        btnConsultar.addActionListener(e -> consultarReportePorZona(internal));
-        btnLimpiar.addActionListener(e -> limpiarReportePorZona(internal));
+        btnConsultar.addActionListener(_ -> consultarReportePorZona(internal));
+        btnLimpiar.addActionListener(_ -> limpiarReportePorZona(internal));
         
         panelSeleccion.add(lblZona);
         panelSeleccion.add(cbZona);
@@ -961,8 +961,8 @@ public class PrestamoControllerUltraRefactored {
         JButton btnConsultar = new JButton("🔍 Consultar Materiales Pendientes");
         JButton btnLimpiar = new JButton("🔄 Limpiar");
         
-        btnConsultar.addActionListener(e -> consultarMaterialesPendientes(internal));
-        btnLimpiar.addActionListener(e -> limpiarMaterialesPendientes(internal));
+        btnConsultar.addActionListener(_ -> consultarMaterialesPendientes(internal));
+        btnLimpiar.addActionListener(_ -> limpiarMaterialesPendientes(internal));
         
         panelAcciones.add(btnConsultar);
         panelAcciones.add(btnLimpiar);
@@ -1446,7 +1446,7 @@ public class PrestamoControllerUltraRefactored {
         
         JPanel botonesPanel = new JPanel(new FlowLayout());
         JButton btnCopiar = new JButton("📋 Copiar al Portapapeles");
-        btnCopiar.addActionListener(e -> {
+        btnCopiar.addActionListener(_ -> {
             java.awt.datatransfer.StringSelection stringSelection = new java.awt.datatransfer.StringSelection(contenido);
             java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
             JOptionPane.showMessageDialog(internal, "Contenido copiado al portapapeles", "Copiado", JOptionPane.INFORMATION_MESSAGE);
@@ -1489,9 +1489,9 @@ public class PrestamoControllerUltraRefactored {
         JButton btnFiltrarPorLector = new JButton("👤 Filtrar por Lector");
         JButton btnLimpiar = new JButton("🔄 Limpiar");
         
-        btnMostrarTodos.addActionListener(e -> mostrarTodosLosPrestamosPendientes(internal));
-        btnFiltrarPorLector.addActionListener(e -> filtrarPrestamosPendientesPorLector(internal));
-        btnLimpiar.addActionListener(e -> limpiarTablaPrestamosPendientes(internal));
+        btnMostrarTodos.addActionListener(_ -> mostrarTodosLosPrestamosPendientes(internal));
+        btnFiltrarPorLector.addActionListener(_ -> filtrarPrestamosPendientesPorLector(internal));
+        btnLimpiar.addActionListener(_ -> limpiarTablaPrestamosPendientes(internal));
         
         panelControles.add(new JLabel("Lector:"));
         panelControles.add(cbLector);
@@ -1539,9 +1539,9 @@ public class PrestamoControllerUltraRefactored {
         JButton btnCancelar = new JButton("❌ Cancelar Préstamo");
         JButton btnActualizar = new JButton("🔄 Actualizar");
         
-        btnAprovar.addActionListener(e -> aprobarPrestamoSeleccionado(internal));
-        btnCancelar.addActionListener(e -> cancelarPrestamoSeleccionado(internal));
-        btnActualizar.addActionListener(e -> actualizarTablaPrestamosPendientes(internal));
+        btnAprovar.addActionListener(_ -> aprobarPrestamoSeleccionado(internal));
+        btnCancelar.addActionListener(_ -> cancelarPrestamoSeleccionado(internal));
+        btnActualizar.addActionListener(_ -> actualizarTablaPrestamosPendientes(internal));
         
         // Estilos de botones
         btnAprovar.setBackground(new Color(76, 175, 80));

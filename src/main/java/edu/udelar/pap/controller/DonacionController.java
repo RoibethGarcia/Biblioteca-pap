@@ -129,7 +129,7 @@ public class DonacionController {
         // Función para mostrar/ocultar campos según el tipo seleccionado
         @SuppressWarnings("unchecked")
         JComboBox<String> cbTipoMaterial = (JComboBox<String>) internal.getClientProperty("cbTipoMaterial");
-        ActionListener actualizarCampos = e -> actualizarCamposEspecificos(internal);
+        ActionListener actualizarCampos = _ -> actualizarCamposEspecificos(internal);
         
         cbTipoMaterial.addActionListener(actualizarCampos);
         actualizarCampos.actionPerformed(null); // Ejecutar inicialmente
@@ -200,8 +200,8 @@ public class DonacionController {
         JButton btnAceptar = new JButton("Aceptar");
         JButton btnCancelar = new JButton("Cancelar");
         
-        btnAceptar.addActionListener(e -> crearDonacion(internal));
-        btnCancelar.addActionListener(e -> cancelarCreacion(internal));
+        btnAceptar.addActionListener(_ -> crearDonacion(internal));
+        btnCancelar.addActionListener(_ -> cancelarCreacion(internal));
         
         return InterfaceUtil.crearPanelAcciones(btnAceptar, btnCancelar);
     }
@@ -468,10 +468,10 @@ public class DonacionController {
         JButton btnActualizar = new JButton("🔄 Actualizar");
         JButton btnCerrar = new JButton("❌ Cerrar");
         
-        btnFiltrar.addActionListener(e -> filtrarDonacionesPorFechas(internal));
-        btnMostrarTodas.addActionListener(e -> cargarDatosDonaciones(internal));
-        btnActualizar.addActionListener(e -> actualizarTablaDonaciones(internal));
-        btnCerrar.addActionListener(e -> internal.dispose());
+        btnFiltrar.addActionListener(_ -> filtrarDonacionesPorFechas(internal));
+        btnMostrarTodas.addActionListener(_ -> cargarDatosDonaciones(internal));
+        btnActualizar.addActionListener(_ -> actualizarTablaDonaciones(internal));
+        btnCerrar.addActionListener(_ -> internal.dispose());
         
         panelBotones.add(btnFiltrar);
         panelBotones.add(btnMostrarTodas);
