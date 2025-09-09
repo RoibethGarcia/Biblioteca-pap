@@ -27,11 +27,13 @@ public class PrestamoControllerUltraRefactored {
     private static final String[] COLUMNAS_PRESTAMOS_POR_LECTOR = {"ID", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Bibliotecario", "Días Restantes"};
     private static final String[] COLUMNAS_HISTORIAL_BIBLIOTECARIO = {"ID", "Lector", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Días Duración"};
     private static final String[] COLUMNAS_MATERIALES_PENDIENTES = {"Posición", "Material", "Tipo", "Cantidad Pendientes", "Primer Solicitud", "Última Solicitud", "Prioridad"};
+    private static final String[] COLUMNAS_PRESTAMOS_PENDIENTES = {"ID", "Lector", "Material", "Fecha Solicitud", "Fecha Devolución", "Bibliotecario", "Días Esperando"};
     
     // ==================== CONSTANTES PARA ANCHOS DE COLUMNAS ====================
     private static final int[] ANCHOS_PRESTAMOS_POR_LECTOR = {50, 300, 120, 120, 100, 150, 100};
     private static final int[] ANCHOS_HISTORIAL_BIBLIOTECARIO = {50, 200, 300, 120, 120, 100, 100};
     private static final int[] ANCHOS_MATERIALES_PENDIENTES = {80, 300, 100, 150, 120, 120, 100};
+    private static final int[] ANCHOS_PRESTAMOS_PENDIENTES = {50, 200, 300, 120, 120, 150, 100};
     
     public PrestamoControllerUltraRefactored() {
         this.prestamoService = new PrestamoService();
@@ -44,7 +46,7 @@ public class PrestamoControllerUltraRefactored {
     // ==================== MÉTODOS PÚBLICOS PRINCIPALES ====================
     
     public void mostrarInterfazGestionPrestamos(JDesktopPane desktop) {
-        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Gestión de Préstamos", 700, 500, this::crearPanelPrestamo);
+        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Gestión de Préstamos", 800, 600, this::crearPanelPrestamo);
     }
     
     public void mostrarInterfazPrestamosPorLector(JDesktopPane desktop) {
@@ -52,19 +54,23 @@ public class PrestamoControllerUltraRefactored {
     }
     
     public void mostrarInterfazHistorialPorBibliotecario(JDesktopPane desktop) {
-        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Historial de Préstamos por Bibliotecario", 900, 650, this::crearPanelHistorialPorBibliotecario);
+        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Historial de Préstamos por Bibliotecario", 800, 600, this::crearPanelHistorialPorBibliotecario);
     }
     
     public void mostrarInterfazReportePorZona(JDesktopPane desktop) {
-        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Reporte de Préstamos por Zona", 900, 650, this::crearPanelReportePorZona);
+        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Reporte de Préstamos por Zona", 800, 600, this::crearPanelReportePorZona);
     }
     
     public void mostrarInterfazMaterialesPendientes(JDesktopPane desktop) {
-        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Materiales con Préstamos Pendientes", 900, 650, this::crearPanelMaterialesPendientes);
+        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Materiales con Préstamos Pendientes", 800, 600, this::crearPanelMaterialesPendientes);
     }
     
     public void mostrarInterfazGestionDevoluciones(JDesktopPane desktop) {
         PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Gestión de Devoluciones", 800, 600, this::crearPanelDevoluciones, this);
+    }
+    
+    public void mostrarInterfazAprovarPrestamos(JDesktopPane desktop) {
+        PrestamoUIUtil.mostrarInterfazGenerica(desktop, "Aprovar Préstamos", 800, 600, this::crearPanelAprovarPrestamos, this);
     }
     
     // ==================== PANELES PRINCIPALES ====================
@@ -128,6 +134,14 @@ public class PrestamoControllerUltraRefactored {
         return panel;
     }
     
+    private JPanel crearPanelAprovarPrestamos(JInternalFrame internal) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(crearPanelSuperiorAprovarPrestamos(internal), BorderLayout.NORTH);
+        panel.add(crearPanelTablaPrestamosPendientes(internal), BorderLayout.CENTER);
+        panel.add(crearPanelAccionesAprovarPrestamos(internal), BorderLayout.SOUTH);
+        return panel;
+    }
+    
     // ==================== FORMULARIO Y ACCIONES ====================
     
     private JPanel crearFormularioPrestamo(JInternalFrame internal) {
@@ -162,8 +176,8 @@ public class PrestamoControllerUltraRefactored {
         JButton btnAceptar = new JButton("Crear Préstamo");
         JButton btnCancelar = new JButton("Cancelar");
         
-        btnAceptar.addActionListener(_ -> crearPrestamo(internal));
-        btnCancelar.addActionListener(_ -> cancelarCreacion(internal));
+        btnAceptar.addActionListener(e -> crearPrestamo(internal));
+        btnCancelar.addActionListener(e -> cancelarCreacion(internal));
         
         return InterfaceUtil.crearPanelAcciones(btnAceptar, btnCancelar);
     }
@@ -181,8 +195,8 @@ public class PrestamoControllerUltraRefactored {
         JButton btnFiltrar = new JButton("Filtrar Préstamos Activos");
         JButton btnMostrarTodos = new JButton("Mostrar Todos");
         
-        btnFiltrar.addActionListener(_ -> filtrarPrestamosActivos(internal));
-        btnMostrarTodos.addActionListener(_ -> mostrarTodosLosPrestamosActivos(internal));
+        btnFiltrar.addActionListener(e -> filtrarPrestamosActivos(internal));
+        btnMostrarTodos.addActionListener(e -> mostrarTodosLosPrestamosActivos(internal));
         
         panel.add(new JLabel("Lector:"));
         panel.add(cbLector);
@@ -211,8 +225,8 @@ public class PrestamoControllerUltraRefactored {
         JButton btnConsultar = new JButton("🔍 Consultar Préstamos");
         JButton btnLimpiar = new JButton("🔄 Limpiar");
         
-        btnConsultar.addActionListener(_ -> consultarPrestamosPorLector(internal));
-        btnLimpiar.addActionListener(_ -> limpiarConsultaPrestamosPorLector(internal));
+        btnConsultar.addActionListener(e -> consultarPrestamosPorLector(internal));
+        btnLimpiar.addActionListener(e -> limpiarConsultaPrestamosPorLector(internal));
         
         JPanel panelSeleccion = PrestamoUIUtil.crearPanelSeleccionGenerico(
             "Seleccionar Lector", new JLabel("Lector:"), cbLector, btnConsultar, btnLimpiar);
@@ -250,8 +264,8 @@ public class PrestamoControllerUltraRefactored {
         JButton btnConsultar = new JButton("🔍 Consultar Historial");
         JButton btnLimpiar = new JButton("🔄 Limpiar");
         
-        btnConsultar.addActionListener(_ -> consultarHistorialPorBibliotecario(internal));
-        btnLimpiar.addActionListener(_ -> limpiarHistorialPorBibliotecario(internal));
+        btnConsultar.addActionListener(e -> consultarHistorialPorBibliotecario(internal));
+        btnLimpiar.addActionListener(e -> limpiarHistorialPorBibliotecario(internal));
         
         JPanel panelSeleccion = PrestamoUIUtil.crearPanelSeleccionGenerico(
             "Seleccionar Bibliotecario", new JLabel("Bibliotecario:"), cbBibliotecario, btnConsultar, btnLimpiar);
@@ -724,8 +738,8 @@ public class PrestamoControllerUltraRefactored {
         JButton btnConsultar = new JButton("🔍 Consultar Reporte");
         JButton btnLimpiar = new JButton("🔄 Limpiar");
         
-        btnConsultar.addActionListener(_ -> consultarReportePorZona(internal));
-        btnLimpiar.addActionListener(_ -> limpiarReportePorZona(internal));
+        btnConsultar.addActionListener(e -> consultarReportePorZona(internal));
+        btnLimpiar.addActionListener(e -> limpiarReportePorZona(internal));
         
         panelSeleccion.add(lblZona);
         panelSeleccion.add(cbZona);
@@ -947,8 +961,8 @@ public class PrestamoControllerUltraRefactored {
         JButton btnConsultar = new JButton("🔍 Consultar Materiales Pendientes");
         JButton btnLimpiar = new JButton("🔄 Limpiar");
         
-        btnConsultar.addActionListener(_ -> consultarMaterialesPendientes(internal));
-        btnLimpiar.addActionListener(_ -> limpiarMaterialesPendientes(internal));
+        btnConsultar.addActionListener(e -> consultarMaterialesPendientes(internal));
+        btnLimpiar.addActionListener(e -> limpiarMaterialesPendientes(internal));
         
         panelAcciones.add(btnConsultar);
         panelAcciones.add(btnLimpiar);
@@ -1432,7 +1446,7 @@ public class PrestamoControllerUltraRefactored {
         
         JPanel botonesPanel = new JPanel(new FlowLayout());
         JButton btnCopiar = new JButton("📋 Copiar al Portapapeles");
-        btnCopiar.addActionListener(_ -> {
+        btnCopiar.addActionListener(e -> {
             java.awt.datatransfer.StringSelection stringSelection = new java.awt.datatransfer.StringSelection(contenido);
             java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(stringSelection, null);
             JOptionPane.showMessageDialog(internal, "Contenido copiado al portapapeles", "Copiado", JOptionPane.INFORMATION_MESSAGE);
@@ -1447,5 +1461,301 @@ public class PrestamoControllerUltraRefactored {
             "Exportar - " + nombreSugerido,
             JOptionPane.PLAIN_MESSAGE
         );
+    }
+    
+    // ==================== MÉTODOS PARA APROBACIÓN DE PRÉSTAMOS ====================
+    
+    /**
+     * Crea el panel superior para la aprobación de préstamos
+     */
+    private JPanel crearPanelSuperiorAprovarPrestamos(JInternalFrame internal) {
+        JPanel panel = new JPanel(new BorderLayout());
+        
+        // Panel izquierdo
+        JPanel panelIzquierdo = new JPanel(new BorderLayout());
+        
+        JLabel lblTitulo = new JLabel("✅ Aprovar Préstamos Pendientes");
+        lblTitulo.setFont(new Font("Arial", Font.BOLD, 16));
+        panelIzquierdo.add(lblTitulo, BorderLayout.NORTH);
+        
+        // Panel de controles
+        JPanel panelControles = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        
+        JComboBox<Lector> cbLector = new JComboBox<>();
+        cbLector.addItem(null);
+        PrestamoUIUtil.cargarLectores(cbLector);
+        
+        JButton btnMostrarTodos = new JButton("🔍 Mostrar Todos los Pendientes");
+        JButton btnFiltrarPorLector = new JButton("👤 Filtrar por Lector");
+        JButton btnLimpiar = new JButton("🔄 Limpiar");
+        
+        btnMostrarTodos.addActionListener(e -> mostrarTodosLosPrestamosPendientes(internal));
+        btnFiltrarPorLector.addActionListener(e -> filtrarPrestamosPendientesPorLector(internal));
+        btnLimpiar.addActionListener(e -> limpiarTablaPrestamosPendientes(internal));
+        
+        panelControles.add(new JLabel("Lector:"));
+        panelControles.add(cbLector);
+        panelControles.add(btnMostrarTodos);
+        panelControles.add(btnFiltrarPorLector);
+        panelControles.add(btnLimpiar);
+        
+        panelIzquierdo.add(panelControles, BorderLayout.CENTER);
+        
+        // Guardar referencias
+        internal.putClientProperty("cbLectorAprovar", cbLector);
+        
+        panel.add(panelIzquierdo, BorderLayout.CENTER);
+        
+        // Panel derecho - estadísticas
+        JPanel panelDerecho = new JPanel(new BorderLayout());
+        JLabel lblEstadisticas = new JLabel("Seleccione una opción para ver los préstamos pendientes");
+        lblEstadisticas.setFont(new Font("Arial", Font.ITALIC, 12));
+        lblEstadisticas.setForeground(Color.GRAY);
+        panelDerecho.add(lblEstadisticas, BorderLayout.CENTER);
+        
+        internal.putClientProperty("lblEstadisticasAprovar", lblEstadisticas);
+        
+        panel.add(panelDerecho, BorderLayout.EAST);
+        
+        return panel;
+    }
+    
+    /**
+     * Crea el panel de la tabla de préstamos pendientes
+     */
+    private JPanel crearPanelTablaPrestamosPendientes(JInternalFrame internal) {
+        JTable tabla = PrestamoUIUtil.crearTablaGenerica(COLUMNAS_PRESTAMOS_PENDIENTES, ANCHOS_PRESTAMOS_PENDIENTES, "tablaPrestamosPendientes");
+        
+        return PrestamoUIUtil.crearPanelTablaGenerico("Préstamos Pendientes de Aprobación", tabla, "tablaPrestamosPendientes", internal);
+    }
+    
+    /**
+     * Crea el panel de acciones para aprobar préstamos
+     */
+    private JPanel crearPanelAccionesAprovarPrestamos(JInternalFrame internal) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        
+        JButton btnAprovar = new JButton("✅ Aprobar Préstamo");
+        JButton btnCancelar = new JButton("❌ Cancelar Préstamo");
+        JButton btnActualizar = new JButton("🔄 Actualizar");
+        
+        btnAprovar.addActionListener(e -> aprobarPrestamoSeleccionado(internal));
+        btnCancelar.addActionListener(e -> cancelarPrestamoSeleccionado(internal));
+        btnActualizar.addActionListener(e -> actualizarTablaPrestamosPendientes(internal));
+        
+        // Estilos de botones
+        btnAprovar.setBackground(new Color(76, 175, 80));
+        btnAprovar.setForeground(Color.WHITE);
+        btnAprovar.setFont(new Font("Arial", Font.BOLD, 12));
+        
+        btnCancelar.setBackground(new Color(244, 67, 54));
+        btnCancelar.setForeground(Color.WHITE);
+        btnCancelar.setFont(new Font("Arial", Font.BOLD, 12));
+        
+        btnActualizar.setBackground(new Color(33, 150, 243));
+        btnActualizar.setForeground(Color.WHITE);
+        btnActualizar.setFont(new Font("Arial", Font.BOLD, 12));
+        
+        panel.add(btnAprovar);
+        panel.add(btnCancelar);
+        panel.add(btnActualizar);
+        
+        return panel;
+    }
+    
+    /**
+     * Muestra todos los préstamos pendientes
+     */
+    private void mostrarTodosLosPrestamosPendientes(JInternalFrame internal) {
+        try {
+            List<Prestamo> prestamos = prestamoService.obtenerTodosLosPrestamosPendientes();
+            actualizarTablaPrestamosPendientes(internal, prestamos);
+            
+            JLabel lblEstadisticas = (JLabel) internal.getClientProperty("lblEstadisticasAprovar");
+            if (prestamos.isEmpty()) {
+                lblEstadisticas.setText("<html><b>Sin préstamos pendientes</b><br>No hay préstamos esperando aprobación</html>");
+                lblEstadisticas.setForeground(Color.GRAY);
+            } else {
+                lblEstadisticas.setText("<html><b>Préstamos Pendientes</b><br>📋 Total: " + prestamos.size() + " préstamos<br>⏰ Esperando aprobación</html>");
+                lblEstadisticas.setForeground(new Color(255, 152, 0));
+            }
+            
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(internal, "Error al cargar préstamos pendientes: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
+     * Filtra préstamos pendientes por lector
+     */
+    private void filtrarPrestamosPendientesPorLector(JInternalFrame internal) {
+        @SuppressWarnings("unchecked")
+        JComboBox<Lector> cbLector = (JComboBox<Lector>) internal.getClientProperty("cbLectorAprovar");
+        Lector lectorSeleccionado = (Lector) cbLector.getSelectedItem();
+        
+        if (lectorSeleccionado == null) {
+            JOptionPane.showMessageDialog(internal, "Por favor seleccione un lector", "Selección Requerida", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        try {
+            List<Prestamo> prestamos = prestamoService.obtenerPrestamosPendientesPorLector(lectorSeleccionado);
+            actualizarTablaPrestamosPendientes(internal, prestamos);
+            
+            JLabel lblEstadisticas = (JLabel) internal.getClientProperty("lblEstadisticasAprovar");
+            if (prestamos.isEmpty()) {
+                lblEstadisticas.setText("<html><b>Sin préstamos pendientes</b><br>Lector: " + lectorSeleccionado.getNombre() + "</html>");
+                lblEstadisticas.setForeground(Color.GRAY);
+            } else {
+                lblEstadisticas.setText("<html><b>Préstamos Pendientes</b><br>👤 Lector: " + lectorSeleccionado.getNombre() + "<br>📋 Total: " + prestamos.size() + " préstamos</html>");
+                lblEstadisticas.setForeground(new Color(255, 152, 0));
+            }
+            
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(internal, "Error al filtrar préstamos: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
+     * Actualiza la tabla con la lista de préstamos pendientes
+     */
+    private void actualizarTablaPrestamosPendientes(JInternalFrame internal, List<Prestamo> prestamos) {
+        JTable tabla = (JTable) internal.getClientProperty("tablaPrestamosPendientes");
+        
+        // Crear modelo de datos
+        Object[][] datos = new Object[prestamos.size()][COLUMNAS_PRESTAMOS_PENDIENTES.length];
+        
+        for (int i = 0; i < prestamos.size(); i++) {
+            Prestamo prestamo = prestamos.get(i);
+            datos[i][0] = prestamo.getId();
+            datos[i][1] = prestamo.getLector().getNombre();
+            datos[i][2] = prestamo.getMaterial().getClass().getSimpleName() + ": " + 
+                         (prestamo.getMaterial() instanceof Libro ? 
+                          ((Libro) prestamo.getMaterial()).getTitulo() : 
+                          ((ArticuloEspecial) prestamo.getMaterial()).getDescripcion());
+            datos[i][3] = prestamo.getFechaSolicitud().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            datos[i][4] = prestamo.getFechaEstimadaDevolucion().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            datos[i][5] = prestamo.getBibliotecario().getNombre();
+            
+            // Calcular días esperando
+            long diasEsperando = java.time.temporal.ChronoUnit.DAYS.between(prestamo.getFechaSolicitud(), LocalDate.now());
+            datos[i][6] = diasEsperando + " días";
+        }
+        
+        // Actualizar tabla
+        tabla.setModel(new javax.swing.table.DefaultTableModel(datos, COLUMNAS_PRESTAMOS_PENDIENTES));
+    }
+    
+    /**
+     * Actualiza la tabla con todos los préstamos pendientes
+     */
+    private void actualizarTablaPrestamosPendientes(JInternalFrame internal) {
+        mostrarTodosLosPrestamosPendientes(internal);
+    }
+    
+    /**
+     * Limpia la tabla de préstamos pendientes
+     */
+    private void limpiarTablaPrestamosPendientes(JInternalFrame internal) {
+        JTable tabla = (JTable) internal.getClientProperty("tablaPrestamosPendientes");
+        
+        // Limpiar tabla
+        Object[][] datos = {};
+        tabla.setModel(new javax.swing.table.DefaultTableModel(datos, COLUMNAS_PRESTAMOS_PENDIENTES));
+        
+        // Limpiar estadísticas
+        JLabel lblEstadisticas = (JLabel) internal.getClientProperty("lblEstadisticasAprovar");
+        lblEstadisticas.setText("Seleccione una opción para ver los préstamos pendientes");
+        lblEstadisticas.setForeground(Color.GRAY);
+        
+        // Limpiar combo box
+        @SuppressWarnings("unchecked")
+        JComboBox<Lector> cbLector = (JComboBox<Lector>) internal.getClientProperty("cbLectorAprovar");
+        cbLector.setSelectedIndex(0);
+    }
+    
+    /**
+     * Aprueba el préstamo seleccionado
+     */
+    private void aprobarPrestamoSeleccionado(JInternalFrame internal) {
+        JTable tabla = (JTable) internal.getClientProperty("tablaPrestamosPendientes");
+        int filaSeleccionada = tabla.getSelectedRow();
+        
+        if (filaSeleccionada == -1) {
+            JOptionPane.showMessageDialog(internal, "Por favor seleccione un préstamo para aprobar", "Selección Requerida", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        Long prestamoId = (Long) tabla.getValueAt(filaSeleccionada, 0);
+        String lectorNombre = (String) tabla.getValueAt(filaSeleccionada, 1);
+        String materialNombre = (String) tabla.getValueAt(filaSeleccionada, 2);
+        
+        int confirmacion = JOptionPane.showConfirmDialog(
+            internal,
+            "¿Está seguro de que desea aprobar este préstamo?\n\n" +
+            "ID: " + prestamoId + "\n" +
+            "Lector: " + lectorNombre + "\n" +
+            "Material: " + materialNombre,
+            "Confirmar Aprobación",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+        
+        if (confirmacion == JOptionPane.YES_OPTION) {
+            try {
+                boolean exito = prestamoService.aprobarPrestamo(prestamoId);
+                if (exito) {
+                    JOptionPane.showMessageDialog(internal, "Préstamo aprobado exitosamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                    actualizarTablaPrestamosPendientes(internal);
+                } else {
+                    JOptionPane.showMessageDialog(internal, "No se pudo aprobar el préstamo. Verifique que el material esté disponible y el lector no exceda el límite de préstamos.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(internal, "Error al aprobar préstamo: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    
+    /**
+     * Cancela el préstamo seleccionado
+     */
+    private void cancelarPrestamoSeleccionado(JInternalFrame internal) {
+        JTable tabla = (JTable) internal.getClientProperty("tablaPrestamosPendientes");
+        int filaSeleccionada = tabla.getSelectedRow();
+        
+        if (filaSeleccionada == -1) {
+            JOptionPane.showMessageDialog(internal, "Por favor seleccione un préstamo para cancelar", "Selección Requerida", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        Long prestamoId = (Long) tabla.getValueAt(filaSeleccionada, 0);
+        String lectorNombre = (String) tabla.getValueAt(filaSeleccionada, 1);
+        String materialNombre = (String) tabla.getValueAt(filaSeleccionada, 2);
+        
+        int confirmacion = JOptionPane.showConfirmDialog(
+            internal,
+            "¿Está seguro de que desea cancelar este préstamo?\n\n" +
+            "ID: " + prestamoId + "\n" +
+            "Lector: " + lectorNombre + "\n" +
+            "Material: " + materialNombre + "\n\n" +
+            "Esta acción marcará el préstamo como DEVUELTO.",
+            "Confirmar Cancelación",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+        
+        if (confirmacion == JOptionPane.YES_OPTION) {
+            try {
+                boolean exito = prestamoService.cancelarPrestamo(prestamoId);
+                if (exito) {
+                    JOptionPane.showMessageDialog(internal, "Préstamo cancelado exitosamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                    actualizarTablaPrestamosPendientes(internal);
+                } else {
+                    JOptionPane.showMessageDialog(internal, "No se pudo cancelar el préstamo. Verifique que el préstamo esté en estado PENDIENTE.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(internal, "Error al cancelar préstamo: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 }

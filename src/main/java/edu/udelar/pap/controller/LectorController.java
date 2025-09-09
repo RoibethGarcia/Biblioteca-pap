@@ -36,7 +36,7 @@ public class LectorController {
      * Crea la interfaz de gestión de lectores
      */
     public void mostrarInterfazGestionLectores(JDesktopPane desktop) {
-        ControllerUtil.mostrarInterfazGestion(desktop, "Gestión de Lectores", 600, 400, 
+        ControllerUtil.mostrarInterfazGestion(desktop, "Gestión de Lectores", 800, 600, 
             this::crearPanelLector);
     }
     
@@ -44,7 +44,7 @@ public class LectorController {
      * Muestra la interfaz para gestionar la edición de lectores
      */
     public void mostrarInterfazGestionEdicionLectores(JDesktopPane desktop) {
-        ControllerUtil.mostrarInterfazGestion(desktop, "Gestión de Edición de Lectores", 900, 700, 
+        ControllerUtil.mostrarInterfazGestion(desktop, "Gestión de Edición de Lectores", 800, 600, 
             this::crearPanelEdicionLectores);
     }
     
@@ -63,8 +63,8 @@ public class LectorController {
         JButton btnAceptar = new JButton("Crear Usuario");
         JButton btnCancelar = new JButton("Cancelar");
         
-        btnAceptar.addActionListener(_ -> crearLector(internal));
-        btnCancelar.addActionListener(_ -> cancelarCreacion(internal));
+        btnAceptar.addActionListener(e -> crearLector(internal));
+        btnCancelar.addActionListener(e -> cancelarCreacion(internal));
         
         JPanel actions = InterfaceUtil.crearPanelAcciones(btnAceptar, btnCancelar);
         
@@ -142,12 +142,12 @@ public class LectorController {
         
         // Botón para filtrar
         JButton btnFiltrar = new JButton("Filtrar Lectores");
-        btnFiltrar.addActionListener(_ -> filtrarLectores(internal));
+        btnFiltrar.addActionListener(e -> filtrarLectores(internal));
         panel.add(btnFiltrar);
         
         // Botón para mostrar todos
         JButton btnMostrarTodos = new JButton("Mostrar Todos");
-        btnMostrarTodos.addActionListener(_ -> mostrarTodosLosLectores(internal));
+        btnMostrarTodos.addActionListener(e -> mostrarTodosLosLectores(internal));
         panel.add(btnMostrarTodos);
         
         // Guardar referencias
@@ -185,22 +185,22 @@ public class LectorController {
         
         // Botón para cambiar estado
         JButton btnCambiarEstado = new JButton("Cambiar Estado");
-        btnCambiarEstado.addActionListener(_ -> cambiarEstadoLector(internal));
+        btnCambiarEstado.addActionListener(e -> cambiarEstadoLector(internal));
         panel.add(btnCambiarEstado);
         
         // Botón para cambiar zona
         JButton btnCambiarZona = new JButton("Cambiar Zona");
-        btnCambiarZona.addActionListener(_ -> cambiarZonaLector(internal));
+        btnCambiarZona.addActionListener(e -> cambiarZonaLector(internal));
         panel.add(btnCambiarZona);
         
         // Botón para ver detalles
         JButton btnVerDetalles = new JButton("Ver Detalles");
-        btnVerDetalles.addActionListener(_ -> verDetallesLector(internal));
+        btnVerDetalles.addActionListener(e -> verDetallesLector(internal));
         panel.add(btnVerDetalles);
         
         // Botón para cerrar
         JButton btnCerrar = new JButton("Cerrar");
-        btnCerrar.addActionListener(_ -> internal.dispose());
+        btnCerrar.addActionListener(e -> internal.dispose());
         panel.add(btnCerrar);
         
         return panel;

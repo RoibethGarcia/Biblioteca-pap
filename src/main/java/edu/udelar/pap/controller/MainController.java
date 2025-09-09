@@ -93,10 +93,10 @@ public class MainController {
         JMenuItem miBibliotecarios = new JMenuItem("Gestionar Bibliotecarios");
         JMenuItem miEditarUsuario = new JMenuItem("Editar Usuario");
         
-        miLectores.addActionListener(_ -> controllerFactory.getLectorController().mostrarInterfazGestionLectores(desktop));
-        miEditarLectores.addActionListener(_ -> controllerFactory.getLectorController().mostrarInterfazGestionEdicionLectores(desktop));
-        miBibliotecarios.addActionListener(_ -> controllerFactory.getBibliotecarioController().mostrarInterfazGestionBibliotecarios(desktop));
-        miEditarUsuario.addActionListener(_ -> mostrarInterfazEditarUsuario(desktop));
+        miLectores.addActionListener(e -> controllerFactory.getLectorController().mostrarInterfazGestionLectores(desktop));
+        miEditarLectores.addActionListener(e -> controllerFactory.getLectorController().mostrarInterfazGestionEdicionLectores(desktop));
+        miBibliotecarios.addActionListener(e -> controllerFactory.getBibliotecarioController().mostrarInterfazGestionBibliotecarios(desktop));
+        miEditarUsuario.addActionListener(e -> mostrarInterfazEditarUsuario(desktop));
         
         menuUsuarios.add(miLectores);
         menuUsuarios.add(miEditarLectores);
@@ -108,8 +108,8 @@ public class MainController {
         JMenuItem miDonaciones = new JMenuItem("Registrar Donación");
         JMenuItem miConsultarDonaciones = new JMenuItem("Consultar Donaciones");
         
-        miDonaciones.addActionListener(_ -> controllerFactory.getDonacionController().mostrarInterfazDonaciones(desktop));
-        miConsultarDonaciones.addActionListener(_ -> controllerFactory.getDonacionController().mostrarInterfazConsultaDonaciones(desktop));
+        miDonaciones.addActionListener(e -> controllerFactory.getDonacionController().mostrarInterfazDonaciones(desktop));
+        miConsultarDonaciones.addActionListener(e -> controllerFactory.getDonacionController().mostrarInterfazConsultaDonaciones(desktop));
         
         menuMateriales.add(miDonaciones);
         menuMateriales.add(miConsultarDonaciones);
@@ -118,20 +118,23 @@ public class MainController {
         JMenu menuPrestamos = new JMenu("Préstamos");
         JMenuItem miPrestamos = new JMenuItem("Gestionar Préstamos");
         JMenuItem miDevoluciones = new JMenuItem("Gestionar Devoluciones");
+        JMenuItem miAprovarPrestamos = new JMenuItem("Aprovar Préstamos");
         JMenuItem miPrestamosPorLector = new JMenuItem("Préstamos por Lector");
         JMenuItem miHistorialPorBibliotecario = new JMenuItem("Historial por Bibliotecario");
         JMenuItem miReportePorZona = new JMenuItem("Reporte por Zona");
         JMenuItem miMaterialesPendientes = new JMenuItem("Materiales Pendientes");
         
-        miPrestamos.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazGestionPrestamos(desktop));
-        miDevoluciones.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazGestionDevoluciones(desktop));
-        miPrestamosPorLector.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazPrestamosPorLector(desktop));
-        miHistorialPorBibliotecario.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazHistorialPorBibliotecario(desktop));
-        miReportePorZona.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazReportePorZona(desktop));
-        miMaterialesPendientes.addActionListener(_ -> controllerFactory.getPrestamoController().mostrarInterfazMaterialesPendientes(desktop));
+        miPrestamos.addActionListener(e -> controllerFactory.getPrestamoController().mostrarInterfazGestionPrestamos(desktop));
+        miDevoluciones.addActionListener(e -> controllerFactory.getPrestamoController().mostrarInterfazGestionDevoluciones(desktop));
+        miAprovarPrestamos.addActionListener(e -> controllerFactory.getPrestamoController().mostrarInterfazAprovarPrestamos(desktop));
+        miPrestamosPorLector.addActionListener(e -> controllerFactory.getPrestamoController().mostrarInterfazPrestamosPorLector(desktop));
+        miHistorialPorBibliotecario.addActionListener(e -> controllerFactory.getPrestamoController().mostrarInterfazHistorialPorBibliotecario(desktop));
+        miReportePorZona.addActionListener(e -> controllerFactory.getPrestamoController().mostrarInterfazReportePorZona(desktop));
+        miMaterialesPendientes.addActionListener(e -> controllerFactory.getPrestamoController().mostrarInterfazMaterialesPendientes(desktop));
         
         menuPrestamos.add(miPrestamos);
         menuPrestamos.add(miDevoluciones);
+        menuPrestamos.add(miAprovarPrestamos);
         menuPrestamos.add(miPrestamosPorLector);
         menuPrestamos.add(miHistorialPorBibliotecario);
         menuPrestamos.add(miReportePorZona);
@@ -147,8 +150,12 @@ public class MainController {
     
     /**
      * Muestra la interfaz para editar usuarios
+     * Implementa el patrón de ventana única: cierra ventanas existentes antes de abrir una nueva
      */
     private void mostrarInterfazEditarUsuario(JDesktopPane desktop) {
+        // Cerrar todas las ventanas internas existentes para mantener solo una ventana abierta
+        cerrarTodasLasVentanasInternas(desktop);
+        
         JInternalFrame internal = crearVentanaEditarUsuario();
         JPanel panel = crearPanelEditarUsuario(internal, desktop);
         internal.setContentPane(panel);
@@ -157,11 +164,22 @@ public class MainController {
     }
     
     /**
+     * Cierra todas las ventanas internas del desktop pane
+     * Utilizado para implementar el patrón de ventana única
+     */
+    private void cerrarTodasLasVentanasInternas(JDesktopPane desktop) {
+        JInternalFrame[] frames = desktop.getAllFrames();
+        for (JInternalFrame frame : frames) {
+            frame.dispose();
+        }
+    }
+    
+    /**
      * Crea la ventana interna para editar usuarios
      */
     private JInternalFrame crearVentanaEditarUsuario() {
         JInternalFrame internal = new JInternalFrame("Editar Usuario", true, true, true, true);
-        internal.setSize(700, 500);
+        internal.setSize(800, 600);
         internal.setLocation(100, 100);
         internal.setVisible(true);
         return internal;
@@ -220,7 +238,7 @@ public class MainController {
         gbc.weightx = 0.0;
         gbc.fill = GridBagConstraints.NONE;
         JButton btnBuscar = new JButton("Buscar");
-        btnBuscar.addActionListener(_ -> realizarBusqueda(internal, tfNombre.getText(), tfApellido.getText()));
+        btnBuscar.addActionListener(e -> realizarBusqueda(internal, tfNombre.getText(), tfApellido.getText()));
         searchPanel.add(btnBuscar, gbc);
         
         // Botón Mostrar Todos
@@ -257,12 +275,15 @@ public class MainController {
         // Panel de botones
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton btnEditar = new JButton("Editar Seleccionado");
+        // JButton btnEliminar = new JButton("Eliminar Seleccionado"); // Removed to prevent unwanted changes
         JButton btnLimpiar = new JButton("Limpiar Búsqueda");
         
-        btnEditar.addActionListener(_ -> editarUsuarioSeleccionado(internal, table));
-        btnLimpiar.addActionListener(_ -> limpiarBusqueda(internal));
+        btnEditar.addActionListener(e -> editarUsuarioSeleccionado(internal, table));
+        // btnEliminar.addActionListener(_ -> eliminarUsuarioSeleccionado(internal, table)); // Removed
+        btnLimpiar.addActionListener(e -> limpiarBusqueda(internal));
         
         buttonPanel.add(btnEditar);
+        // buttonPanel.add(btnEliminar); // Removed
         buttonPanel.add(btnLimpiar);
         
         resultsPanel.add(buttonPanel, BorderLayout.SOUTH);
@@ -605,8 +626,8 @@ public class MainController {
         JButton btnGuardar = new JButton("Guardar Cambios");
         JButton btnCancelar = new JButton("Cancelar");
         
-        btnGuardar.addActionListener(_ -> guardarCambiosUsuario(dialog, internal, userId, fieldsPanel));
-        btnCancelar.addActionListener(_ -> dialog.dispose());
+        btnGuardar.addActionListener(e -> guardarCambiosUsuario(dialog, internal, userId, fieldsPanel));
+        btnCancelar.addActionListener(e -> dialog.dispose());
         
         panel.add(btnGuardar);
         panel.add(btnCancelar);

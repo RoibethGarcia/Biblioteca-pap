@@ -274,9 +274,9 @@ public class PrestamoUIUtil {
         if (incluirVerDetalles) {
             JButton btnVerDetalles = new JButton("👁️ Ver Detalles");
             if (callbackVerDetalles != null) {
-                btnVerDetalles.addActionListener(_ -> callbackVerDetalles.run());
+                btnVerDetalles.addActionListener(e -> callbackVerDetalles.run());
             } else {
-                btnVerDetalles.addActionListener(_ -> verDetallesPrestamoComun(internal));
+                btnVerDetalles.addActionListener(e -> verDetallesPrestamoComun(internal));
             }
             btnVerDetalles.setPreferredSize(new Dimension(140, 30));
             panel.add(btnVerDetalles);
@@ -284,14 +284,14 @@ public class PrestamoUIUtil {
         
         if (incluirEditar) {
             JButton btnEditarPrestamo = new JButton("✏️ Editar Préstamo");
-            btnEditarPrestamo.addActionListener(_ -> editarPrestamoComun(internal));
+            btnEditarPrestamo.addActionListener(e -> editarPrestamoComun(internal));
             btnEditarPrestamo.setPreferredSize(new Dimension(140, 30));
             panel.add(btnEditarPrestamo);
         }
         
         if (incluirMarcarDevuelto) {
             JButton btnMarcarDevuelto = new JButton("✅ Marcar como Devuelto");
-            btnMarcarDevuelto.addActionListener(_ -> marcarDevueltoComun(internal));
+            btnMarcarDevuelto.addActionListener(e -> marcarDevueltoComun(internal));
             btnMarcarDevuelto.setPreferredSize(new Dimension(180, 30));
             panel.add(btnMarcarDevuelto);
         }
@@ -299,9 +299,9 @@ public class PrestamoUIUtil {
         if (incluirExportar) {
             JButton btnExportar = new JButton("📄 Exportar Reporte");
             if (callbackExportar != null) {
-                btnExportar.addActionListener(_ -> callbackExportar.run());
+                btnExportar.addActionListener(e -> callbackExportar.run());
             } else {
-                btnExportar.addActionListener(_ -> exportarReporteComun(internal));
+                btnExportar.addActionListener(e -> exportarReporteComun(internal));
             }
             btnExportar.setPreferredSize(new Dimension(150, 30));
             panel.add(btnExportar);
@@ -309,7 +309,7 @@ public class PrestamoUIUtil {
         
         // Botón para cerrar
         JButton btnCerrar = new JButton("❌ Cerrar");
-        btnCerrar.addActionListener(_ -> internal.dispose());
+        btnCerrar.addActionListener(e -> internal.dispose());
         btnCerrar.setPreferredSize(new Dimension(100, 30));
         panel.add(btnCerrar);
         
@@ -573,8 +573,8 @@ public class PrestamoUIUtil {
         JButton btnGuardar = new JButton("💾 Guardar Cambios");
         JButton btnCancelar = new JButton("❌ Cancelar");
         
-        btnGuardar.addActionListener(_ -> guardarCambiosPrestamo(dialog, internal, prestamo, fieldsPanel));
-        btnCancelar.addActionListener(_ -> dialog.dispose());
+        btnGuardar.addActionListener(e -> guardarCambiosPrestamo(dialog, internal, prestamo, fieldsPanel));
+        btnCancelar.addActionListener(e -> dialog.dispose());
         
         panel.add(btnGuardar);
         panel.add(btnCancelar);
@@ -713,7 +713,19 @@ public class PrestamoUIUtil {
     // ==================== MÉTODOS PARA ELIMINAR DUPLICACIÓN RESTANTE ====================
     
     /**
+     * Cierra todas las ventanas internas del desktop pane
+     * Utilizado para implementar el patrón de ventana única
+     */
+    private static void cerrarTodasLasVentanasInternas(JDesktopPane desktop) {
+        JInternalFrame[] frames = desktop.getAllFrames();
+        for (JInternalFrame frame : frames) {
+            frame.dispose();
+        }
+    }
+    
+    /**
      * Crea y muestra una interfaz interna de manera genérica con tamaño responsivo
+     * Implementa el patrón de ventana única: cierra ventanas existentes antes de abrir una nueva
      */
     public static void mostrarInterfazGenerica(JDesktopPane desktop, 
                                              String titulo, 
@@ -729,6 +741,9 @@ public class PrestamoUIUtil {
                                              int alto,
                                              java.util.function.Function<JInternalFrame, JPanel> creadorPanel,
                                              Object controller) {
+        // Cerrar todas las ventanas internas existentes para mantener solo una ventana abierta
+        cerrarTodasLasVentanasInternas(desktop);
+        
         JInternalFrame internal = InterfaceUtil.crearVentanaInterna(titulo, ancho, alto);
         
         // Guardar referencia del controlador si se proporciona
@@ -738,19 +753,37 @@ public class PrestamoUIUtil {
         
         JPanel panel = creadorPanel.apply(internal);
         
+        // Configurar el panel para que llene todo el espacio disponible
+        panel.setPreferredSize(new java.awt.Dimension(ancho - 20, alto - 40)); // Restar espacio para bordes y título
+        panel.setMinimumSize(new java.awt.Dimension(ancho - 20, alto - 40));
+        panel.setMaximumSize(new java.awt.Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        
         internal.setContentPane(panel);
+        
+        // Forzar el reajuste del layout
+        internal.pack();
+        internal.setSize(ancho, alto); // Restaurar el tamaño deseado después del pack
+        
+        // Asegurar que el internal frame sea visible y tenga el tamaño correcto
+        internal.validate();
+        internal.repaint();
+        
         desktop.add(internal);
         internal.toFront();
     }
     
     /**
      * Crea y muestra una interfaz interna adaptativa que se ajusta al contenido
+     * Implementa el patrón de ventana única: cierra ventanas existentes antes de abrir una nueva
      */
     public static void mostrarInterfazAdaptativa(JDesktopPane desktop, 
                                                String titulo, 
                                                int anchoMinimo, 
                                                int altoMinimo,
                                                java.util.function.Function<JInternalFrame, JPanel> creadorPanel) {
+        // Cerrar todas las ventanas internas existentes para mantener solo una ventana abierta
+        cerrarTodasLasVentanasInternas(desktop);
+        
         JInternalFrame internal = InterfaceUtil.crearVentanaInternaAdaptativa(titulo, anchoMinimo, altoMinimo);
         JPanel panel = creadorPanel.apply(internal);
         
@@ -954,7 +987,16 @@ public class PrestamoUIUtil {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder(titulo));
         
+        // Configurar la tabla para que se expanda
+        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        tabla.setRowHeight(25);
+        tabla.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        
         JScrollPane scrollPane = new JScrollPane(tabla);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setPreferredSize(new java.awt.Dimension(800, 400));
+        
         panel.add(scrollPane, BorderLayout.CENTER);
         
         internal.putClientProperty(nombreTabla, tabla);

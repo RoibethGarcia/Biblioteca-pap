@@ -4,6 +4,7 @@ import edu.udelar.pap.domain.Bibliotecario;
 import edu.udelar.pap.service.BibliotecarioService;
 import edu.udelar.pap.util.ValidacionesUtil;
 import edu.udelar.pap.util.DatabaseUtil;
+import edu.udelar.pap.util.InterfaceUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,8 +24,12 @@ public class BibliotecarioController {
     
     /**
      * Crea la interfaz de gestión de bibliotecarios
+     * Implementa el patrón de ventana única: cierra ventanas existentes antes de abrir una nueva
      */
     public void mostrarInterfazGestionBibliotecarios(JDesktopPane desktop) {
+        // Cerrar todas las ventanas internas existentes para mantener solo una ventana abierta
+        cerrarTodasLasVentanasInternas(desktop);
+        
         JInternalFrame internal = crearVentanaBibliotecario();
         JPanel panel = crearPanelBibliotecario(internal);
         internal.setContentPane(panel);
@@ -33,14 +38,21 @@ public class BibliotecarioController {
     }
     
     /**
+     * Cierra todas las ventanas internas del desktop pane
+     * Utilizado para implementar el patrón de ventana única
+     */
+    private void cerrarTodasLasVentanasInternas(JDesktopPane desktop) {
+        JInternalFrame[] frames = desktop.getAllFrames();
+        for (JInternalFrame frame : frames) {
+            frame.dispose();
+        }
+    }
+    
+    /**
      * Crea la ventana interna para bibliotecarios
      */
     private JInternalFrame crearVentanaBibliotecario() {
-        JInternalFrame internal = new JInternalFrame("Gestión de Bibliotecarios", true, true, true, true);
-        internal.setSize(600, 400);
-        internal.setLocation(50, 50);
-        internal.setVisible(true);
-        return internal;
+        return InterfaceUtil.crearVentanaInterna("Gestión de Bibliotecarios", 800, 600);
     }
     
     /**
@@ -98,8 +110,8 @@ public class BibliotecarioController {
         JButton btnAceptar = new JButton("Aceptar");
         JButton btnCancelar = new JButton("Cancelar");
         
-        btnAceptar.addActionListener(_ -> crearBibliotecario(internal));
-        btnCancelar.addActionListener(_ -> cancelarCreacion(internal));
+        btnAceptar.addActionListener(e -> crearBibliotecario(internal));
+        btnCancelar.addActionListener(e -> cancelarCreacion(internal));
         
         actions.add(btnAceptar);
         actions.add(btnCancelar);
