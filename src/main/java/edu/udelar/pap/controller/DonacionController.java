@@ -29,8 +29,12 @@ public class DonacionController {
     
     /**
      * Crea la interfaz de gestión de donaciones
+     * Implementa el patrón de ventana única: cierra ventanas existentes antes de abrir una nueva
      */
     public void mostrarInterfazDonaciones(JDesktopPane desktop) {
+        // Cerrar todas las ventanas internas existentes para mantener solo una ventana abierta
+        cerrarTodasLasVentanasInternas(desktop);
+        
         JInternalFrame internal = crearVentanaDonacion();
         JPanel panel = crearPanelDonacion(internal);
         internal.setContentPane(panel);
@@ -39,10 +43,21 @@ public class DonacionController {
     }
     
     /**
+     * Cierra todas las ventanas internas del desktop pane
+     * Utilizado para implementar el patrón de ventana única
+     */
+    private void cerrarTodasLasVentanasInternas(JDesktopPane desktop) {
+        JInternalFrame[] frames = desktop.getAllFrames();
+        for (JInternalFrame frame : frames) {
+            frame.dispose();
+        }
+    }
+    
+    /**
      * Crea la ventana interna para donaciones
      */
     private JInternalFrame crearVentanaDonacion() {
-        return InterfaceUtil.crearVentanaInterna("Donaciones de Material", 700, 500);
+        return InterfaceUtil.crearVentanaInterna("Donaciones de Material", 800, 600);
     }
     
     /**
@@ -114,7 +129,7 @@ public class DonacionController {
         // Función para mostrar/ocultar campos según el tipo seleccionado
         @SuppressWarnings("unchecked")
         JComboBox<String> cbTipoMaterial = (JComboBox<String>) internal.getClientProperty("cbTipoMaterial");
-        ActionListener actualizarCampos = _ -> actualizarCamposEspecificos(internal);
+        ActionListener actualizarCampos = e -> actualizarCamposEspecificos(internal);
         
         cbTipoMaterial.addActionListener(actualizarCampos);
         actualizarCampos.actionPerformed(null); // Ejecutar inicialmente
@@ -187,8 +202,8 @@ public class DonacionController {
         JButton btnAceptar = new JButton("Aceptar");
         JButton btnCancelar = new JButton("Cancelar");
         
-        btnAceptar.addActionListener(_ -> crearDonacion(internal));
-        btnCancelar.addActionListener(_ -> cancelarCreacion(internal));
+        btnAceptar.addActionListener(e -> crearDonacion(internal));
+        btnCancelar.addActionListener(e -> cancelarCreacion(internal));
         
         return InterfaceUtil.crearPanelAcciones(btnAceptar, btnCancelar);
     }
@@ -388,8 +403,12 @@ public class DonacionController {
     
     /**
      * Muestra la interfaz para consultar todas las donaciones registradas
+     * Implementa el patrón de ventana única: cierra ventanas existentes antes de abrir una nueva
      */
     public void mostrarInterfazConsultaDonaciones(JDesktopPane desktop) {
+        // Cerrar todas las ventanas internas existentes para mantener solo una ventana abierta
+        cerrarTodasLasVentanasInternas(desktop);
+        
         JInternalFrame internal = crearVentanaConsultaDonaciones();
         JPanel panel = crearPanelConsultaDonaciones(internal);
         internal.setContentPane(panel);
@@ -401,7 +420,7 @@ public class DonacionController {
      * Crea la ventana interna para consulta de donaciones
      */
     private JInternalFrame crearVentanaConsultaDonaciones() {
-        return InterfaceUtil.crearVentanaInterna("Consulta de Donaciones", 1000, 600);
+        return InterfaceUtil.crearVentanaInterna("Consulta de Donaciones", 800, 600);
     }
     
     /**
@@ -451,10 +470,10 @@ public class DonacionController {
         JButton btnActualizar = new JButton("🔄 Actualizar");
         JButton btnCerrar = new JButton("❌ Cerrar");
         
-        btnFiltrar.addActionListener(_ -> filtrarDonacionesPorFechas(internal));
-        btnMostrarTodas.addActionListener(_ -> cargarDatosDonaciones(internal));
-        btnActualizar.addActionListener(_ -> actualizarTablaDonaciones(internal));
-        btnCerrar.addActionListener(_ -> internal.dispose());
+        btnFiltrar.addActionListener(e -> filtrarDonacionesPorFechas(internal));
+        btnMostrarTodas.addActionListener(e -> cargarDatosDonaciones(internal));
+        btnActualizar.addActionListener(e -> actualizarTablaDonaciones(internal));
+        btnCerrar.addActionListener(e -> internal.dispose());
         
         panelBotones.add(btnFiltrar);
         panelBotones.add(btnMostrarTodas);

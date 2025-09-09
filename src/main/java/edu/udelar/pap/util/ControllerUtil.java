@@ -16,15 +16,30 @@ public class ControllerUtil {
     /**
      * Patrón común para mostrar interfaces de gestión
      * Crea y muestra una ventana interna con el panel proporcionado
+     * Implementa el patrón de ventana única: cierra ventanas existentes antes de abrir una nueva
      */
     public static void mostrarInterfazGestion(JDesktopPane desktop, String titulo, 
                                             int ancho, int alto, 
                                             Function<JInternalFrame, JPanel> creadorPanel) {
+        // Cerrar todas las ventanas internas existentes para mantener solo una ventana abierta
+        cerrarTodasLasVentanasInternas(desktop);
+        
         JInternalFrame internal = InterfaceUtil.crearVentanaInterna(titulo, ancho, alto);
         JPanel panel = creadorPanel.apply(internal);
         internal.setContentPane(panel);
         desktop.add(internal);
         internal.toFront();
+    }
+    
+    /**
+     * Cierra todas las ventanas internas del desktop pane
+     * Utilizado para implementar el patrón de ventana única
+     */
+    private static void cerrarTodasLasVentanasInternas(JDesktopPane desktop) {
+        JInternalFrame[] frames = desktop.getAllFrames();
+        for (JInternalFrame frame : frames) {
+            frame.dispose();
+        }
     }
     
     /**
@@ -56,7 +71,7 @@ public class ControllerUtil {
         for (int i = 0; i < textosBotones.length; i++) {
             JButton boton = new JButton(textosBotones[i]);
             final int index = i;
-            boton.addActionListener(_ -> actionListeners[index].accept(internal));
+            boton.addActionListener(e -> actionListeners[index].accept(internal));
             actions.add(boton);
         }
         
