@@ -283,9 +283,18 @@ public class PrestamoUIUtil {
         }
         
         if (incluirEditar) {
-            JButton btnEditarPrestamo = new JButton("✏️ Editar Préstamo");
+            JButton btnEditarPrestamo = new JButton("EDITAR");
             btnEditarPrestamo.addActionListener(_ -> editarPrestamoComun(internal));
             btnEditarPrestamo.setPreferredSize(new Dimension(140, 30));
+            
+            // Aplicar estilos consistentes
+            btnEditarPrestamo.setBackground(new Color(156, 39, 176)); // Púrpura
+            btnEditarPrestamo.setForeground(Color.WHITE);
+            btnEditarPrestamo.setFont(new Font("SansSerif", Font.BOLD, 12));
+            btnEditarPrestamo.setFocusPainted(false);
+            btnEditarPrestamo.setOpaque(true);
+            btnEditarPrestamo.setBorderPainted(false);
+            
             panel.add(btnEditarPrestamo);
         }
         

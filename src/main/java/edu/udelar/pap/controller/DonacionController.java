@@ -191,6 +191,9 @@ public class DonacionController {
             panelCamposEspecificos.add(tfDimensiones);
         }
         
+        // Actualizar la interfaz para mostrar los cambios
+        panelCamposEspecificos.revalidate();
+        panelCamposEspecificos.repaint();
     }
     
     /**
@@ -463,17 +466,14 @@ public class DonacionController {
         // Panel de botones
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         
-        JButton btnFiltrar = new JButton("🔍 Filtrar por Fechas");
         JButton btnMostrarTodas = new JButton("📋 Mostrar Todas");
         JButton btnActualizar = new JButton("🔄 Actualizar");
         JButton btnCerrar = new JButton("❌ Cerrar");
         
-        btnFiltrar.addActionListener(_ -> filtrarDonacionesPorFechas(internal));
         btnMostrarTodas.addActionListener(_ -> cargarDatosDonaciones(internal));
         btnActualizar.addActionListener(_ -> actualizarTablaDonaciones(internal));
         btnCerrar.addActionListener(_ -> internal.dispose());
         
-        panelBotones.add(btnFiltrar);
         panelBotones.add(btnMostrarTodas);
         panelBotones.add(btnActualizar);
         panelBotones.add(btnCerrar);
@@ -595,6 +595,16 @@ public class DonacionController {
         DateTextField tfFechaFin = new DateTextField();
         tfFechaFin.setToolTipText("Formato: DD/MM/AAAA (ejemplo: 31/12/2024)");
         panel.add(tfFechaFin, gbc);
+        
+        // Botón de filtrar por fechas - agregado al panel de filtros
+        gbc.gridx = 0; gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        gbc.weightx = 0.0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.CENTER;
+        JButton btnFiltrar = new JButton("🔍 Filtrar por Fechas");
+        btnFiltrar.addActionListener(_ -> filtrarDonacionesPorFechas(internal));
+        panel.add(btnFiltrar, gbc);
         
         // Guardar referencias
         internal.putClientProperty("tfFechaInicio", tfFechaInicio);

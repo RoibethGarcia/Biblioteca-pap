@@ -14,6 +14,7 @@ import java.util.List;
 import java.time.LocalDate;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.function.Function;
 import edu.udelar.pap.domain.EstadoPrestamo;
 
 /**
@@ -28,6 +29,40 @@ public class PrestamoService {
     public PrestamoService() {
         this.sessionFactory = HibernateUtil.getSessionFactory();
         logger.info("PrestamoService inicializado");
+    }
+    
+    /**
+     * Método base para ejecutar transacciones de préstamos
+     * Centraliza la lógica común de manejo de sesiones y transacciones
+     */
+    private <T> T ejecutarTransaccionPrestamo(Long prestamoId, 
+                                             Function<Prestamo, T> operacion,
+                                             String operacionNombre) {
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            try {
+                Prestamo prestamo = session.get(Prestamo.class, prestamoId);
+                if (prestamo == null) {
+                    tx.rollback();
+                    logger.warning("Préstamo no encontrado - ID: " + prestamoId);
+                    return null;
+                }
+                
+                T resultado = operacion.apply(prestamo);
+                session.merge(prestamo);
+                tx.commit();
+                
+                logger.info("Préstamo " + operacionNombre + " exitosamente - ID: " + prestamo.getId() + 
+                           ", Lector: " + prestamo.getLector().getNombre() + 
+                           ", Material: " + prestamo.getMaterial().getClass().getSimpleName());
+                return resultado;
+                
+            } catch (Exception e) {
+                tx.rollback();
+                logger.log(Level.SEVERE, "Error al " + operacionNombre + " préstamo - ID: " + prestamoId, e);
+                throw e;
+            }
+        }
     }
     
     /**
@@ -317,42 +352,56 @@ public class PrestamoService {
     }
 
     /**
-     * Marca un préstamo como devuelto
-     * Incluye validaciones adicionales
+     * Marca un préstamo como devuelto, independientemente de su estado actual
+     * Maneja tanto préstamos EN_CURSO como PENDIENTES
+     * @param prestamoId ID del préstamo a marcar como devuelto
+     * @return true si se marcó exitosamente, false en caso contrario
      */
     public boolean marcarPrestamoComoDevuelto(Long prestamoId) {
-        try (Session session = sessionFactory.openSession()) {
-            Transaction tx = session.beginTransaction();
-            try {
-                Prestamo prestamo = session.get(Prestamo.class, prestamoId);
-                if (prestamo == null) {
-                    tx.rollback();
-                    return false;
-                }
-                
-                // Validar que el préstamo esté en estado EN_CURSO
-                if (prestamo.getEstado() != EstadoPrestamo.EN_CURSO) {
-                    tx.rollback();
-                    return false;
-                }
-                
-                // Marcar como devuelto y actualizar la fecha de devolución a la fecha actual
-                prestamo.setEstado(EstadoPrestamo.DEVUELTO);
-                prestamo.setFechaEstimadaDevolucion(LocalDate.now()); // Actualizar a la fecha actual
-                session.merge(prestamo);
-                tx.commit();
-                
-                logger.info("Préstamo marcado como devuelto - ID: " + prestamo.getId() + 
-                           ", Lector: " + prestamo.getLector().getNombre() + 
-                           ", Material: " + prestamo.getMaterial().getClass().getSimpleName() +
-                           ", Fecha devolución: " + LocalDate.now());
-                return true;
-                
-            } catch (Exception e) {
-                tx.rollback();
-                throw e;
+        Boolean resultado = ejecutarTransaccionPrestamo(prestamoId, prestamo -> {
+            // Validar que el préstamo no esté ya devuelto
+            if (prestamo.getEstado() == EstadoPrestamo.DEVUELTO) {
+                throw new IllegalStateException("El préstamo ya está marcado como devuelto");
             }
-        }
+            
+            // Guardar el estado original para la lógica de fecha
+            EstadoPrestamo estadoOriginal = prestamo.getEstado();
+            
+            // Marcar como devuelto
+            prestamo.setEstado(EstadoPrestamo.DEVUELTO);
+            
+            // Si estaba EN_CURSO, actualizar fecha de devolución a la fecha actual
+            if (estadoOriginal == EstadoPrestamo.EN_CURSO) {
+                prestamo.setFechaEstimadaDevolucion(LocalDate.now());
+            }
+            // Si estaba PENDIENTE, mantener la fecha original (no se prestó realmente)
+            
+            return true;
+        }, "marcado como devuelto");
+        
+        return resultado != null && resultado;
+    }
+    
+    /**
+     * Método específico para cancelar préstamos pendientes
+     * @param prestamoId ID del préstamo a cancelar
+     * @return true si se canceló exitosamente, false en caso contrario
+     */
+    public boolean cancelarPrestamoPendiente(Long prestamoId) {
+        Boolean resultado = ejecutarTransaccionPrestamo(prestamoId, prestamo -> {
+            // Validar que está en estado PENDIENTE
+            if (prestamo.getEstado() != EstadoPrestamo.PENDIENTE) {
+                throw new IllegalStateException("Solo se pueden cancelar préstamos en estado PENDIENTE");
+            }
+            
+            // Marcar como devuelto (cancelado)
+            prestamo.setEstado(EstadoPrestamo.DEVUELTO);
+            // No cambiar la fecha - se mantiene la fecha estimada original
+            
+            return true;
+        }, "cancelado");
+        
+        return resultado != null && resultado;
     }
 
     /**
@@ -463,50 +512,29 @@ public class PrestamoService {
      * @return true si se aprobó exitosamente, false en caso contrario
      */
     public boolean aprobarPrestamo(Long prestamoId) {
-        try (Session session = sessionFactory.openSession()) {
-            Transaction tx = session.beginTransaction();
-            try {
-                Prestamo prestamo = session.get(Prestamo.class, prestamoId);
-                if (prestamo == null) {
-                    tx.rollback();
-                    return false;
-                }
-                
-                // Validar que el préstamo esté en estado PENDIENTE
-                if (prestamo.getEstado() != EstadoPrestamo.PENDIENTE) {
-                    tx.rollback();
-                    return false;
-                }
-                
-                // Verificar que el material no esté ya prestado (excluyendo el préstamo actual)
-                if (materialEstaPrestadoExcluyendo(prestamo.getMaterial(), prestamo.getId())) {
-                    tx.rollback();
-                    return false;
-                }
-                
-                // Verificar límite de préstamos por lector
-                long prestamosActivos = obtenerNumeroPrestamosActivos(prestamo.getLector());
-                if (prestamosActivos >= 3) {
-                    tx.rollback();
-                    return false;
-                }
-                
-                // Aprobar el préstamo
-                prestamo.setEstado(EstadoPrestamo.EN_CURSO);
-                session.merge(prestamo);
-                tx.commit();
-                
-                logger.info("Préstamo aprobado exitosamente - ID: " + prestamo.getId() + 
-                           ", Lector: " + prestamo.getLector().getNombre() + 
-                           ", Material: " + prestamo.getMaterial().getClass().getSimpleName());
-                return true;
-                
-            } catch (Exception e) {
-                tx.rollback();
-                logger.log(Level.SEVERE, "Error al aprobar préstamo", e);
-                throw e;
+        Boolean resultado = ejecutarTransaccionPrestamo(prestamoId, prestamo -> {
+            // Validar que el préstamo esté en estado PENDIENTE
+            if (prestamo.getEstado() != EstadoPrestamo.PENDIENTE) {
+                throw new IllegalStateException("El préstamo debe estar en estado PENDIENTE para ser aprobado");
             }
-        }
+            
+            // Verificar que el material no esté ya prestado (excluyendo el préstamo actual)
+            if (materialEstaPrestadoExcluyendo(prestamo.getMaterial(), prestamo.getId())) {
+                throw new IllegalStateException("El material ya está prestado por otro préstamo");
+            }
+            
+            // Verificar límite de préstamos por lector
+            long prestamosActivos = obtenerNumeroPrestamosActivos(prestamo.getLector());
+            if (prestamosActivos >= 3) {
+                throw new IllegalStateException("El lector ya tiene el máximo de préstamos permitidos (3)");
+            }
+            
+            // Aprobar el préstamo
+            prestamo.setEstado(EstadoPrestamo.EN_CURSO);
+            return true;
+        }, "aprobado");
+        
+        return resultado != null && resultado;
     }
     
     /**

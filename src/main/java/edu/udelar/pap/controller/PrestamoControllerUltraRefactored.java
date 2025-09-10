@@ -195,6 +195,9 @@ public class PrestamoControllerUltraRefactored {
         JButton btnFiltrar = new JButton("Filtrar Préstamos Activos");
         JButton btnMostrarTodos = new JButton("Mostrar Todos");
         
+        btnFiltrar.setPreferredSize(new Dimension(180, 30));
+        btnMostrarTodos.setPreferredSize(new Dimension(140, 30));
+        
         btnFiltrar.addActionListener(_ -> filtrarPrestamosActivos(internal));
         btnMostrarTodos.addActionListener(_ -> mostrarTodosLosPrestamosActivos(internal));
         
@@ -1534,27 +1537,42 @@ public class PrestamoControllerUltraRefactored {
      */
     private JPanel crearPanelAccionesAprovarPrestamos(JInternalFrame internal) {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
-        JButton btnAprovar = new JButton("✅ Aprobar Préstamo");
-        JButton btnCancelar = new JButton("❌ Cancelar Préstamo");
-        JButton btnActualizar = new JButton("🔄 Actualizar");
+        JButton btnAprovar = new JButton("APROBAR");
+        JButton btnCancelar = new JButton("CANCELAR");
+        JButton btnActualizar = new JButton("ACTUALIZAR");
         
         btnAprovar.addActionListener(_ -> aprobarPrestamoSeleccionado(internal));
         btnCancelar.addActionListener(_ -> cancelarPrestamoSeleccionado(internal));
         btnActualizar.addActionListener(_ -> actualizarTablaPrestamosPendientes(internal));
         
         // Estilos de botones
+        Font buttonFont = new Font("SansSerif", Font.BOLD, 12);
+        
         btnAprovar.setBackground(new Color(76, 175, 80));
         btnAprovar.setForeground(Color.WHITE);
-        btnAprovar.setFont(new Font("Arial", Font.BOLD, 12));
+        btnAprovar.setFont(buttonFont);
+        btnAprovar.setPreferredSize(new Dimension(160, 35));
+        btnAprovar.setFocusPainted(false);
+        btnAprovar.setOpaque(true);
+        btnAprovar.setBorderPainted(false);
         
         btnCancelar.setBackground(new Color(244, 67, 54));
         btnCancelar.setForeground(Color.WHITE);
-        btnCancelar.setFont(new Font("Arial", Font.BOLD, 12));
+        btnCancelar.setFont(buttonFont);
+        btnCancelar.setPreferredSize(new Dimension(160, 35));
+        btnCancelar.setFocusPainted(false);
+        btnCancelar.setOpaque(true);
+        btnCancelar.setBorderPainted(false);
         
         btnActualizar.setBackground(new Color(33, 150, 243));
         btnActualizar.setForeground(Color.WHITE);
-        btnActualizar.setFont(new Font("Arial", Font.BOLD, 12));
+        btnActualizar.setFont(buttonFont);
+        btnActualizar.setPreferredSize(new Dimension(120, 35));
+        btnActualizar.setFocusPainted(false);
+        btnActualizar.setOpaque(true);
+        btnActualizar.setBorderPainted(false);
         
         panel.add(btnAprovar);
         panel.add(btnCancelar);
@@ -1687,14 +1705,13 @@ public class PrestamoControllerUltraRefactored {
         }
         
         Long prestamoId = (Long) tabla.getValueAt(filaSeleccionada, 0);
-        String lectorNombre = (String) tabla.getValueAt(filaSeleccionada, 1);
         String materialNombre = (String) tabla.getValueAt(filaSeleccionada, 2);
         
+        // Confirmar acción
         int confirmacion = JOptionPane.showConfirmDialog(
             internal,
             "¿Está seguro de que desea aprobar este préstamo?\n\n" +
             "ID: " + prestamoId + "\n" +
-            "Lector: " + lectorNombre + "\n" +
             "Material: " + materialNombre,
             "Confirmar Aprobación",
             JOptionPane.YES_NO_OPTION,
@@ -1729,14 +1746,13 @@ public class PrestamoControllerUltraRefactored {
         }
         
         Long prestamoId = (Long) tabla.getValueAt(filaSeleccionada, 0);
-        String lectorNombre = (String) tabla.getValueAt(filaSeleccionada, 1);
         String materialNombre = (String) tabla.getValueAt(filaSeleccionada, 2);
         
+        // Confirmar acción
         int confirmacion = JOptionPane.showConfirmDialog(
             internal,
             "¿Está seguro de que desea cancelar este préstamo?\n\n" +
             "ID: " + prestamoId + "\n" +
-            "Lector: " + lectorNombre + "\n" +
             "Material: " + materialNombre + "\n\n" +
             "Esta acción marcará el préstamo como DEVUELTO.",
             "Confirmar Cancelación",
@@ -1746,7 +1762,7 @@ public class PrestamoControllerUltraRefactored {
         
         if (confirmacion == JOptionPane.YES_OPTION) {
             try {
-                boolean exito = prestamoService.cancelarPrestamo(prestamoId);
+                boolean exito = prestamoService.cancelarPrestamoPendiente(prestamoId);
                 if (exito) {
                     JOptionPane.showMessageDialog(internal, "Préstamo cancelado exitosamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
                     actualizarTablaPrestamosPendientes(internal);
