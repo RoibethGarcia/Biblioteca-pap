@@ -1,21 +1,32 @@
 package edu.udelar.pap.controller;
 
-import edu.udelar.pap.domain.Lector;
+import java.time.LocalDate;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JDesktopPane;
+import javax.swing.JInternalFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.table.DefaultTableModel;
+
 import edu.udelar.pap.domain.EstadoLector;
+import edu.udelar.pap.domain.Lector;
 import edu.udelar.pap.domain.Zona;
 import edu.udelar.pap.service.LectorService;
 import edu.udelar.pap.ui.DateTextField;
 import edu.udelar.pap.ui.LectorUIUtil;
 import edu.udelar.pap.util.ControllerUtil;
+import edu.udelar.pap.util.DatabaseUtil;
 import edu.udelar.pap.util.InterfaceUtil;
 import edu.udelar.pap.util.ValidacionesUtil;
-import edu.udelar.pap.util.DatabaseUtil;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
-import java.time.LocalDate;
-import java.util.List;
 
 
 /**
@@ -716,4 +727,5 @@ public class LectorController {
             return 0;
         }
     }
+    
 }

@@ -12,51 +12,47 @@ const BibliotecaAPI = {
     auth: {
         // Login
         login: function(userData) {
-            return $.ajax({
-                url: `${BibliotecaAPI.config.baseUrl}/auth/login`,
-                method: 'POST',
-                data: userData,
-                timeout: BibliotecaAPI.config.timeout,
-                dataType: 'json'
-            }).then(response => {
-                // Simular respuesta de login (en implementación real vendría del servidor)
-                return {
-                    success: true,
-                    message: 'Login exitoso',
-                    user: {
-                        type: userData.userType,
-                        email: userData.email
+            // Por ahora simulamos el login ya que no tenemos el backend completo
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    // Validar credenciales básicas
+                    if (userData.email && userData.password && userData.userType) {
+                        resolve({
+                            success: true,
+                            message: 'Login exitoso',
+                            user: {
+                                type: userData.userType,
+                                email: userData.email
+                            }
+                        });
+                    } else {
+                        resolve({
+                            success: false,
+                            message: 'Credenciales incompletas'
+                        });
                     }
-                };
-            }).catch(error => {
-                console.error('Error en login:', error);
-                return {
-                    success: false,
-                    message: 'Error en el login'
-                };
+                }, 1000); // Simular delay de red
             });
         },
         
         // Registro
         register: function(userData) {
-            return $.ajax({
-                url: `${BibliotecaAPI.config.baseUrl}/auth/register`,
-                method: 'POST',
-                data: userData,
-                timeout: BibliotecaAPI.config.timeout,
-                dataType: 'json'
-            }).then(response => {
-                // Simular respuesta de registro
-                return {
-                    success: true,
-                    message: 'Usuario registrado exitosamente'
-                };
-            }).catch(error => {
-                console.error('Error en registro:', error);
-                return {
-                    success: false,
-                    message: 'Error en el registro'
-                };
+            // Por ahora simulamos el registro
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    // Validar datos básicos
+                    if (userData.nombre && userData.apellido && userData.email && userData.password) {
+                        resolve({
+                            success: true,
+                            message: 'Usuario registrado exitosamente'
+                        });
+                    } else {
+                        resolve({
+                            success: false,
+                            message: 'Faltan datos requeridos para el registro'
+                        });
+                    }
+                }, 1500); // Simular delay de red
             });
         }
     },

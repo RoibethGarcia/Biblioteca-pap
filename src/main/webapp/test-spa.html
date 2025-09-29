@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test SPA - Biblioteca PAP</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-form {
+            margin: 20px 0;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Test SPA - Biblioteca PAP</h1>
+        <p>Esta página prueba las funcionalidades básicas de la SPA sin dependencias externas.</p>
+        
+        <!-- Test de Login -->
+        <div class="test-form">
+            <h3>🔐 Test de Login</h3>
+            <div class="form-group">
+                <label for="testUserType">Tipo de Usuario:</label>
+                <select id="testUserType">
+                    <option value="">Seleccione...</option>
+                    <option value="BIBLIOTECARIO">Bibliotecario</option>
+                    <option value="LECTOR">Lector</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="testEmail">Email:</label>
+                <input type="email" id="testEmail" placeholder="test@example.com" value="test@example.com">
+            </div>
+            <div class="form-group">
+                <label for="testPassword">Contraseña:</label>
+                <input type="password" id="testPassword" placeholder="Contraseña" value="password123">
+            </div>
+            <button id="testLoginBtn">Probar Login</button>
+            <button id="testRegisterBtn">Probar Registro</button>
+        </div>
+        
+        <!-- Resultado -->
+        <div id="testResult"></div>
+        
+        <!-- Información del Estado -->
+        <div class="info">
+            <h4>📊 Estado Actual:</h4>
+            <p><strong>jQuery cargado:</strong> <span id="jqueryStatus">Verificando...</span></p>
+            <p><strong>Sesión:</strong> <span id="sessionStatus">No iniciada</span></p>
+            <p><strong>Última acción:</strong> <span id="lastAction">Ninguna</span></p>
+        </div>
+    </div>
+
+    <script>
+        // Verificar jQuery
+        $(document).ready(function() {
+            $('#jqueryStatus').text('✅ jQuery ' + $.fn.jquery + ' cargado correctamente');
+            
+            // Test de login
+            $('#testLoginBtn').click(function() {
+                testLogin();
+            });
+            
+            // Test de registro
+            $('#testRegisterBtn').click(function() {
+                testRegister();
+            });
+        });
+        
+        function testLogin() {
+            const userType = $('#testUserType').val();
+            const email = $('#testEmail').val();
+            const password = $('#testPassword').val();
+            
+            if (!userType || !email || !password) {
+                showResult('Por favor complete todos los campos', 'error');
+                return;
+            }
+            
+            const btn = $('#testLoginBtn');
+            const originalText = btn.text();
+            
+            btn.prop('disabled', true).text('🔄 Procesando...');
+            $('#lastAction').text('Login iniciado');
+            
+            // Simular login
+            setTimeout(() => {
+                btn.prop('disabled', false).text(originalText);
+                
+                if (email === 'test@example.com' && password === 'password123') {
+                    showResult('✅ Login exitoso para ' + userType + ' (' + email + ')', 'success');
+                    $('#sessionStatus').text('Iniciada - ' + userType);
+                    $('#lastAction').text('Login exitoso');
+                } else {
+                    showResult('❌ Credenciales inválidas', 'error');
+                    $('#lastAction').text('Login fallido');
+                }
+            }, 1500);
+        }
+        
+        function testRegister() {
+            const userType = $('#testUserType').val();
+            const email = $('#testEmail').val();
+            const password = $('#testPassword').val();
+            
+            if (!userType || !email || !password) {
+                showResult('Por favor complete todos los campos', 'error');
+                return;
+            }
+            
+            const btn = $('#testRegisterBtn');
+            const originalText = btn.text();
+            
+            btn.prop('disabled', true).text('🔄 Procesando...');
+            $('#lastAction').text('Registro iniciado');
+            
+            // Simular registro
+            setTimeout(() => {
+                btn.prop('disabled', false).text(originalText);
+                showResult('✅ Usuario ' + userType + ' registrado exitosamente (' + email + ')', 'success');
+                $('#lastAction').text('Registro exitoso');
+            }, 2000);
+        }
+        
+        function showResult(message, type) {
+            const result = $('#testResult');
+            result.removeClass('success error info').addClass(type).html(message);
+        }
+    </script>
+</body>
+</html>

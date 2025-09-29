@@ -248,6 +248,19 @@ const BibliotecaForms = {
                 promise = Promise.resolve({ success: false, message: 'Formulario no reconocido' });
         }
         
+        // Timeout de seguridad (30 segundos)
+        const timeoutPromise = new Promise((resolve) => {
+            setTimeout(() => {
+                resolve({ 
+                    success: false, 
+                    message: 'Tiempo de espera agotado. Intente nuevamente.' 
+                });
+            }, 30000);
+        });
+        
+        // Usar Promise.race para que se ejecute el timeout si la promesa principal tarda mucho
+        promise = Promise.race([promise, timeoutPromise]);
+        
         // Procesar respuesta
         promise.then(response => {
             if (response.success) {
@@ -263,9 +276,9 @@ const BibliotecaForms = {
             }
         }).catch(error => {
             console.error('Error en envío de formulario:', error);
-            BibliotecaSPA.showAlert('Error en el sistema: ' + error.message, 'danger');
+            BibliotecaSPA.showAlert('Error en el sistema: ' + (error.message || 'Error desconocido'), 'danger');
         }).finally(() => {
-            // Restaurar botón
+            // Restaurar botón SIEMPRE
             submitBtn.prop('disabled', false);
             submitBtn.text(originalText);
         });
