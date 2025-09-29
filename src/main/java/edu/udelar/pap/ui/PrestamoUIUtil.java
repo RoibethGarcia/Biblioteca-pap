@@ -274,9 +274,9 @@ public class PrestamoUIUtil {
         if (incluirVerDetalles) {
             JButton btnVerDetalles = new JButton("👁️ Ver Detalles");
             if (callbackVerDetalles != null) {
-                btnVerDetalles.addActionListener(_ -> callbackVerDetalles.run());
+                btnVerDetalles.addActionListener(e -> callbackVerDetalles.run());
             } else {
-                btnVerDetalles.addActionListener(_ -> verDetallesPrestamoComun(internal));
+                btnVerDetalles.addActionListener(e -> verDetallesPrestamoComun(internal));
             }
             btnVerDetalles.setPreferredSize(new Dimension(140, 30));
             panel.add(btnVerDetalles);
@@ -284,7 +284,7 @@ public class PrestamoUIUtil {
         
         if (incluirEditar) {
             JButton btnEditarPrestamo = new JButton("EDITAR");
-            btnEditarPrestamo.addActionListener(_ -> editarPrestamoComun(internal));
+            btnEditarPrestamo.addActionListener(e -> editarPrestamoComun(internal));
             btnEditarPrestamo.setPreferredSize(new Dimension(140, 30));
             
             // Aplicar estilos consistentes
@@ -300,7 +300,7 @@ public class PrestamoUIUtil {
         
         if (incluirMarcarDevuelto) {
             JButton btnMarcarDevuelto = new JButton("✅ Marcar como Devuelto");
-            btnMarcarDevuelto.addActionListener(_ -> marcarDevueltoComun(internal));
+            btnMarcarDevuelto.addActionListener(e -> marcarDevueltoComun(internal));
             btnMarcarDevuelto.setPreferredSize(new Dimension(180, 30));
             panel.add(btnMarcarDevuelto);
         }
@@ -308,9 +308,9 @@ public class PrestamoUIUtil {
         if (incluirExportar) {
             JButton btnExportar = new JButton("📄 Exportar Reporte");
             if (callbackExportar != null) {
-                btnExportar.addActionListener(_ -> callbackExportar.run());
+                btnExportar.addActionListener(e -> callbackExportar.run());
             } else {
-                btnExportar.addActionListener(_ -> exportarReporteComun(internal));
+                btnExportar.addActionListener(e -> exportarReporteComun(internal));
             }
             btnExportar.setPreferredSize(new Dimension(150, 30));
             panel.add(btnExportar);
@@ -318,7 +318,7 @@ public class PrestamoUIUtil {
         
         // Botón para cerrar
         JButton btnCerrar = new JButton("❌ Cerrar");
-        btnCerrar.addActionListener(_ -> internal.dispose());
+        btnCerrar.addActionListener(e -> internal.dispose());
         btnCerrar.setPreferredSize(new Dimension(100, 30));
         panel.add(btnCerrar);
         
@@ -582,8 +582,8 @@ public class PrestamoUIUtil {
         JButton btnGuardar = new JButton("💾 Guardar Cambios");
         JButton btnCancelar = new JButton("❌ Cancelar");
         
-        btnGuardar.addActionListener(_ -> guardarCambiosPrestamo(dialog, internal, prestamo, fieldsPanel));
-        btnCancelar.addActionListener(_ -> dialog.dispose());
+        btnGuardar.addActionListener(e -> guardarCambiosPrestamo(dialog, internal, prestamo, fieldsPanel));
+        btnCancelar.addActionListener(e -> dialog.dispose());
         
         panel.add(btnGuardar);
         panel.add(btnCancelar);

@@ -186,5 +186,121 @@ public class ValidacionesUtil {
             "Número inválido",
             JOptionPane.WARNING_MESSAGE);
     }
+    
+    // ==================== VALIDACIONES DE PASSWORD ====================
+    
+    /**
+     * Valida que el password cumpla con los requisitos de seguridad
+     * Requisitos: mínimo 8 caracteres, al menos una mayúscula, una minúscula y un número
+     */
+    public static boolean validarPassword(String password) {
+        if (password == null || password.length() < 8) {
+            return false;
+        }
+        
+        boolean tieneMayuscula = false;
+        boolean tieneMinuscula = false;
+        boolean tieneNumero = false;
+        
+        for (char c : password.toCharArray()) {
+            if (Character.isUpperCase(c)) {
+                tieneMayuscula = true;
+            } else if (Character.isLowerCase(c)) {
+                tieneMinuscula = true;
+            } else if (Character.isDigit(c)) {
+                tieneNumero = true;
+            }
+        }
+        
+        return tieneMayuscula && tieneMinuscula && tieneNumero;
+    }
+    
+    /**
+     * Muestra mensaje de error para password inválido
+     */
+    public static void mostrarErrorPassword(JInternalFrame parent) {
+        JOptionPane.showMessageDialog(parent,
+            "El password debe cumplir con los siguientes requisitos:\n" +
+            "• Mínimo 8 caracteres\n" +
+            "• Al menos una letra mayúscula\n" +
+            "• Al menos una letra minúscula\n" +
+            "• Al menos un número",
+            "Password inválido",
+            JOptionPane.WARNING_MESSAGE);
+    }
+    
+    /**
+     * Valida que dos passwords sean iguales
+     */
+    public static boolean validarConfirmacionPassword(String password, String confirmacion) {
+        return password != null && password.equals(confirmacion);
+    }
+    
+    /**
+     * Muestra mensaje de error cuando los passwords no coinciden
+     */
+    public static void mostrarErrorConfirmacionPassword(JInternalFrame parent) {
+        JOptionPane.showMessageDialog(parent,
+            "Los passwords no coinciden. Por favor verifique su escritura.",
+            "Passwords no coinciden",
+            JOptionPane.WARNING_MESSAGE);
+    }
+    
+    /**
+     * Valida que el password no sea común o débil
+     */
+    public static boolean validarPasswordSeguro(String password) {
+        if (password == null) {
+            return false;
+        }
+        
+        // Lista de passwords comunes a evitar
+        String[] passwordsDebiles = {
+            "password", "12345678", "qwerty123", "abc12345", "password123",
+            "admin123", "usuario123", "biblioteca", "lector123", "empleado123"
+        };
+        
+        String passwordLower = password.toLowerCase();
+        for (String debil : passwordsDebiles) {
+            if (passwordLower.equals(debil) || passwordLower.contains(debil)) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Muestra mensaje de error para password inseguro
+     */
+    public static void mostrarErrorPasswordInseguro(JInternalFrame parent) {
+        JOptionPane.showMessageDialog(parent,
+            "El password seleccionado es muy común o inseguro.\n" +
+            "Por favor elija un password más único y seguro.",
+            "Password inseguro",
+            JOptionPane.WARNING_MESSAGE);
+    }
+    
+    /**
+     * Validación completa de password (combina todas las validaciones)
+     */
+    public static boolean validarPasswordCompleto(String password, String confirmacion, JInternalFrame parent) {
+        if (!validarPassword(password)) {
+            mostrarErrorPassword(parent);
+            return false;
+        }
+        
+        if (!validarPasswordSeguro(password)) {
+            mostrarErrorPasswordInseguro(parent);
+            return false;
+        }
+        
+        if (!validarConfirmacionPassword(password, confirmacion)) {
+            mostrarErrorConfirmacionPassword(parent);
+            return false;
+        }
+        
+        return true;
+    }
 }
 

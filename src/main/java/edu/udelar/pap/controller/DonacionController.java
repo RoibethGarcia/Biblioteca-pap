@@ -129,7 +129,7 @@ public class DonacionController {
         // Función para mostrar/ocultar campos según el tipo seleccionado
         @SuppressWarnings("unchecked")
         JComboBox<String> cbTipoMaterial = (JComboBox<String>) internal.getClientProperty("cbTipoMaterial");
-        ActionListener actualizarCampos = _ -> actualizarCamposEspecificos(internal);
+        ActionListener actualizarCampos = e -> actualizarCamposEspecificos(internal);
         
         cbTipoMaterial.addActionListener(actualizarCampos);
         actualizarCampos.actionPerformed(null); // Ejecutar inicialmente
@@ -203,8 +203,8 @@ public class DonacionController {
         JButton btnAceptar = new JButton("Aceptar");
         JButton btnCancelar = new JButton("Cancelar");
         
-        btnAceptar.addActionListener(_ -> crearDonacion(internal));
-        btnCancelar.addActionListener(_ -> cancelarCreacion(internal));
+        btnAceptar.addActionListener(e -> crearDonacion(internal));
+        btnCancelar.addActionListener(e -> cancelarCreacion(internal));
         
         return InterfaceUtil.crearPanelAcciones(btnAceptar, btnCancelar);
     }
@@ -402,6 +402,147 @@ public class DonacionController {
         return donacionService.obtenerArticulosEspecialesDisponibles();
     }
     
+    // ==================== MÉTODOS PARA APLICACIÓN WEB ====================
+    
+    /**
+     * Crea una nueva donación de libro y retorna el ID generado
+     * @param titulo Título del libro
+     * @param paginas Número de páginas
+     * @return ID del libro creado, o -1 si hay error
+     */
+    public Long crearLibroWeb(String titulo, String paginas) {
+        try {
+            // Validaciones básicas
+            if (titulo == null || titulo.trim().isEmpty() ||
+                paginas == null || paginas.trim().isEmpty()) {
+                return -1L;
+            }
+            
+            // Validar páginas
+            int numPaginas;
+            try {
+                numPaginas = Integer.parseInt(paginas.trim());
+                if (numPaginas <= 0) {
+                    return -1L;
+                }
+            } catch (NumberFormatException e) {
+                return -1L;
+            }
+            
+            // Crear libro
+            Libro libro = new Libro();
+            libro.setTitulo(titulo.trim());
+            libro.setPaginas(numPaginas);
+            
+            // Guardar usando el servicio
+            donacionService.guardarLibro(libro);
+            
+            return libro.getId();
+            
+        } catch (Exception ex) {
+            return -1L;
+        }
+    }
+    
+    /**
+     * Crea una nueva donación de artículo especial y retorna el ID generado
+     * @param descripcion Descripción del artículo
+     * @param peso Peso en kg
+     * @param dimensiones Dimensiones del artículo
+     * @return ID del artículo creado, o -1 si hay error
+     */
+    public Long crearArticuloEspecialWeb(String descripcion, String peso, String dimensiones) {
+        try {
+            // Validaciones básicas
+            if (descripcion == null || descripcion.trim().isEmpty() ||
+                peso == null || peso.trim().isEmpty() ||
+                dimensiones == null || dimensiones.trim().isEmpty()) {
+                return -1L;
+            }
+            
+            // Validar peso
+            double pesoNum;
+            try {
+                pesoNum = Double.parseDouble(peso.trim());
+                if (pesoNum <= 0) {
+                    return -1L;
+                }
+            } catch (NumberFormatException e) {
+                return -1L;
+            }
+            
+            // Crear artículo especial
+            ArticuloEspecial articulo = new ArticuloEspecial();
+            articulo.setDescripcion(descripcion.trim());
+            articulo.setPeso(pesoNum);
+            articulo.setDimensiones(dimensiones.trim());
+            
+            // Guardar usando el servicio
+            donacionService.guardarArticuloEspecial(articulo);
+            
+            return articulo.getId();
+            
+        } catch (Exception ex) {
+            return -1L;
+        }
+    }
+    
+    /**
+     * Obtiene la cantidad total de libros
+     * @return Número de libros registrados
+     */
+    public int obtenerCantidadLibros() {
+        try {
+            List<Libro> libros = donacionService.obtenerLibrosDisponibles();
+            return libros.size();
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
+    
+    /**
+     * Obtiene la cantidad total de artículos especiales
+     * @return Número de artículos especiales registrados
+     */
+    public int obtenerCantidadArticulosEspeciales() {
+        try {
+            List<ArticuloEspecial> articulos = donacionService.obtenerArticulosEspecialesDisponibles();
+            return articulos.size();
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
+    
+    /**
+     * Obtiene información básica de un libro como String
+     * @param id ID del libro
+     * @return String con información del libro o null si no existe
+     */
+    public String obtenerInfoLibro(Long id) {
+        try {
+            // Este método requeriría un servicio para obtener libro por ID
+            // Por simplicidad, retornamos null
+            return null;
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+    
+    /**
+     * Obtiene información básica de un artículo especial como String
+     * @param id ID del artículo especial
+     * @return String con información del artículo o null si no existe
+     */
+    public String obtenerInfoArticuloEspecial(Long id) {
+        try {
+            // Este método requeriría un servicio para obtener artículo por ID
+            // Por simplicidad, retornamos null
+            return null;
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+    
     /**
      * Muestra la interfaz para consultar todas las donaciones registradas
      * Implementa el patrón de ventana única: cierra ventanas existentes antes de abrir una nueva
@@ -470,9 +611,9 @@ public class DonacionController {
         JButton btnActualizar = new JButton("🔄 Actualizar");
         JButton btnCerrar = new JButton("❌ Cerrar");
         
-        btnMostrarTodas.addActionListener(_ -> cargarDatosDonaciones(internal));
-        btnActualizar.addActionListener(_ -> actualizarTablaDonaciones(internal));
-        btnCerrar.addActionListener(_ -> internal.dispose());
+        btnMostrarTodas.addActionListener(e -> cargarDatosDonaciones(internal));
+        btnActualizar.addActionListener(e -> actualizarTablaDonaciones(internal));
+        btnCerrar.addActionListener(e -> internal.dispose());
         
         panelBotones.add(btnMostrarTodas);
         panelBotones.add(btnActualizar);
@@ -603,7 +744,7 @@ public class DonacionController {
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.CENTER;
         JButton btnFiltrar = new JButton("🔍 Filtrar por Fechas");
-        btnFiltrar.addActionListener(_ -> filtrarDonacionesPorFechas(internal));
+        btnFiltrar.addActionListener(e -> filtrarDonacionesPorFechas(internal));
         panel.add(btnFiltrar, gbc);
         
         // Guardar referencias

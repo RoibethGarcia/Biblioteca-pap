@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee 
+         https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+    <display-name>Biblioteca PAP Web Services</display-name>
+    <description>Aplicación web para gestión de biblioteca con Web Services JAX-WS</description>
+
+    <!-- Configuración de JAX-WS - Comentada temporalmente -->
+    <!--
+    <listener>
+        <listener-class>com.sun.xml.ws.transport.http.servlet.WSServletContextListener</listener-class>
+    </listener>
+    -->
+
+    <!-- Servlets para cada Web Service -->
+    
+    <!-- Web Service de Bibliotecarios -->
+    <servlet>
+        <servlet-name>BibliotecarioWebService</servlet-name>
+        <servlet-class>com.sun.xml.ws.transport.http.servlet.WSServlet</servlet-class>
+        <init-param>
+            <param-name>wsdl</param-name>
+            <param-value>/BibliotecarioWebService?wsdl</param-value>
+        </init-param>
+        <init-param>
+            <param-name>wsdl-port</param-name>
+            <param-value>BibliotecarioWebServicePort</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>BibliotecarioWebService</servlet-name>
+        <url-pattern>/BibliotecarioWebService</url-pattern>
+    </servlet-mapping>
+
+    <!-- Web Service de Lectores -->
+    <servlet>
+        <servlet-name>LectorWebService</servlet-name>
+        <servlet-class>com.sun.xml.ws.transport.http.servlet.WSServlet</servlet-class>
+        <init-param>
+            <param-name>wsdl</param-name>
+            <param-value>/LectorWebService?wsdl</param-value>
+        </init-param>
+        <init-param>
+            <param-name>wsdl-port</param-name>
+            <param-value>LectorWebServicePort</param-value>
+        </init-param>
+        <load-on-startup>2</load-on-startup>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>LectorWebService</servlet-name>
+        <url-pattern>/LectorWebService</url-pattern>
+    </servlet-mapping>
+
+    <!-- Web Service de Préstamos -->
+    <servlet>
+        <servlet-name>PrestamoWebService</servlet-name>
+        <servlet-class>com.sun.xml.ws.transport.http.servlet.WSServlet</servlet-class>
+        <init-param>
+            <param-name>wsdl</param-name>
+            <param-value>/PrestamoWebService?wsdl</param-value>
+        </init-param>
+        <init-param>
+            <param-name>wsdl-port</param-name>
+            <param-value>PrestamoWebServicePort</param-value>
+        </init-param>
+        <load-on-startup>3</load-on-startup>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>PrestamoWebService</servlet-name>
+        <url-pattern>/PrestamoWebService</url-pattern>
+    </servlet-mapping>
+
+    <!-- Web Service de Donaciones -->
+    <servlet>
+        <servlet-name>DonacionWebService</servlet-name>
+        <servlet-class>com.sun.xml.ws.transport.http.servlet.WSServlet</servlet-class>
+        <init-param>
+            <param-name>wsdl</param-name>
+            <param-value>/DonacionWebService?wsdl</param-value>
+        </init-param>
+        <init-param>
+            <param-name>wsdl-port</param-name>
+            <param-value>DonacionWebServicePort</param-value>
+        </init-param>
+        <load-on-startup>4</load-on-startup>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>DonacionWebService</servlet-name>
+        <url-pattern>/DonacionWebService</url-pattern>
+    </servlet-mapping>
+
+    <!-- Servlets REST para endpoints HTTP -->
+    
+    <!-- Servlet REST de Bibliotecarios -->
+    <servlet>
+        <servlet-name>BibliotecarioServlet</servlet-name>
+        <servlet-class>edu.udelar.pap.servlet.BibliotecarioServlet</servlet-class>
+        <load-on-startup>5</load-on-startup>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>BibliotecarioServlet</servlet-name>
+        <url-pattern>/bibliotecario/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Servlet REST de Lectores -->
+    <servlet>
+        <servlet-name>LectorServlet</servlet-name>
+        <servlet-class>edu.udelar.pap.servlet.LectorServlet</servlet-class>
+        <load-on-startup>6</load-on-startup>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>LectorServlet</servlet-name>
+        <url-pattern>/lector/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Servlet REST de Préstamos -->
+    <servlet>
+        <servlet-name>PrestamoServlet</servlet-name>
+        <servlet-class>edu.udelar.pap.servlet.PrestamoServlet</servlet-class>
+        <load-on-startup>7</load-on-startup>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>PrestamoServlet</servlet-name>
+        <url-pattern>/prestamo/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Servlet REST de Donaciones -->
+    <servlet>
+        <servlet-name>DonacionServlet</servlet-name>
+        <servlet-class>edu.udelar.pap.servlet.DonacionServlet</servlet-class>
+        <load-on-startup>8</load-on-startup>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>DonacionServlet</servlet-name>
+        <url-pattern>/donacion/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Servlet de Prueba -->
+    <servlet>
+        <servlet-name>TestServlet</servlet-name>
+        <servlet-class>edu.udelar.pap.servlet.TestServlet</servlet-class>
+        <load-on-startup>9</load-on-startup>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>TestServlet</servlet-name>
+        <url-pattern>/test</url-pattern>
+    </servlet-mapping>
+
+    <!-- Servlets para páginas JSP -->
+    
+    <!-- Servlet de Autenticación -->
+    <servlet>
+        <servlet-name>AuthServlet</servlet-name>
+        <servlet-class>edu.udelar.pap.servlet.AuthServlet</servlet-class>
+        <load-on-startup>10</load-on-startup>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>AuthServlet</servlet-name>
+        <url-pattern>/auth/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Servlet de Dashboard -->
+    <servlet>
+        <servlet-name>DashboardServlet</servlet-name>
+        <servlet-class>edu.udelar.pap.servlet.DashboardServlet</servlet-class>
+        <load-on-startup>11</load-on-startup>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>DashboardServlet</servlet-name>
+        <url-pattern>/dashboard/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Servlet de Gestión -->
+    <servlet>
+        <servlet-name>ManagementServlet</servlet-name>
+        <servlet-class>edu.udelar.pap.servlet.ManagementServlet</servlet-class>
+        <load-on-startup>12</load-on-startup>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>ManagementServlet</servlet-name>
+        <url-pattern>/management/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Configuración de sesión -->
+    <session-config>
+        <session-timeout>30</session-timeout>
+    </session-config>
+
+    <!-- Página de bienvenida -->
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+        <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
+
+</web-app>

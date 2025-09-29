@@ -63,8 +63,8 @@ public class LectorController {
         JButton btnAceptar = new JButton("Crear Usuario");
         JButton btnCancelar = new JButton("Cancelar");
         
-        btnAceptar.addActionListener(_ -> crearLector(internal));
-        btnCancelar.addActionListener(_ -> cancelarCreacion(internal));
+        btnAceptar.addActionListener(e -> crearLector(internal));
+        btnCancelar.addActionListener(e -> cancelarCreacion(internal));
         
         JPanel actions = InterfaceUtil.crearPanelAcciones(btnAceptar, btnCancelar);
         
@@ -78,14 +78,16 @@ public class LectorController {
      */
     private JPanel crearFormularioLector(JInternalFrame internal) {
         // Definir etiquetas y componentes
-        String[] etiquetas = {"Nombre", "Apellido", "Email", "Fecha de Nacimiento", "Dirección", "Zona"};
+        String[] etiquetas = {"Nombre", "Apellido", "Email", "Fecha de Nacimiento", "Dirección", "Zona", "Password", "Confirmar Password"};
         JComponent[] componentes = {
             new JTextField(),
             new JTextField(),
             new JTextField(),
             new DateTextField(),
             new JTextField(),
-            new JComboBox<>(Zona.values())
+            new JComboBox<>(Zona.values()),
+            new JPasswordField(),
+            new JPasswordField()
         };
         
         // Crear formulario usando patrón refactorizado
@@ -98,6 +100,8 @@ public class LectorController {
         internal.putClientProperty("tfFechaNacimiento", componentes[3]);
         internal.putClientProperty("tfDireccion", componentes[4]);
         internal.putClientProperty("cbZona", componentes[5]);
+        internal.putClientProperty("tfPassword", componentes[6]);
+        internal.putClientProperty("tfConfirmarPassword", componentes[7]);
         
         return form;
     }
@@ -142,12 +146,12 @@ public class LectorController {
         
         // Botón para filtrar
         JButton btnFiltrar = new JButton("Filtrar Lectores");
-        btnFiltrar.addActionListener(_ -> filtrarLectores(internal));
+        btnFiltrar.addActionListener(e -> filtrarLectores(internal));
         panel.add(btnFiltrar);
         
         // Botón para mostrar todos
         JButton btnMostrarTodos = new JButton("Mostrar Todos");
-        btnMostrarTodos.addActionListener(_ -> mostrarTodosLosLectores(internal));
+        btnMostrarTodos.addActionListener(e -> mostrarTodosLosLectores(internal));
         panel.add(btnMostrarTodos);
         
         // Guardar referencias
@@ -185,22 +189,22 @@ public class LectorController {
         
         // Botón para cambiar estado
         JButton btnCambiarEstado = new JButton("Cambiar Estado");
-        btnCambiarEstado.addActionListener(_ -> cambiarEstadoLector(internal));
+        btnCambiarEstado.addActionListener(e -> cambiarEstadoLector(internal));
         panel.add(btnCambiarEstado);
         
         // Botón para cambiar zona
         JButton btnCambiarZona = new JButton("Cambiar Zona");
-        btnCambiarZona.addActionListener(_ -> cambiarZonaLector(internal));
+        btnCambiarZona.addActionListener(e -> cambiarZonaLector(internal));
         panel.add(btnCambiarZona);
         
         // Botón para ver detalles
         JButton btnVerDetalles = new JButton("Ver Detalles");
-        btnVerDetalles.addActionListener(_ -> verDetallesLector(internal));
+        btnVerDetalles.addActionListener(e -> verDetallesLector(internal));
         panel.add(btnVerDetalles);
         
         // Botón para cerrar
         JButton btnCerrar = new JButton("Cerrar");
-        btnCerrar.addActionListener(_ -> internal.dispose());
+        btnCerrar.addActionListener(e -> internal.dispose());
         panel.add(btnCerrar);
         
         return panel;
@@ -220,8 +224,19 @@ public class LectorController {
         String direccion = LectorUIUtil.obtenerValorCampo(internal, "tfDireccion");
         Zona zona = LectorUIUtil.obtenerValorCombo(internal, "cbZona");
         
+        // Obtener passwords
+        JPasswordField tfPassword = (JPasswordField) internal.getClientProperty("tfPassword");
+        JPasswordField tfConfirmarPassword = (JPasswordField) internal.getClientProperty("tfConfirmarPassword");
+        String password = new String(tfPassword.getPassword());
+        String confirmarPassword = new String(tfConfirmarPassword.getPassword());
+        
         // Validar usando utilidad específica
         if (!LectorUIUtil.validarDatosLector(nombre, apellido, email, fechaNacimientoStr, direccion, internal)) {
+            return;
+        }
+        
+        // Validar password
+        if (!ValidacionesUtil.validarPasswordCompleto(password, confirmarPassword, internal)) {
             return;
         }
         
@@ -237,7 +252,7 @@ public class LectorController {
         
         try {
             // Crear y guardar lector
-            Lector lector = crearEntidadLector(nombre, apellido, email, direccion, zona);
+            Lector lector = crearEntidadLector(nombre, apellido, email, direccion, zona, password);
             lectorService.guardarLector(lector);
             
             // Mostrar éxito
@@ -427,7 +442,7 @@ public class LectorController {
     /**
      * Crea entidad lector con los datos proporcionados
      */
-    private Lector crearEntidadLector(String nombre, String apellido, String email, String direccion, Zona zona) {
+    private Lector crearEntidadLector(String nombre, String apellido, String email, String direccion, Zona zona, String password) {
         Lector lector = new Lector();
         lector.setNombre(nombre + " " + apellido);
         lector.setEmail(email);
@@ -435,6 +450,7 @@ public class LectorController {
         lector.setFechaRegistro(LocalDate.now());
         lector.setEstado(EstadoLector.ACTIVO);
         lector.setZona(zona);
+        lector.setPlainPassword(password); // Esto hashea automáticamente el password
         return lector;
     }
     
@@ -494,6 +510,210 @@ public class LectorController {
             return sf != null && !sf.isClosed();
         } catch (Exception e) {
             return false;
+        }
+    }
+    
+    // ==================== MÉTODOS PARA APLICACIÓN WEB ====================
+    
+    /**
+     * Crea un nuevo lector y retorna el ID generado
+     * @param nombre Nombre del lector
+     * @param apellido Apellido del lector
+     * @param email Email del lector
+     * @param fechaNacimiento Fecha de nacimiento (no se usa actualmente, para compatibilidad futura)
+     * @param direccion Dirección del lector
+     * @param zona Zona del lector
+     * @param password Password en texto plano
+     * @return ID del lector creado, o -1 si hay error
+     */
+    public Long crearLectorWeb(String nombre, String apellido, String email, String fechaNacimiento, 
+                              String direccion, String zona, String password) {
+        try {
+            // Validaciones básicas
+            if (nombre == null || nombre.trim().isEmpty() ||
+                apellido == null || apellido.trim().isEmpty() ||
+                email == null || email.trim().isEmpty() ||
+                direccion == null || direccion.trim().isEmpty() ||
+                zona == null || zona.trim().isEmpty() ||
+                password == null || password.trim().isEmpty()) {
+                return -1L;
+            }
+            
+            // Validar zona
+            Zona zonaEnum;
+            try {
+                zonaEnum = Zona.valueOf(zona.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return -1L;
+            }
+            
+            // Crear lector
+            Lector lector = new Lector();
+            lector.setNombre(nombre.trim() + " " + apellido.trim());
+            lector.setEmail(email.trim());
+            lector.setDireccion(direccion.trim());
+            lector.setZona(zonaEnum);
+            lector.setFechaRegistro(LocalDate.now());
+            lector.setEstado(EstadoLector.ACTIVO);
+            lector.setPlainPassword(password); // Esto hashea automáticamente
+            
+            // Guardar usando el servicio
+            lectorService.guardarLector(lector);
+            
+            return lector.getId();
+            
+        } catch (Exception ex) {
+            return -1L;
+        }
+    }
+    
+    /**
+     * Obtiene la cantidad total de lectores
+     * @return Número de lectores registrados
+     */
+    public int obtenerCantidadLectores() {
+        try {
+            List<Lector> lectores = lectorService.obtenerTodosLosLectores();
+            return lectores.size();
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
+    
+    /**
+     * Obtiene la cantidad de lectores activos
+     * @return Número de lectores activos
+     */
+    public int obtenerCantidadLectoresActivos() {
+        try {
+            List<Lector> lectores = lectorService.obtenerLectoresActivos();
+            return lectores.size();
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
+    
+    /**
+     * Verifica si un email de lector existe
+     * @param email Email a verificar
+     * @return true si existe, false en caso contrario
+     */
+    public boolean existeEmailLector(String email) {
+        try {
+            List<Lector> lectores = lectorService.obtenerTodosLosLectores();
+            for (Lector lector : lectores) {
+                if (lector.getEmail().equalsIgnoreCase(email.trim())) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Autentica un lector con email y password
+     * @param email Email del lector
+     * @param password Password en texto plano
+     * @return ID del lector si la autenticación es exitosa, -1 en caso contrario
+     */
+    public Long autenticarLector(String email, String password) {
+        try {
+            List<Lector> lectores = lectorService.obtenerTodosLosLectores();
+            for (Lector lector : lectores) {
+                if (lector.getEmail().equalsIgnoreCase(email.trim())) {
+                    if (lector.verificarPassword(password)) {
+                        return lector.getId();
+                    } else {
+                        return -1L; // Password incorrecto
+                    }
+                }
+            }
+            return -1L; // Usuario no encontrado
+        } catch (Exception ex) {
+            return -1L;
+        }
+    }
+    
+    /**
+     * Obtiene información básica de un lector como String
+     * @param id ID del lector
+     * @return String con información del lector o null si no existe
+     */
+    public String obtenerInfoLector(Long id) {
+        try {
+            Lector lector = lectorService.obtenerLectorPorId(id);
+            if (lector != null) {
+                return String.format("ID:%d|Nombre:%s|Email:%s|Direccion:%s|Zona:%s|Estado:%s|FechaRegistro:%s", 
+                    lector.getId(), 
+                    lector.getNombre(), 
+                    lector.getEmail(),
+                    lector.getDireccion(),
+                    lector.getZona(),
+                    lector.getEstado(),
+                    lector.getFechaRegistro());
+            }
+            return null;
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+    
+    /**
+     * Cambia el estado de un lector
+     * @param lectorId ID del lector
+     * @param nuevoEstado Nuevo estado (ACTIVO o SUSPENDIDO)
+     * @return true si se cambió exitosamente, false en caso contrario
+     */
+    public boolean cambiarEstadoLector(Long lectorId, String nuevoEstado) {
+        try {
+            EstadoLector estado;
+            try {
+                estado = EstadoLector.valueOf(nuevoEstado.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return false;
+            }
+            
+            return lectorService.cambiarEstadoLector(lectorId, estado);
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Cambia la zona de un lector
+     * @param lectorId ID del lector
+     * @param nuevaZona Nueva zona
+     * @return true si se cambió exitosamente, false en caso contrario
+     */
+    public boolean cambiarZonaLector(Long lectorId, String nuevaZona) {
+        try {
+            Zona zona;
+            try {
+                zona = Zona.valueOf(nuevaZona.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return false;
+            }
+            
+            return lectorService.cambiarZonaLector(lectorId, zona);
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Busca lectores por nombre y retorna la cantidad encontrada
+     * @param nombre Nombre a buscar
+     * @param apellido Apellido a buscar
+     * @return Cantidad de lectores encontrados
+     */
+    public int contarLectoresPorNombre(String nombre, String apellido) {
+        try {
+            List<Lector> lectores = lectorService.buscarLectoresPorNombreYApellido(nombre, apellido);
+            return lectores.size();
+        } catch (Exception ex) {
+            return 0;
         }
     }
 }

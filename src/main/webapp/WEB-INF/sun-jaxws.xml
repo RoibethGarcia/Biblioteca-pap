@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<endpoints xmlns="http://java.sun.com/xml/ns/jax-ws/ri/runtime" version="2.0">
+    
+    <!-- Web Service de Bibliotecarios -->
+    <endpoint
+        name="BibliotecarioWebService"
+        implementation="edu.udelar.pap.webservice.BibliotecarioWebServiceImpl"
+        url-pattern="/BibliotecarioWebService" />
+    
+    <!-- Web Service de Lectores -->
+    <endpoint
+        name="LectorWebService"
+        implementation="edu.udelar.pap.webservice.LectorWebServiceImpl"
+        url-pattern="/LectorWebService" />
+    
+    <!-- Web Service de Préstamos -->
+    <endpoint
+        name="PrestamoWebService"
+        implementation="edu.udelar.pap.webservice.PrestamoWebServiceImpl"
+        url-pattern="/PrestamoWebService" />
+    
+    <!-- Web Service de Donaciones -->
+    <endpoint
+        name="DonacionWebService"
+        implementation="edu.udelar.pap.webservice.DonacionWebServiceImpl"
+        url-pattern="/DonacionWebService" />
+
+</endpoints>
+

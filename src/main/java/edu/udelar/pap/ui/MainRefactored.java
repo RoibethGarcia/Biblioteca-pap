@@ -1,13 +1,16 @@
 package edu.udelar.pap.ui;
 
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+
 import edu.udelar.pap.controller.MainController;
-import javax.swing.*;
 
 /**
  * Punto de entrada principal de la aplicación refactorizada
  * Utiliza el patrón MVC con controladores separados
  */
 public class MainRefactored {
+    
     
     public static void main(String[] args) {
         try {

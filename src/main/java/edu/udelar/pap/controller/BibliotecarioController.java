@@ -1,14 +1,21 @@
 package edu.udelar.pap.controller;
 
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JDesktopPane;
+import javax.swing.JInternalFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+
 import edu.udelar.pap.domain.Bibliotecario;
 import edu.udelar.pap.service.BibliotecarioService;
-import edu.udelar.pap.util.ValidacionesUtil;
 import edu.udelar.pap.util.DatabaseUtil;
 import edu.udelar.pap.util.InterfaceUtil;
-
-import javax.swing.*;
-import java.awt.*;
-import java.util.List;
+import edu.udelar.pap.util.ValidacionesUtil;
 
 /**
  * Controlador para la gestión de bibliotecarios
@@ -80,7 +87,11 @@ public class BibliotecarioController {
         JTextField tfApellido = new JTextField();
         JTextField tfEmail = new JTextField();
         JTextField tfNumeroEmpleado = new JTextField();
+        JPasswordField tfPassword = new JPasswordField();
+        JPasswordField tfConfirmarPassword = new JPasswordField();
         tfNumeroEmpleado.setToolTipText("Ingrese el número único de empleado");
+        tfPassword.setToolTipText("Mínimo 8 caracteres, con mayúscula, minúscula y número");
+        tfConfirmarPassword.setToolTipText("Repita el password para confirmar");
         
         // Agregar campos al formulario
         form.add(new JLabel("Nombre:"));
@@ -91,12 +102,18 @@ public class BibliotecarioController {
         form.add(tfEmail);
         form.add(new JLabel("Número de Empleado:"));
         form.add(tfNumeroEmpleado);
+        form.add(new JLabel("Password:"));
+        form.add(tfPassword);
+        form.add(new JLabel("Confirmar Password:"));
+        form.add(tfConfirmarPassword);
         
         // Guardar referencias para los botones
         internal.putClientProperty("tfNombre", tfNombre);
         internal.putClientProperty("tfApellido", tfApellido);
         internal.putClientProperty("tfEmail", tfEmail);
         internal.putClientProperty("tfNumeroEmpleado", tfNumeroEmpleado);
+        internal.putClientProperty("tfPassword", tfPassword);
+        internal.putClientProperty("tfConfirmarPassword", tfConfirmarPassword);
         
         return form;
     }
@@ -110,8 +127,8 @@ public class BibliotecarioController {
         JButton btnAceptar = new JButton("Aceptar");
         JButton btnCancelar = new JButton("Cancelar");
         
-        btnAceptar.addActionListener(_ -> crearBibliotecario(internal));
-        btnCancelar.addActionListener(_ -> cancelarCreacion(internal));
+        btnAceptar.addActionListener(e -> crearBibliotecario(internal));
+        btnCancelar.addActionListener(e -> cancelarCreacion(internal));
         
         actions.add(btnAceptar);
         actions.add(btnCancelar);
@@ -128,15 +145,24 @@ public class BibliotecarioController {
         JTextField tfApellido = (JTextField) internal.getClientProperty("tfApellido");
         JTextField tfEmail = (JTextField) internal.getClientProperty("tfEmail");
         JTextField tfNumeroEmpleado = (JTextField) internal.getClientProperty("tfNumeroEmpleado");
+        JPasswordField tfPassword = (JPasswordField) internal.getClientProperty("tfPassword");
+        JPasswordField tfConfirmarPassword = (JPasswordField) internal.getClientProperty("tfConfirmarPassword");
         
         // Obtener valores
         String nombre = tfNombre.getText().trim();
         String apellido = tfApellido.getText().trim();
         String email = tfEmail.getText().trim();
         String numeroEmpleado = tfNumeroEmpleado.getText().trim();
+        String password = new String(tfPassword.getPassword());
+        String confirmarPassword = new String(tfConfirmarPassword.getPassword());
         
         // Validaciones
         if (!validarDatosBibliotecario(nombre, apellido, email, numeroEmpleado, internal)) {
+            return;
+        }
+        
+        // Validar password
+        if (!ValidacionesUtil.validarPasswordCompleto(password, confirmarPassword, internal)) {
             return;
         }
         
@@ -156,6 +182,7 @@ public class BibliotecarioController {
             bibliotecario.setNombre(nombre + " " + apellido);
             bibliotecario.setEmail(email);
             bibliotecario.setNumeroEmpleado(numeroEmpleado);
+            bibliotecario.setPlainPassword(password); // Esto hashea automáticamente el password
             
             // Guardar usando el servicio
             bibliotecarioService.guardarBibliotecario(bibliotecario);
@@ -211,14 +238,18 @@ public class BibliotecarioController {
         JTextField tfApellido = (JTextField) internal.getClientProperty("tfApellido");
         JTextField tfEmail = (JTextField) internal.getClientProperty("tfEmail");
         JTextField tfNumeroEmpleado = (JTextField) internal.getClientProperty("tfNumeroEmpleado");
+        JPasswordField tfPassword = (JPasswordField) internal.getClientProperty("tfPassword");
+        JPasswordField tfConfirmarPassword = (JPasswordField) internal.getClientProperty("tfConfirmarPassword");
         
         String nombre = tfNombre.getText().trim();
         String apellido = tfApellido.getText().trim();
         String email = tfEmail.getText().trim();
         String numeroEmpleado = tfNumeroEmpleado.getText().trim();
+        String password = new String(tfPassword.getPassword());
+        String confirmarPassword = new String(tfConfirmarPassword.getPassword());
         
         // Si hay datos, preguntar confirmación
-        if (hayDatosEnCampos(nombre, apellido, email, numeroEmpleado)) {
+        if (hayDatosEnCampos(nombre, apellido, email, numeroEmpleado, password, confirmarPassword)) {
             if (!ValidacionesUtil.confirmarCancelacion(internal)) {
                 return;
             }
@@ -235,11 +266,15 @@ public class BibliotecarioController {
         JTextField tfApellido = (JTextField) internal.getClientProperty("tfApellido");
         JTextField tfEmail = (JTextField) internal.getClientProperty("tfEmail");
         JTextField tfNumeroEmpleado = (JTextField) internal.getClientProperty("tfNumeroEmpleado");
+        JPasswordField tfPassword = (JPasswordField) internal.getClientProperty("tfPassword");
+        JPasswordField tfConfirmarPassword = (JPasswordField) internal.getClientProperty("tfConfirmarPassword");
         
         tfNombre.setText("");
         tfApellido.setText("");
         tfEmail.setText("");
         tfNumeroEmpleado.setText("");
+        tfPassword.setText("");
+        tfConfirmarPassword.setText("");
         tfNombre.requestFocus();
     }
     
@@ -274,5 +309,140 @@ public class BibliotecarioController {
      */
     public void actualizarBibliotecario(Bibliotecario bibliotecario) {
         bibliotecarioService.actualizarBibliotecario(bibliotecario);
+    }
+    
+    // ==================== MÉTODOS PARA APLICACIÓN WEB ====================
+    
+    /**
+     * Crea un nuevo bibliotecario y retorna el ID generado
+     * @param nombre Nombre del bibliotecario
+     * @param apellido Apellido del bibliotecario
+     * @param email Email del bibliotecario
+     * @param numeroEmpleado Número de empleado
+     * @param password Password en texto plano
+     * @return ID del bibliotecario creado, o -1 si hay error
+     */
+    public Long crearBibliotecarioWeb(String nombre, String apellido, String email, String numeroEmpleado, String password) {
+        try {
+            // Validaciones básicas
+            if (nombre == null || nombre.trim().isEmpty() ||
+                apellido == null || apellido.trim().isEmpty() ||
+                email == null || email.trim().isEmpty() ||
+                numeroEmpleado == null || numeroEmpleado.trim().isEmpty() ||
+                password == null || password.trim().isEmpty()) {
+                return -1L;
+            }
+            
+            // Crear bibliotecario
+            Bibliotecario bibliotecario = new Bibliotecario();
+            bibliotecario.setNombre(nombre.trim() + " " + apellido.trim());
+            bibliotecario.setEmail(email.trim());
+            bibliotecario.setNumeroEmpleado(numeroEmpleado.trim());
+            bibliotecario.setPlainPassword(password); // Esto hashea automáticamente
+            
+            // Guardar usando el servicio
+            bibliotecarioService.guardarBibliotecario(bibliotecario);
+            
+            return bibliotecario.getId();
+            
+        } catch (Exception ex) {
+            return -1L;
+        }
+    }
+    
+    /**
+     * Obtiene la cantidad total de bibliotecarios
+     * @return Número de bibliotecarios registrados
+     */
+    public int obtenerCantidadBibliotecarios() {
+        try {
+            List<Bibliotecario> bibliotecarios = bibliotecarioService.obtenerTodosLosBibliotecarios();
+            return bibliotecarios.size();
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
+    
+    /**
+     * Verifica si un email de bibliotecario existe
+     * @param email Email a verificar
+     * @return true si existe, false en caso contrario
+     */
+    public boolean existeEmailBibliotecario(String email) {
+        try {
+            List<Bibliotecario> bibliotecarios = bibliotecarioService.obtenerTodosLosBibliotecarios();
+            for (Bibliotecario bibliotecario : bibliotecarios) {
+                if (bibliotecario.getEmail().equalsIgnoreCase(email.trim())) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Verifica si un número de empleado existe
+     * @param numeroEmpleado Número de empleado a verificar
+     * @return true si existe, false en caso contrario
+     */
+    public boolean existeNumeroEmpleado(String numeroEmpleado) {
+        try {
+            List<Bibliotecario> bibliotecarios = bibliotecarioService.obtenerTodosLosBibliotecarios();
+            for (Bibliotecario bibliotecario : bibliotecarios) {
+                if (bibliotecario.getNumeroEmpleado().equalsIgnoreCase(numeroEmpleado.trim())) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Autentica un bibliotecario con email y password
+     * @param email Email del bibliotecario
+     * @param password Password en texto plano
+     * @return ID del bibliotecario si la autenticación es exitosa, -1 en caso contrario
+     */
+    public Long autenticarBibliotecario(String email, String password) {
+        try {
+            List<Bibliotecario> bibliotecarios = bibliotecarioService.obtenerTodosLosBibliotecarios();
+            for (Bibliotecario bibliotecario : bibliotecarios) {
+                if (bibliotecario.getEmail().equalsIgnoreCase(email.trim())) {
+                    if (bibliotecario.verificarPassword(password)) {
+                        return bibliotecario.getId();
+                    } else {
+                        return -1L; // Password incorrecto
+                    }
+                }
+            }
+            return -1L; // Usuario no encontrado
+        } catch (Exception ex) {
+            return -1L;
+        }
+    }
+    
+    /**
+     * Obtiene información básica de un bibliotecario como String
+     * @param id ID del bibliotecario
+     * @return String con información del bibliotecario o null si no existe
+     */
+    public String obtenerInfoBibliotecario(Long id) {
+        try {
+            Bibliotecario bibliotecario = bibliotecarioService.obtenerBibliotecarioPorId(id);
+            if (bibliotecario != null) {
+                return String.format("ID:%d|Nombre:%s|Email:%s|NumeroEmpleado:%s", 
+                    bibliotecario.getId(), 
+                    bibliotecario.getNombre(), 
+                    bibliotecario.getEmail(), 
+                    bibliotecario.getNumeroEmpleado());
+            }
+            return null;
+        } catch (Exception ex) {
+            return null;
+        }
     }
 }
