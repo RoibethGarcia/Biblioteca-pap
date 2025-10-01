@@ -14,22 +14,30 @@
     <!-- Header -->
     <header class="header">
         <div class="container">
-            <h1>🏛️ Biblioteca PAP</h1>
-            <p>Sistema de Gestión de Biblioteca Comunitaria</p>
+            <div class="header-content">
+                <div class="header-text">
+                    <h1>🏛️ Biblioteca PAP</h1>
+                    <p>Sistema de Gestión de Biblioteca Comunitaria</p>
+                </div>
+                <div class="header-controls">
+                    <button id="themeToggle" class="theme-toggle" title="Cambiar tema">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
         </div>
     </header>
 
     <!-- Navegación -->
     <nav class="nav" id="mainNavigation" style="display: none;">
         <div class="container">
-            <ul>
-                <li><a href="#" data-page="dashboard" class="nav-link">Dashboard</a></li>
-                <li><a href="#" data-page="lectores" class="nav-link">Gestión Lectores</a></li>
-                <li><a href="#" data-page="prestamos" class="nav-link">Gestión Préstamos</a></li>
-                <li><a href="#" data-page="donaciones" class="nav-link">Gestión Donaciones</a></li>
-                <li><a href="#" data-page="reportes" class="nav-link">Reportes</a></li>
-                <li><a href="#" id="logoutBtn" class="nav-link">Cerrar Sesión</a></li>
-            </ul>
+            <div class="nav-header">
+                <div id="userInfo" class="user-info-container"></div>
+                <button id="logoutBtn" class="btn btn-outline btn-sm">Cerrar Sesión</button>
+            </div>
+            <div class="nav-content">
+                <!-- El contenido de navegación se cargará dinámicamente según el rol -->
+            </div>
         </div>
     </nav>
 
@@ -236,10 +244,11 @@
     </footer>
 
     <!-- Scripts -->
-    <script src="js/spa.js"></script>
     <script src="js/api.js"></script>
     <script src="js/forms.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/management.js"></script>
+    <script src="js/lazy-loading.js"></script>
+    <script src="js/spa.js"></script>
 </body>
 </html>

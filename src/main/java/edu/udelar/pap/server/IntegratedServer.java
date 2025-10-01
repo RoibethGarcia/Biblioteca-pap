@@ -45,6 +45,7 @@ public class IntegratedServer {
             System.out.println("✅ Servidor integrado iniciado exitosamente");
             System.out.println("🖥️  Aplicación de escritorio: Ejecutándose");
             System.out.println("🌐 Servidor web: http://localhost:" + WEB_PORT);
+            System.out.println("🏠 Landing Page: http://localhost:" + WEB_PORT + "/landing.html");
             System.out.println("📱 SPA: http://localhost:" + WEB_PORT + "/spa.html");
             System.out.println("🧪 Test: http://localhost:" + WEB_PORT + "/test-spa.html");
             System.out.println("📋 API: http://localhost:" + WEB_PORT + "/api/");

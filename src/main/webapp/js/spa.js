@@ -13,6 +13,7 @@ const BibliotecaSPA = {
     init: function() {
         this.setupEventListeners();
         this.checkUserSession();
+        this.initTheme();
         this.showPage('login');
     },
     
@@ -42,6 +43,12 @@ const BibliotecaSPA = {
         $('#logoutBtn').click((e) => {
             e.preventDefault();
             this.logout();
+        });
+        
+        // Toggle de tema
+        $('#themeToggle').click((e) => {
+            e.preventDefault();
+            this.toggleTheme();
         });
         
         // Formularios
@@ -83,6 +90,7 @@ const BibliotecaSPA = {
         if (userSession) {
             this.config.userSession = JSON.parse(userSession);
             this.showAuthenticatedUI();
+            this.updateNavigationForRole();
         }
     },
     
@@ -90,6 +98,123 @@ const BibliotecaSPA = {
     showAuthenticatedUI: function() {
         $('#mainNavigation').show();
         this.navigateToPage('dashboard');
+    },
+    
+    // Actualizar navegación según el rol del usuario
+    updateNavigationForRole: function() {
+        if (!this.config.userSession) return;
+        
+        const userType = this.config.userSession.userType;
+        const isLector = userType === 'LECTOR';
+        const isBibliotecario = userType === 'BIBLIOTECARIO';
+        
+        // Agregar clase al body para control CSS
+        $('body').removeClass('user-type-lector user-type-bibliotecario');
+        
+        // Ocultar/mostrar elementos según el rol
+        if (isLector) {
+            // Agregar clase CSS para lector
+            $('body').addClass('user-type-lector');
+            
+            // Ocultar opciones de bibliotecario
+            $('.bibliotecario-only').hide();
+            $('.lector-only').show();
+            
+            // Actualizar menú de navegación
+            this.updateMainNavigationForLector();
+        } else if (isBibliotecario) {
+            // Agregar clase CSS para bibliotecario
+            $('body').addClass('user-type-bibliotecario');
+            
+            // Mostrar todas las opciones para bibliotecario
+            $('.bibliotecario-only').show();
+            $('.lector-only').show();
+            
+            // Actualizar menú de navegación
+            this.updateMainNavigationForBibliotecario();
+        }
+        
+        // Actualizar información del usuario en la UI
+        this.updateUserInfo();
+    },
+    
+    // Actualizar navegación principal para lector
+    updateMainNavigationForLector: function() {
+        const navHtml = `
+            <div class="nav-section">
+                <h4>📚 Mis Servicios</h4>
+                <ul>
+                    <li><a href="#dashboard" class="nav-link">📊 Mi Dashboard</a></li>
+                    <li><a href="#prestamos" class="nav-link">📖 Mis Préstamos</a></li>
+                    <li><a href="#historial" class="nav-link">📋 Mi Historial</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <h4>🔍 Buscar</h4>
+                <ul>
+                    <li><a href="#buscar-libros" class="nav-link">📚 Buscar Libros</a></li>
+                    <li><a href="#buscar-materiales" class="nav-link">📄 Buscar Materiales</a></li>
+                </ul>
+            </div>
+        `;
+        $('#mainNavigation .nav-content').html(navHtml);
+    },
+    
+    // Actualizar navegación principal para bibliotecario
+    updateMainNavigationForBibliotecario: function() {
+        const navHtml = `
+            <div class="nav-section">
+                <h4>📊 Gestión General</h4>
+                <ul>
+                    <li><a href="#dashboard" class="nav-link">📈 Dashboard</a></li>
+                    <li><a href="#reportes" class="nav-link">📊 Reportes</a></li>
+                    <li><a href="#estadisticas" class="nav-link">📈 Estadísticas</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <h4>👥 Gestión de Usuarios</h4>
+                <ul>
+                    <li><a href="#management/lectores" class="nav-link">👤 Gestionar Lectores</a></li>
+                    <li><a href="#management/bibliotecarios" class="nav-link">👨‍💼 Gestionar Bibliotecarios</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <h4>📚 Gestión de Materiales</h4>
+                <ul>
+                    <li><a href="#management/libros" class="nav-link">📖 Gestionar Libros</a></li>
+                    <li><a href="#management/donaciones" class="nav-link">🎁 Gestionar Donaciones</a></li>
+                    <li><a href="#management/materiales" class="nav-link">📄 Gestionar Materiales</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <h4>📋 Gestión de Préstamos</h4>
+                <ul>
+                    <li><a href="#management/prestamos" class="nav-link">📚 Gestionar Préstamos</a></li>
+                    <li><a href="#management/prestamos-activos" class="nav-link">⏰ Préstamos Activos</a></li>
+                    <li><a href="#management/devoluciones" class="nav-link">↩️ Devoluciones</a></li>
+                </ul>
+            </div>
+        `;
+        $('#mainNavigation .nav-content').html(navHtml);
+    },
+    
+    // Actualizar información del usuario en la UI
+    updateUserInfo: function() {
+        if (!this.config.userSession) return;
+        
+        const user = this.config.userSession;
+        const userInfoHtml = `
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas ${user.userType === 'BIBLIOTECARIO' ? 'fa-user-tie' : 'fa-user'}"></i>
+                </div>
+                <div class="user-details">
+                    <div class="user-name">${user.email}</div>
+                    <div class="user-role">${user.userType === 'BIBLIOTECARIO' ? 'Bibliotecario' : 'Lector'}</div>
+                </div>
+            </div>
+        `;
+        $('#userInfo').html(userInfoHtml);
     },
     
     // Navegar a página
@@ -152,12 +277,26 @@ const BibliotecaSPA = {
             case 'reportes':
                 this.renderReportes();
                 break;
+            case 'management/lectores':
+                this.renderLectoresManagement();
+                break;
+            case 'management/prestamos':
+                this.renderPrestamosManagement();
+                break;
+            case 'management/donaciones':
+                this.renderDonacionesManagement();
+                break;
         }
     },
     
     // Renderizar Dashboard
     renderDashboard: function() {
-        const isBibliotecario = this.config.userSession?.userType === 'BIBLIOTECARIO';
+        if (!this.config.userSession) {
+            this.showAlert('Sesión no encontrada', 'warning');
+            return;
+        }
+        
+        const isBibliotecario = this.config.userSession.userType === 'BIBLIOTECARIO';
         
         if (isBibliotecario) {
             this.renderBibliotecarioDashboard();
@@ -342,6 +481,12 @@ const BibliotecaSPA = {
     
     // Renderizar Gestión de Lectores
     renderLectoresManagement: function() {
+        // Verificar que el usuario es bibliotecario
+        if (!this.config.userSession || this.config.userSession.userType !== 'BIBLIOTECARIO') {
+            this.showAlert('Acceso denegado. Solo bibliotecarios pueden gestionar lectores.', 'danger');
+            this.navigateToPage('dashboard');
+            return;
+        }
         const content = `
             <div class="fade-in-up">
                 <h2 class="text-gradient mb-3">👥 Gestión de Lectores</h2>
@@ -566,13 +711,54 @@ const BibliotecaSPA = {
     },
     
     // Mostrar loading
-    showLoading: function() {
-        $('#loadingOverlay').show();
+    showLoading: function(message = 'Cargando...') {
+        const loadingHtml = `
+            <div id="loadingOverlay" class="loading-overlay fade-in">
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <p>${message}</p>
+                    <div class="loading-progress">
+                        <div class="progress-bar"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        $('#loadingOverlay').remove(); // Remover si existe
+        $('body').append(loadingHtml);
+        
+        // Animar la barra de progreso
+        setTimeout(() => {
+            $('.progress-bar').css('width', '100%');
+        }, 100);
     },
     
     // Ocultar loading
     hideLoading: function() {
-        $('#loadingOverlay').hide();
+        $('#loadingOverlay').addClass('fade-out');
+        setTimeout(() => {
+            $('#loadingOverlay').remove();
+        }, 300);
+    },
+    
+    // Loading con progreso
+    showProgressLoading: function(message = 'Procesando...') {
+        this.showLoading(message);
+        this.animateProgress();
+    },
+    
+    // Animar progreso
+    animateProgress: function() {
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress >= 90) {
+                progress = 90;
+                clearInterval(interval);
+            }
+            $('.progress-bar').css('width', progress + '%');
+        }, 200);
+        
+        return interval;
     },
     
     // Mostrar alerta
@@ -610,12 +796,17 @@ const BibliotecaSPA = {
         BibliotecaAPI.login(formData).then(response => {
             this.hideLoading();
             if (response.success) {
+                // Convertir tipo de usuario a formato estándar
+                const userType = formData.userType === 'bibliotecario' ? 'BIBLIOTECARIO' : 'LECTOR';
+                
                 this.config.userSession = {
-                    userType: formData.userType,
-                    email: formData.email
+                    userType: userType,
+                    email: formData.email,
+                    originalUserType: formData.userType
                 };
                 sessionStorage.setItem('bibliotecaUserSession', JSON.stringify(this.config.userSession));
                 this.showAuthenticatedUI();
+                this.updateNavigationForRole();
                 this.showAlert('Login exitoso', 'success');
             } else {
                 this.showAlert('Credenciales inválidas', 'danger');
@@ -727,9 +918,8 @@ const BibliotecaSPA = {
     logout: function() {
         sessionStorage.removeItem('bibliotecaUserSession');
         this.config.userSession = null;
-        $('#mainNavigation').hide();
-        this.showPage('login');
-        this.showAlert('Sesión cerrada exitosamente', 'info');
+        // Redirigir a la landing page en lugar de mostrar login
+        window.location.href = 'landing.html';
     },
     
     // Métodos placeholder para gestión
@@ -758,6 +948,39 @@ const BibliotecaSPA = {
     
     cambiarZonaLector: function(id) {
         this.showAlert(`Función de cambio de zona en desarrollo`, 'info');
+    },
+    
+    // Manejo de temas
+    initTheme: function() {
+        const savedTheme = localStorage.getItem('biblioteca-theme') || 'light';
+        this.setTheme(savedTheme);
+    },
+    
+    setTheme: function(theme) {
+        const body = document.body;
+        const themeToggle = $('#themeToggle');
+        const icon = themeToggle.find('i');
+        
+        if (theme === 'dark') {
+            body.setAttribute('data-theme', 'dark');
+            icon.removeClass('fa-moon').addClass('fa-sun');
+            themeToggle.addClass('active');
+        } else {
+            body.removeAttribute('data-theme');
+            icon.removeClass('fa-sun').addClass('fa-moon');
+            themeToggle.removeClass('active');
+        }
+        
+        localStorage.setItem('biblioteca-theme', theme);
+    },
+    
+    toggleTheme: function() {
+        const currentTheme = document.body.getAttribute('data-theme') || 'light';
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        this.setTheme(newTheme);
+        
+        // Mostrar notificación
+        this.showAlert(`Tema cambiado a ${newTheme === 'dark' ? 'oscuro' : 'claro'}`, 'info');
     }
 };
 

@@ -10,7 +10,7 @@ export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home 
 java -cp target/classes:$(mvn dependency:build-classpath -q -Dmdep.outputFile=/dev/stdout) edu.udelar.pap.ui.MainRefactored
 
 # 3. Probar en navegador
-open http://localhost:8080/spa.html
+open http://localhost:8080/landing.html
 ```
 
 ---
@@ -29,6 +29,7 @@ open http://localhost:8080/spa.html
 | Función | URL | Descripción |
 |---------|-----|-------------|
 | 🏠 **Principal** | `http://localhost:8080/` | Página de inicio |
+| 🌟 **Landing** | `http://localhost:8080/landing.html` | Página de bienvenida |
 | 📱 **SPA** | `http://localhost:8080/spa.html` | Aplicación completa |
 | 🧪 **Test** | `http://localhost:8080/test-spa.html` | Pruebas funcionales |
 | 📋 **API** | `http://localhost:8080/api/test` | API REST |

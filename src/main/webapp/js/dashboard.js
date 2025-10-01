@@ -158,7 +158,7 @@ const BibliotecaDashboard = {
         if (this.state.isRefreshing) return;
         
         this.loadStats();
-        BibliotecaSPA.showAlert('Estadísticas actualizadas', 'success');
+        // Mensaje removido para evitar spam de notificaciones
     },
     
     // Mostrar indicador de refresh

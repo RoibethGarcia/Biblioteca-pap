@@ -113,6 +113,14 @@ else
     show_result 1 "Página principal no carga"
 fi
 
+# Probar landing page
+echo "   Probando landing page..."
+if curl -s http://localhost:8080/landing.html | grep -q "Bienvenido a"; then
+    show_result 0 "Landing page carga"
+else
+    show_result 1 "Landing page no carga"
+fi
+
 # Probar SPA
 echo "   Probando SPA..."
 if curl -s http://localhost:8080/spa.html | grep -q "Sistema de Gestión"; then
@@ -161,6 +169,7 @@ echo ""
 
 echo "🎯 URLs disponibles para pruebas manuales:"
 echo "   🏠 Página Principal: http://localhost:8080/"
+echo "   🌟 Landing Page: http://localhost:8080/landing.html"
 echo "   📱 SPA Completa: http://localhost:8080/spa.html"
 echo "   🧪 Página de Prueba: http://localhost:8080/test-spa.html"
 echo "   📋 API REST: http://localhost:8080/api/"
