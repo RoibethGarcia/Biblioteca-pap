@@ -43,6 +43,8 @@ public class DonacionServlet extends HttpServlet {
                 out.println("    \"GET /donacion/ - Información del servicio\",");
                 out.println("    \"GET /donacion/cantidad-libros - Obtener cantidad de libros\",");
                 out.println("    \"GET /donacion/cantidad-articulos - Obtener cantidad de artículos especiales\",");
+                out.println("    \"GET /donacion/libros - Obtener lista de libros disponibles\",");
+                out.println("    \"GET /donacion/articulos - Obtener lista de artículos especiales disponibles\",");
                 out.println("    \"GET /donacion/estado - Estado del servicio\",");
                 out.println("    \"POST /donacion/crear-libro - Crear donación de libro\",");
                 out.println("    \"POST /donacion/crear-articulo - Crear donación de artículo especial\",");
@@ -59,6 +61,16 @@ public class DonacionServlet extends HttpServlet {
             } else if (pathInfo.equals("/cantidad-articulos")) {
                 // Obtener cantidad de artículos especiales
                 String result = factory.getDonacionPublisher().obtenerCantidadArticulosEspeciales();
+                out.println(result);
+                
+            } else if (pathInfo.equals("/libros")) {
+                // Obtener lista de libros disponibles
+                String result = factory.getDonacionPublisher().obtenerLibrosDisponibles();
+                out.println(result);
+                
+            } else if (pathInfo.equals("/articulos")) {
+                // Obtener lista de artículos especiales disponibles
+                String result = factory.getDonacionPublisher().obtenerArticulosEspecialesDisponibles();
                 out.println(result);
                 
             } else if (pathInfo.equals("/estado")) {

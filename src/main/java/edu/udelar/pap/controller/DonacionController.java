@@ -1,19 +1,36 @@
 package edu.udelar.pap.controller;
 
-import edu.udelar.pap.domain.Libro;
-import edu.udelar.pap.domain.ArticuloEspecial;
-import edu.udelar.pap.service.DonacionService;
-import edu.udelar.pap.util.ValidacionesUtil;
-import edu.udelar.pap.util.DatabaseUtil;
-import edu.udelar.pap.util.InterfaceUtil;
-import edu.udelar.pap.ui.DateTextField;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.event.ActionListener;
 import java.time.LocalDate;
 import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDesktopPane;
+import javax.swing.JInternalFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.table.DefaultTableModel;
+
+import edu.udelar.pap.domain.ArticuloEspecial;
+import edu.udelar.pap.domain.Libro;
+import edu.udelar.pap.service.DonacionService;
+import edu.udelar.pap.ui.DateTextField;
+import edu.udelar.pap.util.DatabaseUtil;
+import edu.udelar.pap.util.InterfaceUtil;
+import edu.udelar.pap.util.ValidacionesUtil;
 
 /**
  * Controlador para la gestión de donaciones
@@ -400,6 +417,79 @@ public class DonacionController {
      */
     public List<ArticuloEspecial> obtenerArticulosEspecialesDisponibles() {
         return donacionService.obtenerArticulosEspecialesDisponibles();
+    }
+    
+    /**
+     * Obtiene todos los libros disponibles en formato JSON
+     */
+    public String obtenerLibrosDisponiblesJSON() {
+        try {
+            List<Libro> libros = donacionService.obtenerLibrosDisponibles();
+            StringBuilder json = new StringBuilder();
+            json.append("{\"success\": true, \"libros\": [");
+            
+            for (int i = 0; i < libros.size(); i++) {
+                Libro libro = libros.get(i);
+                json.append("{");
+                json.append("\"id\": ").append(libro.getId()).append(",");
+                json.append("\"titulo\": \"").append(escapeJson(libro.getTitulo())).append("\",");
+                json.append("\"paginas\": ").append(libro.getPaginas()).append(",");
+                json.append("\"fechaIngreso\": \"").append(libro.getFechaIngreso()).append("\"");
+                json.append("}");
+                
+                if (i < libros.size() - 1) {
+                    json.append(",");
+                }
+            }
+            
+            json.append("]}");
+            return json.toString();
+        } catch (Exception e) {
+            return "{\"success\": false, \"message\": \"Error al obtener libros: " + e.getMessage() + "\"}";
+        }
+    }
+    
+    /**
+     * Obtiene todos los artículos especiales disponibles en formato JSON
+     */
+    public String obtenerArticulosEspecialesDisponiblesJSON() {
+        try {
+            List<ArticuloEspecial> articulos = donacionService.obtenerArticulosEspecialesDisponibles();
+            StringBuilder json = new StringBuilder();
+            json.append("{\"success\": true, \"articulos\": [");
+            
+            for (int i = 0; i < articulos.size(); i++) {
+                ArticuloEspecial articulo = articulos.get(i);
+                json.append("{");
+                json.append("\"id\": ").append(articulo.getId()).append(",");
+                json.append("\"descripcion\": \"").append(escapeJson(articulo.getDescripcion())).append("\",");
+                json.append("\"peso\": ").append(articulo.getPeso()).append(",");
+                json.append("\"dimensiones\": \"").append(escapeJson(articulo.getDimensiones())).append("\",");
+                json.append("\"fechaIngreso\": \"").append(articulo.getFechaIngreso()).append("\"");
+                json.append("}");
+                
+                if (i < articulos.size() - 1) {
+                    json.append(",");
+                }
+            }
+            
+            json.append("]}");
+            return json.toString();
+        } catch (Exception e) {
+            return "{\"success\": false, \"message\": \"Error al obtener artículos especiales: " + e.getMessage() + "\"}";
+        }
+    }
+    
+    /**
+     * Escapa caracteres especiales para JSON
+     */
+    private String escapeJson(String str) {
+        if (str == null) return "";
+        return str.replace("\"", "\\\"")
+                  .replace("\\", "\\\\")
+                  .replace("\n", "\\n")
+                  .replace("\r", "\\r")
+                  .replace("\t", "\\t");
     }
     
     // ==================== MÉTODOS PARA APLICACIÓN WEB ====================

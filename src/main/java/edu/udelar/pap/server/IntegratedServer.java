@@ -5,10 +5,13 @@ import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpExchange;
+
 import edu.udelar.pap.controller.MainController;
 import edu.udelar.pap.server.IntegratedServer.ApiHandler;
 import edu.udelar.pap.server.IntegratedServer.StaticFileHandler;
-import jakarta.xml.ws.spi.http.HttpExchange;
 
 /**
  * Servidor integrado simple que combina la aplicación de escritorio con el servidor web.

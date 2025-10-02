@@ -140,6 +140,30 @@ public class DonacionPublisher {
         }
     }
     
+    /**
+     * Obtiene la lista de libros disponibles
+     * @return JSON con la lista de libros
+     */
+    public String obtenerLibrosDisponibles() {
+        try {
+            return donacionController.obtenerLibrosDisponiblesJSON();
+        } catch (Exception e) {
+            return String.format("{\"success\": false, \"message\": \"Error al obtener libros: %s\"}", e.getMessage());
+        }
+    }
+    
+    /**
+     * Obtiene la lista de artículos especiales disponibles
+     * @return JSON con la lista de artículos especiales
+     */
+    public String obtenerArticulosEspecialesDisponibles() {
+        try {
+            return donacionController.obtenerArticulosEspecialesDisponiblesJSON();
+        } catch (Exception e) {
+            return String.format("{\"success\": false, \"message\": \"Error al obtener artículos especiales: %s\"}", e.getMessage());
+        }
+    }
+    
     // ==================== MÉTODOS DE VALIDACIÓN ====================
     
     /**

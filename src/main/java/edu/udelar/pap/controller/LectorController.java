@@ -1,5 +1,7 @@
 package edu.udelar.pap.controller;
 
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 import java.time.LocalDate;
 import java.util.List;
 

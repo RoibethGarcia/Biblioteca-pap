@@ -13,6 +13,7 @@ import edu.udelar.pap.server.IntegratedServer;
  */
 public class MainRefactored {
     
+
     public static void main(String[] args) {
         try {
             System.out.println("🚀 Iniciando aplicación refactorizada...");
