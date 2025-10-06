@@ -180,93 +180,117 @@ biblioteca-pap/
 
 ## 🌐 FUNCIONALIDADES WEB IMPLEMENTADAS
 
-### ✅ **Autenticación Web**
-- Login de usuarios (Lectores y Bibliotecarios)
-- Registro de nuevos usuarios
-- Gestión de sesiones
-- Diferenciación de roles
+### ✅ **Autenticación Web (2/15 funcionalidades)**
+- ✅ **Login de usuarios**: Como bibliotecario o lector, quiero poder hacer login en la aplicación
+- ✅ **Diferenciación de roles**: Sistema de autenticación con roles diferenciados
+- ✅ **Registro de nuevos usuarios**: Formulario de registro para nuevos usuarios
+- ✅ **Gestión de sesiones**: Control de sesiones de usuario
+- ✅ **Dashboard diferenciado**: Interfaz adaptada según el rol del usuario
 
-### ✅ **Dashboard Web**
-- Dashboard para Lectores
-- Dashboard para Bibliotecarios
-- Navegación diferenciada por rol
+### ✅ **Infraestructura Web**
+- ✅ **Servicios Web (JAX-WS)**: API REST para lectores y bibliotecarios
+- ✅ **Endpoints de autenticación**: Servicios de login y registro
+- ✅ **Interfaz SPA**: Single Page Application con navegación dinámica
+- ✅ **Servidor integrado**: Servidor de desarrollo para testing
 
-### ✅ **Gestión de Usuarios Web**
-- Listado de lectores
-- Gestión básica de usuarios
-- Interfaz de administración
+### 📊 **ESTADO DETALLADO DE IMPLEMENTACIÓN WEB**
 
-### ✅ **Servicios Web (JAX-WS)**
-- API REST para lectores
-- API REST para bibliotecarios
-- Endpoints de autenticación
+| Funcionalidad | Estado | Descripción |
+|---------------|--------|-------------|
+| **Login de usuarios** | ✅ IMPLEMENTADO | Sistema de autenticación funcional |
+| **Diferenciación de roles** | ✅ IMPLEMENTADO | Dashboard diferenciado por rol |
+| **Suspensión de lectores** | ❌ FALTANTE | Cambiar estado a SUSPENDIDO |
+| **Cambio de zona** | ❌ FALTANTE | Modificar barrio del lector |
+| **Registro de donación libros** | ❌ FALTANTE | Formulario de donación de libros |
+| **Registro de donación artículos** | ❌ FALTANTE | Formulario de donación de artículos |
+| **Consulta de donaciones** | ❌ FALTANTE | Listado de todas las donaciones |
+| **Consulta por rango fechas** | ❌ FALTANTE | Filtro de donaciones por período |
+| **Creación de préstamos** | ❌ FALTANTE | Formulario de nuevo préstamo |
+| **Actualización estado préstamos** | ❌ FALTANTE | Cambiar estado EN CURSO/DEVUELTO |
+| **Consulta préstamos por estado** | ❌ FALTANTE | Ver préstamos agrupados por estado |
+| **Actualización completa préstamos** | ❌ FALTANTE | Editar cualquier campo de préstamo |
+| **Listado préstamos activos** | ❌ FALTANTE | Préstamos activos por lector |
+| **Historial por bibliotecario** | ❌ FALTANTE | Préstamos gestionados por bibliotecario |
+| **Reporte por zona** | ❌ FALTANTE | Análisis de préstamos por barrio |
+| **Materiales pendientes** | ❌ FALTANTE | Identificar materiales con muchos préstamos |
 
 ## ❌ CASOS DE USO WEBAPP FALTANTES POR IMPLEMENTAR
 
-### 🔴 **ALTA PRIORIDAD**
+### 📋 **HISTORIAS DE USUARIO - FUNCIONALIDADES MÍNIMAS REQUERIDAS**
 
-#### 1. **Gestión Completa de Materiales Web**
-- ❌ **CRUD de Libros**: Crear, editar, eliminar libros desde web
-- ❌ **CRUD de Artículos Especiales**: Gestión completa de artículos
-- ❌ **Búsqueda Avanzada**: Filtros por título, autor, categoría, ISBN
-- ❌ **Catálogo Público**: Visualización de materiales disponibles
-- ❌ **Gestión de Inventario**: Control de stock y disponibilidad
+#### 1. **👥 Gestión de Usuarios**
 
-#### 2. **Sistema de Préstamos Web Completo**
-- ❌ **Solicitud de Préstamos**: Lectores pueden solicitar materiales
-- ❌ **Aprobación de Préstamos**: Bibliotecarios aprueban/rechazan
-- ❌ **Gestión de Devoluciones**: Proceso completo de devolución
-- ❌ **Renovación de Préstamos**: Extensión de fechas de vencimiento
-- ❌ **Historial de Préstamos**: Consulta completa por usuario
-- ❌ **Notificaciones**: Alertas de vencimiento y recordatorios
+##### ✅ **IMPLEMENTADO**
+- ✅ **Login de usuarios**: Como bibliotecario o lector, quiero poder hacer login en la aplicación
+- ✅ **Diferenciación de roles**: Sistema de autenticación con roles diferenciados
 
-#### 3. **Sistema de Donaciones Web**
-- ❌ **Formulario de Donación**: Registro de donaciones desde web
-- ❌ **Aprobación de Donaciones**: Workflow de aprobación
-- ❌ **Seguimiento de Donaciones**: Estado y trazabilidad
-- ❌ **Reportes de Donaciones**: Estadísticas y análisis
+##### ❌ **FALTANTE POR IMPLEMENTAR**
+- ❌ **Suspensión de lectores**: Como bibliotecario, quiero modificar el estado de un lector a "SUSPENDIDO" para impedirle realizar nuevos préstamos si incumple con las normas
+- ❌ **Cambio de zona**: Como bibliotecario quiero cambiar el barrio (zona) de un lector para mantener actualizada su ubicación dentro del sistema
 
-### 🟡 **MEDIA PRIORIDAD**
+#### 2. **📚 Gestión de Materiales**
 
-#### 4. **Reportes y Analytics Web**
-- ❌ **Dashboard de Estadísticas**: Métricas en tiempo real
-- ❌ **Reportes por Período**: Análisis temporal
-- ❌ **Reportes por Zona**: Análisis geográfico
-- ❌ **Reportes de Uso**: Materiales más prestados
-- ❌ **Exportación de Datos**: PDF, Excel, CSV
+##### ❌ **FALTANTE POR IMPLEMENTAR**
+- ❌ **Registro de donación de libros**: Como bibliotecario, quiero registrar una nueva donación de libros indicando su título y cantidad de páginas para incorporar al inventario
+- ❌ **Registro de donación de artículos especiales**: Como bibliotecario, quiero registrar una nueva donación de artículo especial con su descripción, peso y dimensiones para que esté disponible para préstamo
+- ❌ **Consulta de donaciones**: Como bibliotecario y lector quiero consultar todas las donaciones registradas
+- ❌ **Consulta de donaciones por rango de fechas** (OPCIONAL): Como bibliotecario, quiero consultar todas las donaciones registradas en un rango de fechas para tener trazabilidad del inventario
 
-#### 5. **Gestión Avanzada de Usuarios**
-- ❌ **Perfil de Usuario**: Edición de datos personales
-- ❌ **Cambio de Contraseña**: Seguridad de cuentas
-- ❌ **Recuperación de Contraseña**: Reset por email
-- ❌ **Gestión de Estados**: Activar/desactivar usuarios
-- ❌ **Historial de Actividad**: Log de acciones del usuario
+#### 3. **📖 Gestión de Préstamos**
 
-#### 6. **Sistema de Notificaciones**
-- ❌ **Notificaciones Push**: Alertas en tiempo real
-- ❌ **Email Notifications**: Recordatorios por correo
-- ❌ **SMS Notifications**: Alertas por mensaje de texto
-- ❌ **Configuración de Preferencias**: Personalización de notificaciones
+##### ❌ **FALTANTE POR IMPLEMENTAR**
+- ❌ **Creación de préstamos**: Como lector, quiero crear un nuevo préstamo asociando un material a un lector y a un bibliotecario, para registrar el movimiento del material
+- ❌ **Actualización de estado de préstamos**: Como bibliotecario, quiero actualizar el estado de un préstamo a "EN CURSO" o "DEVUELTO" para reflejar su progreso
+- ❌ **Consulta de préstamos por estado**: Como lector quiero ver todas mis préstamos agrupados por estado
+- ❌ **Actualización completa de préstamos** (OPCIONAL): Como bibliotecario, quiero actualizar cualquier información de un préstamo
+- ❌ **Listado de préstamos activos por lector** (OPCIONAL): Como bibliotecario quiero listar todos los préstamos activos de un lector para verificar su historial y controlar el cumplimiento de devoluciones
 
-### 🟢 **BAJA PRIORIDAD**
+#### 4. **📊 Control y Seguimiento**
 
-#### 7. **Funcionalidades Sociales**
-- ❌ **Sistema de Reseñas**: Comentarios sobre materiales
-- ❌ **Sistema de Favoritos**: Lista de materiales preferidos
-- ❌ **Recomendaciones**: Sugerencias personalizadas
-- ❌ **Foro de Discusión**: Comunidad de usuarios
+##### ❌ **FALTANTE POR IMPLEMENTAR (TODOS OPCIONALES)**
+- ❌ **Historial de préstamos por bibliotecario** (OPCIONAL): Como bibliotecario quiero ver el historial de préstamos gestionados por mi
+- ❌ **Reporte de préstamos por zona** (OPCIONAL): Como bibliotecario, quiero obtener un reporte de préstamos por zona para analizar el uso del servicio en diferentes barrios
+- ❌ **Identificación de materiales pendientes** (OPCIONAL): Como bibliotecario, quiero identificar materiales con muchos préstamos pendientes para priorizar su devolución o reposición
 
-#### 8. **Integración y APIs**
-- ❌ **API REST Completa**: Endpoints para todas las funcionalidades
-- ❌ **Integración con Sistemas Externos**: APIs de terceros
-- ❌ **Webhooks**: Notificaciones a sistemas externos
-- ❌ **Sincronización Offline**: Modo sin conexión
+### 🎯 **RESUMEN DE IMPLEMENTACIÓN WEBAPP**
 
-#### 9. **Funcionalidades Avanzadas**
-- ❌ **Sistema de Reservas**: Reserva de materiales no disponibles
-- ❌ **Sistema de Multas**: Gestión automática de penalizaciones
-- ❌ **Sistema de Eventos**: Gestión de actividades de la biblioteca
-- ❌ **Sistema de Voluntarios**: Gestión de personal voluntario
+| Categoría | Funcionalidades | Implementadas | Faltantes | Total |
+|-----------|----------------|---------------|-----------|-------|
+| **Gestión de Usuarios** | 3 | 2 | 1 | 3 |
+| **Gestión de Materiales** | 4 | 0 | 4 | 4 |
+| **Gestión de Préstamos** | 5 | 0 | 5 | 5 |
+| **Control y Seguimiento** | 3 | 0 | 3 | 3 |
+| **TOTAL** | **15** | **2** | **13** | **15** |
+
+### 📈 **ESTADO ACTUAL WEBAPP**
+- ✅ **Implementado**: 2/15 funcionalidades (13.3%)
+- ❌ **Faltante**: 13/15 funcionalidades (86.7%)
+- 🎯 **Progreso**: Sistema básico de autenticación implementado
+
+### 🔴 **PRIORIDADES DE IMPLEMENTACIÓN**
+
+#### **FASE 1 - FUNCIONALIDADES MÍNIMAS (ALTA PRIORIDAD)**
+1. **Gestión de usuarios restante** (2 funcionalidades)
+2. **Gestión de materiales completa** (4 funcionalidades)
+3. **Gestión de préstamos básica** (3 funcionalidades principales)
+
+#### **FASE 2 - FUNCIONALIDADES OPCIONALES (MEDIA PRIORIDAD)**
+4. **Gestión de préstamos avanzada** (2 funcionalidades opcionales)
+5. **Control y seguimiento** (3 funcionalidades opcionales)
+
+### 🛠️ **FUNCIONALIDADES ADICIONALES IDENTIFICADAS (NO REQUERIDAS)**
+
+#### **🟡 MEJORAS DE USABILIDAD**
+- ❌ **Perfil de usuario**: Edición de datos personales
+- ❌ **Cambio de contraseña**: Seguridad de cuentas
+- ❌ **Recuperación de contraseña**: Reset por email
+- ❌ **Dashboard personalizado**: Interfaz adaptada por rol
+
+#### **🟢 FUNCIONALIDADES AVANZADAS**
+- ❌ **Sistema de notificaciones**: Alertas y recordatorios
+- ❌ **Búsqueda avanzada**: Filtros múltiples
+- ❌ **Exportación de datos**: PDF, Excel, CSV
+- ❌ **API REST completa**: Integración con sistemas externos
 
 ## 🛠️ TECNOLOGÍAS UTILIZADAS
 
@@ -349,5 +373,23 @@ mvn package
 6. **Documentación completa** disponible en `/documentacion/`
 7. **Scripts automatizados** disponibles en `/scripts/`
 
+## 🎯 **RESUMEN EJECUTIVO**
+
+### **📊 Estado del Proyecto**
+- **🖥️ Aplicación Desktop**: ✅ **100% COMPLETADA** (15/15 funcionalidades)
+- **🌐 Aplicación Web**: ⚠️ **13.3% COMPLETADA** (2/15 funcionalidades)
+
+### **🚀 Próximos Pasos Recomendados**
+1. **Implementar gestión de usuarios restante** (suspensión y cambio de zona)
+2. **Desarrollar gestión completa de materiales** (donaciones de libros y artículos)
+3. **Crear sistema de préstamos web** (creación, actualización y consulta)
+4. **Implementar funcionalidades opcionales** (reportes y control avanzado)
+
+### **📈 Progreso General**
+- **Total de funcionalidades**: 30 (15 desktop + 15 web)
+- **Implementadas**: 17 (15 desktop + 2 web)
+- **Faltantes**: 13 (0 desktop + 13 web)
+- **Progreso general**: 56.7% completado
+
 ---
-**🎉 ¡Proyecto 100% funcional en desktop, webapp en desarrollo activo!**
+**🎉 ¡Proyecto desktop 100% funcional, webapp con base sólida para desarrollo!**
