@@ -43,6 +43,7 @@ public class LectorServlet extends HttpServlet {
                 out.println("    \"GET /lector/ - Información del servicio\",");
                 out.println("    \"GET /lector/cantidad - Obtener cantidad de lectores\",");
                 out.println("    \"GET /lector/cantidad-activos - Obtener cantidad de lectores activos\",");
+                out.println("    \"GET /lector/lista - Obtener lista completa de lectores\",");
                 out.println("    \"GET /lector/estado - Estado del servicio\",");
                 out.println("    \"POST /lector/crear - Crear lector\",");
                 out.println("    \"POST /lector/autenticar - Autenticar lector\",");
@@ -59,6 +60,11 @@ public class LectorServlet extends HttpServlet {
             } else if (pathInfo.equals("/cantidad-activos")) {
                 // Obtener cantidad de lectores activos
                 String result = factory.getLectorPublisher().obtenerCantidadLectoresActivos();
+                out.println(result);
+                
+            } else if (pathInfo.equals("/lista")) {
+                // Obtener lista de lectores
+                String result = factory.getLectorPublisher().obtenerListaLectores();
                 out.println(result);
                 
             } else if (pathInfo.equals("/estado")) {

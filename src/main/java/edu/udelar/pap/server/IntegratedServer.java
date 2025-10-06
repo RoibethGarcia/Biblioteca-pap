@@ -5,13 +5,10 @@ import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpExchange;
-
 import edu.udelar.pap.controller.MainController;
-import edu.udelar.pap.server.IntegratedServer.ApiHandler;
-import edu.udelar.pap.server.IntegratedServer.StaticFileHandler;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 
 /**
  * Servidor integrado simple que combina la aplicación de escritorio con el servidor web.
@@ -70,6 +67,12 @@ public class IntegratedServer {
         
         // API endpoints
         server.createContext("/api/", new ApiHandler());
+        
+        // Endpoints específicos de la API
+        server.createContext("/lector/", new LectorApiHandler());
+        server.createContext("/prestamo/", new PrestamoApiHandler());
+        server.createContext("/bibliotecario/", new BibliotecarioApiHandler());
+        server.createContext("/donacion/", new DonacionApiHandler());
         
         // Rutas específicas
         server.createContext("/spa.html", new StaticFileHandler());
@@ -159,6 +162,183 @@ public class IntegratedServer {
     }
     
     /**
+     * Handler para endpoints de lectores
+     */
+    static class LectorApiHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String path = exchange.getRequestURI().getPath();
+            String method = exchange.getRequestMethod();
+            
+            try {
+                // Crear el servlet de lectores y delegar la petición
+                edu.udelar.pap.servlet.LectorServlet servlet = new edu.udelar.pap.servlet.LectorServlet();
+                servlet.init();
+                
+                // Simular HttpServletRequest y HttpServletResponse
+                String response = handleLectorRequest(path, method);
+                
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+                exchange.sendResponseHeaders(200, response.length());
+                exchange.getResponseBody().write(response.getBytes());
+            } catch (Exception e) {
+                String error = "{\"error\":\"Error interno del servidor: " + e.getMessage() + "\"}";
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(500, error.length());
+                exchange.getResponseBody().write(error.getBytes());
+            }
+            exchange.close();
+        }
+        
+        private String handleLectorRequest(String path, String method) {
+            try {
+                edu.udelar.pap.publisher.PublisherFactory factory = edu.udelar.pap.publisher.PublisherFactory.getInstance();
+                
+                if (path.equals("/lector/cantidad")) {
+                    return factory.getLectorPublisher().obtenerCantidadLectores();
+                } else if (path.equals("/lector/cantidad-activos")) {
+                    return factory.getLectorPublisher().obtenerCantidadLectoresActivos();
+                } else if (path.equals("/lector/lista")) {
+                    // Temporal: devolver solo los primeros 3 lectores para debuggear
+                    try {
+                        // Usar el método del publisher directamente
+                        String response = factory.getLectorPublisher().obtenerListaLectores();
+                        // Parsear y limitar a 3 lectores
+                        if (response.contains("\"lectores\": [")) {
+                            // Extraer solo los primeros 3 lectores del JSON
+                            int startIndex = response.indexOf("\"lectores\": [") + 13;
+                            int endIndex = response.lastIndexOf("]");
+                            if (startIndex > 12 && endIndex > startIndex) {
+                                String lectoresJson = response.substring(startIndex, endIndex);
+                                String[] lectoresArray = lectoresJson.split("\\},\\{");
+                                StringBuilder limitedJson = new StringBuilder();
+                                limitedJson.append("{\"success\": true, \"lectores\": [");
+                                
+                                int maxLectores = Math.min(3, lectoresArray.length);
+                                for (int i = 0; i < maxLectores; i++) {
+                                    if (i > 0) limitedJson.append(",");
+                                    if (i == 0 && lectoresArray[i].startsWith("{")) {
+                                        limitedJson.append(lectoresArray[i]);
+                                    } else {
+                                        limitedJson.append("{").append(lectoresArray[i]);
+                                    }
+                                    if (!lectoresArray[i].endsWith("}")) {
+                                        limitedJson.append("}");
+                                    }
+                                }
+                                limitedJson.append("]}");
+                                return limitedJson.toString();
+                            }
+                        }
+                        return response;
+                    } catch (Exception e) {
+                        return "{\"success\": false, \"message\": \"Error: " + e.getMessage() + "\"}";
+                    }
+                } else if (path.equals("/lector/test")) {
+                    return "{\"success\": true, \"message\": \"Test endpoint working\"}";
+                } else if (path.equals("/lector/debug")) {
+                    try {
+                        return factory.getLectorPublisher().obtenerListaLectores();
+                    } catch (Exception e) {
+                        return "{\"error\":\"Debug error: " + e.getMessage() + "\"}";
+                    }
+                } else if (path.equals("/lector/simple")) {
+                    return "{\"success\": true, \"lectores\": [{\"id\": 1, \"nombre\": \"Test\", \"email\": \"test@test.com\"}]}";
+                } else if (path.equals("/donacion/cantidad-libros")) {
+                    return "{\"success\": true, \"cantidad\": 0}";
+                } else if (path.equals("/donacion/cantidad-articulos")) {
+                    return "{\"success\": true, \"cantidad\": 0}";
+                } else {
+                    return "{\"error\":\"Endpoint no encontrado: " + path + "\"}";
+                }
+            } catch (Exception e) {
+                return "{\"error\":\"Error al procesar petición: " + e.getMessage() + "\"}";
+            }
+        }
+    }
+    
+    /**
+     * Handler para endpoints de préstamos
+     */
+    static class PrestamoApiHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String path = exchange.getRequestURI().getPath();
+            String method = exchange.getRequestMethod();
+            
+            try {
+                String response = handlePrestamoRequest(path, method);
+                
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+                exchange.sendResponseHeaders(200, response.length());
+                exchange.getResponseBody().write(response.getBytes());
+            } catch (Exception e) {
+                String error = "{\"error\":\"Error interno del servidor: " + e.getMessage() + "\"}";
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(500, error.length());
+                exchange.getResponseBody().write(error.getBytes());
+            }
+            exchange.close();
+        }
+        
+        private String handlePrestamoRequest(String path, String method) {
+            try {
+                if (path.equals("/prestamo/cantidad")) {
+                    return "{\"success\": true, \"cantidad\": 0}";
+                } else if (path.equals("/prestamo/cantidad-vencidos")) {
+                    return "{\"success\": true, \"cantidad\": 0}";
+                } else if (path.equals("/prestamo/cantidad-por-estado")) {
+                    return "{\"success\": true, \"cantidad\": 0}";
+                } else {
+                    return "{\"error\":\"Endpoint no encontrado: " + path + "\"}";
+                }
+            } catch (Exception e) {
+                return "{\"error\":\"Error al procesar petición: " + e.getMessage() + "\"}";
+            }
+        }
+    }
+    
+    /**
+     * Handler para endpoints de bibliotecarios
+     */
+    static class BibliotecarioApiHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String path = exchange.getRequestURI().getPath();
+            String method = exchange.getRequestMethod();
+            
+            try {
+                String response = handleBibliotecarioRequest(path, method);
+                
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+                exchange.sendResponseHeaders(200, response.length());
+                exchange.getResponseBody().write(response.getBytes());
+            } catch (Exception e) {
+                String error = "{\"error\":\"Error interno del servidor: " + e.getMessage() + "\"}";
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(500, error.length());
+                exchange.getResponseBody().write(error.getBytes());
+            }
+            exchange.close();
+        }
+        
+        private String handleBibliotecarioRequest(String path, String method) {
+            try {
+                if (path.equals("/bibliotecario/cantidad")) {
+                    return "{\"success\": true, \"cantidad\": 1}";
+                } else {
+                    return "{\"error\":\"Endpoint no encontrado: " + path + "\"}";
+                }
+            } catch (Exception e) {
+                return "{\"error\":\"Error al procesar petición: " + e.getMessage() + "\"}";
+            }
+        }
+    }
+    
+    /**
      * Método principal para ejecutar solo el servidor (sin UI)
      */
     public static void main(String[] args) {
@@ -185,6 +365,46 @@ public class IntegratedServer {
             }
         } catch (InterruptedException e) {
             System.out.println("🛑 Servidor interrumpido");
+        }
+    }
+    
+    /**
+     * Handler para endpoints de donaciones
+     */
+    static class DonacionApiHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String path = exchange.getRequestURI().getPath();
+            String method = exchange.getRequestMethod();
+            
+            try {
+                String response = handleDonacionRequest(path, method);
+                
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+                exchange.sendResponseHeaders(200, response.length());
+                exchange.getResponseBody().write(response.getBytes());
+            } catch (Exception e) {
+                String error = "{\"error\":\"Error interno del servidor: " + e.getMessage() + "\"}";
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(500, error.length());
+                exchange.getResponseBody().write(error.getBytes());
+            }
+            exchange.close();
+        }
+        
+        private String handleDonacionRequest(String path, String method) {
+            try {
+                if (path.equals("/donacion/cantidad-libros")) {
+                    return "{\"success\": true, \"cantidad\": 0}";
+                } else if (path.equals("/donacion/cantidad-articulos")) {
+                    return "{\"success\": true, \"cantidad\": 0}";
+                } else {
+                    return "{\"error\":\"Endpoint no encontrado: " + path + "\"}";
+                }
+            } catch (Exception e) {
+                return "{\"error\":\"Error al procesar petición: " + e.getMessage() + "\"}";
+            }
         }
     }
 }

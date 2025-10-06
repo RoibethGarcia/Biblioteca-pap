@@ -285,8 +285,8 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadLectorStats() {
     try {
         const [totalResponse, activosResponse] = await Promise.all([
-            BibliotecaPAP.api.get(`${BibliotecaPAP.config.apiBaseUrl}/lector/cantidad`),
-            BibliotecaPAP.api.get(`${BibliotecaPAP.config.apiBaseUrl}/lector/cantidad-activos`)
+            fetch('/lector/cantidad').then(r => r.json()),
+            fetch('/lector/cantidad-activos').then(r => r.json())
         ]);
         
         document.getElementById('totalLectores').textContent = totalResponse.cantidad || 0;
@@ -302,40 +302,27 @@ async function loadLectores() {
     const tbody = document.querySelector('#lectoresTable tbody');
     
     try {
-        // Simular carga de lectores
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Cargar lectores desde el servidor real
+        const response = await fetch('/lector/lista');
         
-        const lectores = [
-            {
-                id: 1,
-                nombre: 'Juan',
-                apellido: 'Pérez',
-                email: 'juan.perez@email.com',
-                telefono: '+598 99 123 456',
-                zona: 'Centro',
-                estado: 'ACTIVO'
-            },
-            {
-                id: 2,
-                nombre: 'María',
-                apellido: 'González',
-                email: 'maria.gonzalez@email.com',
-                telefono: '+598 98 765 432',
-                zona: 'Norte',
-                estado: 'ACTIVO'
-            },
-            {
-                id: 3,
-                nombre: 'Carlos',
-                apellido: 'Rodríguez',
-                email: 'carlos.rodriguez@email.com',
-                telefono: '+598 97 654 321',
-                zona: 'Sur',
-                estado: 'SUSPENDIDO'
-            }
-        ];
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Error al cargar lectores');
+        }
+        
+        const lectores = data.lectores || [];
         
         tbody.innerHTML = '';
+        
+        if (lectores.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay lectores registrados</td></tr>';
+            return;
+        }
         
         lectores.forEach(lector => {
             const row = document.createElement('tr');
@@ -345,10 +332,10 @@ async function loadLectores() {
             
             row.innerHTML = `
                 <td>${lector.id}</td>
-                <td>${lector.nombre} ${lector.apellido}</td>
+                <td>${lector.nombre}</td>
                 <td>${lector.email}</td>
-                <td>${lector.telefono}</td>
-                <td>${lector.zona}</td>
+                <td>${lector.telefono || 'N/A'}</td>
+                <td>${lector.zona || 'N/A'}</td>
                 <td>${estadoBadge}</td>
                 <td>
                     <button class="btn btn-primary btn-sm" onclick="verDetallesLector(${lector.id})">
@@ -367,7 +354,7 @@ async function loadLectores() {
         
     } catch (error) {
         console.error('Error cargando lectores:', error);
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Error al cargar los lectores</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Error al cargar los lectores: ' + error.message + '</td></tr>';
     }
 }
 

@@ -4,7 +4,7 @@ const BibliotecaSPA = {
     
     // Configuración
     config: {
-        apiBaseUrl: '/biblioteca-pap-0.1.0-SNAPSHOT',
+        apiBaseUrl: '',
         currentPage: 'login',
         userSession: null
     },
@@ -592,22 +592,35 @@ const BibliotecaSPA = {
     loadDashboardStats: function() {
         console.log('🔍 loadDashboardStats called');
         
-        // En una implementación real, esto haría una llamada al servidor
-        // Por ahora, retornamos estadísticas vacías para sistema nuevo
-        const stats = {
-            totalLectores: 0,
-            lectoresActivos: 0,
-            totalPrestamos: 0,
-            prestamosVencidos: 0
-        };
-        
-        // Actualizar estadísticas en el dashboard
-        $('#totalLectores').text(stats.totalLectores);
-        $('#lectoresActivos').text(stats.lectoresActivos);
-        $('#totalPrestamos').text(stats.totalPrestamos);
-        $('#prestamosVencidos').text(stats.prestamosVencidos);
-        
-        console.log('✅ Dashboard stats loaded (empty for new system):', stats);
+        // Cargar estadísticas reales desde el servidor
+        Promise.all([
+            fetch('/lector/cantidad').then(r => r.json()),
+            fetch('/lector/cantidad-activos').then(r => r.json()),
+            fetch('/prestamo/cantidad').then(r => r.json()),
+            fetch('/prestamo/cantidad-vencidos').then(r => r.json())
+        ]).then(([lectoresResponse, activosResponse, prestamosResponse, vencidosResponse]) => {
+            const stats = {
+                totalLectores: lectoresResponse.cantidad || 0,
+                lectoresActivos: activosResponse.cantidad || 0,
+                totalPrestamos: prestamosResponse.cantidad || 0,
+                prestamosVencidos: vencidosResponse.cantidad || 0
+            };
+            
+            // Actualizar estadísticas en el dashboard
+            $('#totalLectores').text(stats.totalLectores);
+            $('#lectoresActivos').text(stats.lectoresActivos);
+            $('#totalPrestamos').text(stats.totalPrestamos);
+            $('#prestamosVencidos').text(stats.prestamosVencidos);
+            
+            console.log('✅ Dashboard stats loaded from server:', stats);
+        }).catch(error => {
+            console.error('❌ Error loading dashboard stats:', error);
+            // En caso de error, mostrar ceros
+            $('#totalLectores').text('0');
+            $('#lectoresActivos').text('0');
+            $('#totalPrestamos').text('0');
+            $('#prestamosVencidos').text('0');
+        });
     },
     
     // Renderizar Dashboard Lector
@@ -861,6 +874,7 @@ const BibliotecaSPA = {
         
         $('#lectoresContent').html(content);
         this.loadLectoresData();
+        this.loadLectoresManagementStats();
     },
     
     // Cargar estadísticas del dashboard
@@ -889,40 +903,59 @@ const BibliotecaSPA = {
     
     // Cargar datos de lectores
     loadLectoresData: function() {
-        // Simular carga de datos
-        setTimeout(() => {
-            const lectores = [
-                {
-                    id: 1,
-                    nombre: 'Juan',
-                    apellido: 'Pérez',
-                    email: 'juan.perez@email.com',
-                    telefono: '+598 99 123 456',
-                    zona: 'Centro',
-                    estado: 'ACTIVO'
-                },
-                {
-                    id: 2,
-                    nombre: 'María',
-                    apellido: 'González',
-                    email: 'maria.gonzalez@email.com',
-                    telefono: '+598 98 765 432',
-                    zona: 'Norte',
-                    estado: 'ACTIVO'
-                },
-                {
-                    id: 3,
-                    nombre: 'Carlos',
-                    apellido: 'Rodríguez',
-                    email: 'carlos.rodriguez@email.com',
-                    telefono: '+598 97 654 321',
-                    zona: 'Sur',
-                    estado: 'SUSPENDIDO'
+        console.log('🔍 loadLectoresData called');
+        
+        // Cargar datos reales desde el servidor
+        fetch('/lector/lista')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-            ];
+                return response.json();
+            })
+            .then(data => {
+                if (!data.success) {
+                    throw new Error(data.message || 'Error al cargar lectores');
+                }
+                
+                const lectores = data.lectores || [];
+                console.log('✅ Lectores loaded from server:', lectores.length);
+                this.renderLectoresTable(lectores);
+            })
+            .catch(error => {
+                console.error('❌ Error loading lectores:', error);
+                // En caso de error, mostrar mensaje
+                const tbody = $('#lectoresTable tbody');
+                tbody.html('<tr><td colspan="7" class="text-center">Error al cargar los lectores: ' + error.message + '</td></tr>');
+            });
+    },
+    
+    // Cargar estadísticas para la gestión de lectores
+    loadLectoresManagementStats: function() {
+        console.log('🔍 loadLectoresManagementStats called');
+        
+        // Cargar estadísticas reales desde el servidor
+        Promise.all([
+            fetch('/lector/cantidad').then(r => r.json()),
+            fetch('/lector/cantidad-activos').then(r => r.json())
+        ]).then(([totalResponse, activosResponse]) => {
+            const total = totalResponse.cantidad || 0;
+            const activos = activosResponse.cantidad || 0;
+            const suspendidos = total - activos;
             
-            this.renderLectoresTable(lectores);
-        }, 1000);
+            // Actualizar estadísticas en la gestión de lectores
+            $('#totalLectores').text(total);
+            $('#lectoresActivos').text(activos);
+            $('#lectoresSuspendidos').text(suspendidos);
+            
+            console.log('✅ Lectores management stats loaded:', { total, activos, suspendidos });
+        }).catch(error => {
+            console.error('❌ Error loading lectores management stats:', error);
+            // En caso de error, mostrar ceros
+            $('#totalLectores').text('0');
+            $('#lectoresActivos').text('0');
+            $('#lectoresSuspendidos').text('0');
+        });
     },
     
     // Renderizar tabla de lectores

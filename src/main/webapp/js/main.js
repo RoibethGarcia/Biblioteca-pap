@@ -5,7 +5,7 @@ const BibliotecaPAP = {
     
     // Configuración base
     config: {
-        apiBaseUrl: window.location.origin + '/biblioteca-pap-0.1.0-SNAPSHOT',
+        apiBaseUrl: window.location.origin,
         timeout: 30000
     },
     

@@ -145,38 +145,12 @@ const BibliotecaManagement = {
         return itemString.includes(searchTerm.toLowerCase());
     },
     
-    // Obtener datos actuales (placeholder)
+    // Obtener datos actuales desde la API
     getCurrentData: function() {
-        // En una implementación real, esto vendría de la API o estado
-        return [
-            {
-                id: 1,
-                nombre: 'Juan',
-                apellido: 'Pérez',
-                email: 'juan.perez@email.com',
-                telefono: '+598 99 123 456',
-                zona: 'Centro',
-                estado: 'ACTIVO'
-            },
-            {
-                id: 2,
-                nombre: 'María',
-                apellido: 'González',
-                email: 'maria.gonzalez@email.com',
-                telefono: '+598 98 765 432',
-                zona: 'Norte',
-                estado: 'ACTIVO'
-            },
-            {
-                id: 3,
-                nombre: 'Carlos',
-                apellido: 'Rodríguez',
-                email: 'carlos.rodriguez@email.com',
-                telefono: '+598 97 654 321',
-                zona: 'Sur',
-                estado: 'SUSPENDIDO'
-            }
-        ];
+        return BibliotecaAPI.lectores.getList().catch(error => {
+            console.error('Error obteniendo datos de lectores:', error);
+            return [];
+        });
     },
     
     // Renderizar datos

@@ -71,6 +71,55 @@ public class LectorPublisher {
     }
     
     /**
+     * Obtiene la lista completa de lectores
+     * @return JSON con la lista de lectores
+     */
+    public String obtenerListaLectores() {
+        try {
+            // Primero intentar obtener la cantidad para verificar que la conexión funciona
+            String cantidadResponse = obtenerCantidadLectores();
+            System.out.println("Cantidad response: " + cantidadResponse);
+            
+            java.util.List<edu.udelar.pap.domain.Lector> lectores = lectorController.obtenerTodosLectores();
+            System.out.println("Lectores obtenidos: " + (lectores != null ? lectores.size() : "null"));
+            
+            if (lectores == null) {
+                return "{\"success\": false, \"message\": \"Lista de lectores es null\"}";
+            }
+            
+            if (lectores.isEmpty()) {
+                return "{\"success\": true, \"lectores\": []}";
+            }
+            
+            StringBuilder json = new StringBuilder();
+            json.append("{\"success\": true, \"lectores\": [");
+            
+            for (int i = 0; i < lectores.size(); i++) {
+                edu.udelar.pap.domain.Lector lector = lectores.get(i);
+                if (i > 0) json.append(",");
+                json.append("{");
+                json.append("\"id\": ").append(lector.getId()).append(",");
+                json.append("\"nombre\": \"").append(lector.getNombre() != null ? lector.getNombre().replace("\"", "\\\"") : "").append("\",");
+                json.append("\"email\": \"").append(lector.getEmail() != null ? lector.getEmail().replace("\"", "\\\"") : "").append("\",");
+                json.append("\"telefono\": \"N/A\","); // Lector no tiene campo telefono
+                json.append("\"direccion\": \"").append(lector.getDireccion() != null ? lector.getDireccion().replace("\"", "\\\"") : "").append("\",");
+                json.append("\"zona\": \"").append(lector.getZona() != null ? lector.getZona().toString() : "").append("\",");
+                json.append("\"estado\": \"").append(lector.getEstado() != null ? lector.getEstado().toString() : "").append("\"");
+                json.append("}");
+            }
+            
+            json.append("]}");
+            String result = json.toString();
+            System.out.println("JSON result length: " + result.length());
+            return result;
+        } catch (Exception e) {
+            System.err.println("Error en obtenerListaLectores: " + e.getMessage());
+            e.printStackTrace();
+            return String.format("{\"success\": false, \"message\": \"Error al obtener lista: %s\"}", e.getMessage());
+        }
+    }
+    
+    /**
      * Obtiene información de un lector
      * @param id ID del lector
      * @return JSON con la información

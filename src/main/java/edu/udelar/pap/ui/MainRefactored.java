@@ -12,9 +12,7 @@ import edu.udelar.pap.server.IntegratedServer;
  * Ahora soporta modo servidor integrado
  */
 public class MainRefactored {
-    
-
-    public static void main(String[] args) {
+        public static void main(String[] args) {
         try {
             System.out.println("🚀 Iniciando aplicación refactorizada...");
             

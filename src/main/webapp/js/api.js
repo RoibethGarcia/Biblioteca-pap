@@ -4,7 +4,7 @@ const BibliotecaAPI = {
     
     // Configuración base
     config: {
-        baseUrl: '/biblioteca-pap-0.1.0-SNAPSHOT',
+        baseUrl: '',
         timeout: 30000
     },
     
@@ -61,15 +61,26 @@ const BibliotecaAPI = {
     lectores: {
         // Obtener estadísticas
         getStats: function() {
-            return $.ajax({
-                url: `${BibliotecaAPI.config.baseUrl}/lector/cantidad`,
-                method: 'GET',
-                timeout: BibliotecaAPI.config.timeout
-            }).then(response => {
+            return Promise.all([
+                $.ajax({
+                    url: `${BibliotecaAPI.config.baseUrl}/lector/cantidad`,
+                    method: 'GET',
+                    timeout: BibliotecaAPI.config.timeout
+                }),
+                $.ajax({
+                    url: `${BibliotecaAPI.config.baseUrl}/lector/cantidad-activos`,
+                    method: 'GET',
+                    timeout: BibliotecaAPI.config.timeout
+                })
+            ]).then(([totalResponse, activosResponse]) => {
+                const total = totalResponse.cantidad || 0;
+                const activos = activosResponse.cantidad || 0;
+                const suspendidos = total - activos;
+                
                 return {
-                    total: response.cantidad || 0,
-                    activos: Math.floor((response.cantidad || 0) * 0.8), // Simular 80% activos
-                    suspendidos: Math.floor((response.cantidad || 0) * 0.2) // Simular 20% suspendidos
+                    total: total,
+                    activos: activos,
+                    suspendidos: suspendidos
                 };
             }).catch(error => {
                 console.error('Error obteniendo estadísticas de lectores:', error);
@@ -80,41 +91,16 @@ const BibliotecaAPI = {
         // Obtener lista de lectores
         getList: function(filters = {}) {
             return $.ajax({
-                url: `${BibliotecaAPI.config.baseUrl}/lector/`,
+                url: `${BibliotecaAPI.config.baseUrl}/lector/lista`,
                 method: 'GET',
                 data: filters,
                 timeout: BibliotecaAPI.config.timeout
             }).then(response => {
-                // Simular lista de lectores
-                return [
-                    {
-                        id: 1,
-                        nombre: 'Juan',
-                        apellido: 'Pérez',
-                        email: 'juan.perez@email.com',
-                        telefono: '+598 99 123 456',
-                        zona: 'Centro',
-                        estado: 'ACTIVO'
-                    },
-                    {
-                        id: 2,
-                        nombre: 'María',
-                        apellido: 'González',
-                        email: 'maria.gonzalez@email.com',
-                        telefono: '+598 98 765 432',
-                        zona: 'Norte',
-                        estado: 'ACTIVO'
-                    },
-                    {
-                        id: 3,
-                        nombre: 'Carlos',
-                        apellido: 'Rodríguez',
-                        email: 'carlos.rodriguez@email.com',
-                        telefono: '+598 97 654 321',
-                        zona: 'Sur',
-                        estado: 'SUSPENDIDO'
-                    }
-                ];
+                if (response.success && response.lectores) {
+                    return response.lectores;
+                } else {
+                    throw new Error(response.message || 'Error al obtener lectores');
+                }
             }).catch(error => {
                 console.error('Error obteniendo lista de lectores:', error);
                 return [];

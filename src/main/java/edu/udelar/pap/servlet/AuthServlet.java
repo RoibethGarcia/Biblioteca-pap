@@ -3,7 +3,6 @@ package edu.udelar.pap.servlet;
 import java.io.IOException;
 
 import edu.udelar.pap.publisher.PublisherFactory;
-import edu.udelar.pap.servlet.AuthServlet.UserSession;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
