@@ -58,6 +58,17 @@ public class BibliotecarioServlet extends HttpServlet {
                 String result = factory.getBibliotecarioPublisher().obtenerEstado();
                 out.println(result);
                 
+            } else if (pathInfo.equals("/por-email")) {
+                // Obtener bibliotecario por email
+                String email = request.getParameter("email");
+                if (email == null || email.trim().isEmpty()) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.println("{\"error\": \"Parámetro 'email' es requerido\"}");
+                    return;
+                }
+                String result = factory.getBibliotecarioPublisher().obtenerBibliotecarioPorEmail(email);
+                out.println(result);
+                
             } else {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                 out.println("{\"error\": \"Endpoint no encontrado\"}");

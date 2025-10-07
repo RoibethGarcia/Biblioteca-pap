@@ -73,6 +73,53 @@ public class BibliotecarioPublisher {
         }
     }
     
+    /**
+     * Obtiene un bibliotecario por su email
+     * @param email Email del bibliotecario
+     * @return JSON con la información del bibliotecario
+     */
+    public String obtenerBibliotecarioPorEmail(String email) {
+        try {
+            edu.udelar.pap.domain.Bibliotecario bibliotecario = bibliotecarioController.obtenerBibliotecarioPorEmail(email);
+            
+            if (bibliotecario != null) {
+                return String.format("{\"success\": true, \"bibliotecario\": {\"id\": %d, \"nombre\": \"%s\", \"email\": \"%s\", \"numeroEmpleado\": \"%s\"}}", 
+                    bibliotecario.getId(),
+                    bibliotecario.getNombre(),
+                    bibliotecario.getEmail(),
+                    bibliotecario.getNumeroEmpleado());
+            } else {
+                return "{\"success\": false, \"message\": \"Bibliotecario no encontrado con ese email\"}";
+            }
+        } catch (Exception e) {
+            return String.format("{\"success\": false, \"message\": \"Error al obtener bibliotecario: %s\"}", e.getMessage());
+        }
+    }
+    
+    /**
+     * Obtiene el ID del primer bibliotecario disponible en el sistema
+     * Útil para auto-asignar préstamos cuando no hay un bibliotecario específico
+     * @return ID del primer bibliotecario, o null si no hay ninguno
+     */
+    public Long obtenerPrimerBibliotecarioId() {
+        try {
+            java.util.List<edu.udelar.pap.domain.Bibliotecario> bibliotecarios = 
+                bibliotecarioController.obtenerBibliotecarios();
+            
+            if (bibliotecarios != null && !bibliotecarios.isEmpty()) {
+                Long id = bibliotecarios.get(0).getId();
+                System.out.println("✅ Primer bibliotecario encontrado con ID: " + id);
+                return id;
+            } else {
+                System.err.println("❌ No hay bibliotecarios en la base de datos");
+                return null;
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error al obtener primer bibliotecario: " + e.getMessage());
+            return null;
+        }
+    }
+    
     // ==================== MÉTODOS DE VALIDACIÓN ====================
     
     /**

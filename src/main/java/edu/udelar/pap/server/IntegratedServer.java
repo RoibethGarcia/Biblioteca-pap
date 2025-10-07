@@ -69,6 +69,7 @@ public class IntegratedServer {
         server.createContext("/api/", new ApiHandler());
         
         // Endpoints específicos de la API
+        server.createContext("/auth/", new AuthApiHandler());
         server.createContext("/lector/", new LectorApiHandler());
         server.createContext("/prestamo/", new PrestamoApiHandler());
         server.createContext("/bibliotecario/", new BibliotecarioApiHandler());
@@ -162,43 +163,199 @@ public class IntegratedServer {
     }
     
     /**
+     * Handler para endpoints de autenticación
+     */
+    static class AuthApiHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String path = exchange.getRequestURI().getPath();
+            String method = exchange.getRequestMethod();
+            
+            System.out.println("📥 AuthApiHandler recibió: " + method + " " + path);
+            
+            try {
+                String response = handleAuthRequest(path, method, exchange);
+                
+                if (response == null || response.isEmpty()) {
+                    response = "{\"error\":\"Respuesta vacía del servidor\"}";
+                }
+                
+                System.out.println("📤 Enviando respuesta de auth (" + response.length() + " bytes)");
+                
+                exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
+                exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+                
+                byte[] responseBytes = response.getBytes("UTF-8");
+                exchange.sendResponseHeaders(200, responseBytes.length);
+                exchange.getResponseBody().write(responseBytes);
+                exchange.getResponseBody().flush();
+            } catch (Exception e) {
+                System.err.println("❌ Error en AuthApiHandler: " + e.getMessage());
+                e.printStackTrace();
+                
+                String error = "{\"error\":\"Error interno del servidor: " + e.getMessage().replace("\"", "'") + "\"}";
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                
+                byte[] errorBytes = error.getBytes("UTF-8");
+                exchange.sendResponseHeaders(500, errorBytes.length);
+                exchange.getResponseBody().write(errorBytes);
+                exchange.getResponseBody().flush();
+            } finally {
+                exchange.close();
+            }
+        }
+        
+        private String handleAuthRequest(String path, String method, HttpExchange exchange) {
+            try {
+                System.out.println("🔍 Procesando autenticación: " + path);
+                
+                if (path.equals("/auth/login") && method.equals("POST")) {
+                    // Leer el body de la petición
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body recibido: " + body);
+                    
+                    // Parsear parámetros del body
+                    java.util.Map<String, String> params = new java.util.HashMap<>();
+                    for (String param : body.split("&")) {
+                        String[] keyValue = param.split("=");
+                        if (keyValue.length == 2) {
+                            params.put(keyValue[0], java.net.URLDecoder.decode(keyValue[1], "UTF-8"));
+                        }
+                    }
+                    
+                    String userType = params.get("userType");
+                    String email = params.get("email");
+                    String password = params.get("password");
+                    
+                    System.out.println("🔐 Intentando login: userType=" + userType + ", email=" + email);
+                    
+                    edu.udelar.pap.publisher.PublisherFactory factory = edu.udelar.pap.publisher.PublisherFactory.getInstance();
+                    
+                    if ("LECTOR".equalsIgnoreCase(userType)) {
+                        return factory.getLectorPublisher().autenticar(email, password);
+                    } else if ("BIBLIOTECARIO".equalsIgnoreCase(userType)) {
+                        return factory.getBibliotecarioPublisher().autenticar(email, password);
+                    } else {
+                        return "{\"success\": false, \"message\": \"Tipo de usuario no válido\"}";
+                    }
+                } else if (path.equals("/auth/register") && method.equals("POST")) {
+                    // Leer el body de la petición
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body de registro recibido: " + body);
+                    
+                    // Parsear parámetros del body
+                    java.util.Map<String, String> params = new java.util.HashMap<>();
+                    for (String param : body.split("&")) {
+                        String[] keyValue = param.split("=");
+                        if (keyValue.length == 2) {
+                            params.put(keyValue[0], java.net.URLDecoder.decode(keyValue[1], "UTF-8"));
+                        }
+                    }
+                    
+                    String userType = params.get("userType");
+                    
+                    System.out.println("📝 Intentando registrar: userType=" + userType);
+                    
+                    edu.udelar.pap.publisher.PublisherFactory factory = edu.udelar.pap.publisher.PublisherFactory.getInstance();
+                    
+                    if ("LECTOR".equalsIgnoreCase(userType)) {
+                        String nombre = params.get("nombre");
+                        String apellido = params.get("apellido");
+                        String email = params.get("email");
+                        String telefono = params.get("telefono");
+                        String direccion = params.get("direccion");
+                        String zona = params.get("zona");
+                        String password = params.get("password");
+                        
+                        System.out.println("📝 Creando lector: " + nombre + " " + apellido + ", email: " + email);
+                        
+                        return factory.getLectorPublisher().crearLector(nombre, apellido, email, telefono, direccion, zona, password);
+                    } else if ("BIBLIOTECARIO".equalsIgnoreCase(userType)) {
+                        String nombre = params.get("nombre");
+                        String apellido = params.get("apellido");
+                        String email = params.get("email");
+                        String numeroEmpleado = params.get("numeroEmpleado");
+                        String password = params.get("password");
+                        
+                        System.out.println("📝 Creando bibliotecario: " + nombre + " " + apellido + ", email: " + email);
+                        
+                        return factory.getBibliotecarioPublisher().crearBibliotecario(nombre, apellido, email, numeroEmpleado, password);
+                    } else {
+                        return "{\"success\": false, \"message\": \"Tipo de usuario no válido\"}";
+                    }
+                } else {
+                    return "{\"error\":\"Endpoint no encontrado: " + path + "\"}";
+                }
+            } catch (Exception e) {
+                System.err.println("❌ Error en handleAuthRequest: " + e.getMessage());
+                e.printStackTrace();
+                return "{\"error\":\"Error al procesar petición: " + e.getMessage().replace("\"", "'") + "\"}";
+            }
+        }
+    }
+    
+    /**
      * Handler para endpoints de lectores
      */
     static class LectorApiHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             String path = exchange.getRequestURI().getPath();
+            String query = exchange.getRequestURI().getQuery();
             String method = exchange.getRequestMethod();
             
+            System.out.println("📥 LectorApiHandler recibió: " + method + " " + path + (query != null ? "?" + query : ""));
+            
             try {
-                // Crear el servlet de lectores y delegar la petición
-                edu.udelar.pap.servlet.LectorServlet servlet = new edu.udelar.pap.servlet.LectorServlet();
-                servlet.init();
+                String response = handleLectorRequest(path, query, method);
                 
-                // Simular HttpServletRequest y HttpServletResponse
-                String response = handleLectorRequest(path, method);
+                if (response == null || response.isEmpty()) {
+                    response = "{\"error\":\"Respuesta vacía del servidor\"}";
+                }
                 
-                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                System.out.println("📤 Enviando respuesta (" + response.length() + " bytes)");
+                
+                exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
                 exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-                exchange.sendResponseHeaders(200, response.length());
-                exchange.getResponseBody().write(response.getBytes());
+                
+                byte[] responseBytes = response.getBytes("UTF-8");
+                exchange.sendResponseHeaders(200, responseBytes.length);
+                exchange.getResponseBody().write(responseBytes);
+                exchange.getResponseBody().flush();
             } catch (Exception e) {
-                String error = "{\"error\":\"Error interno del servidor: " + e.getMessage() + "\"}";
+                System.err.println("❌ Error en LectorApiHandler: " + e.getMessage());
+                e.printStackTrace();
+                
+                String error = "{\"error\":\"Error interno del servidor: " + e.getMessage().replace("\"", "'") + "\"}";
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
-                exchange.sendResponseHeaders(500, error.length());
-                exchange.getResponseBody().write(error.getBytes());
+                
+                byte[] errorBytes = error.getBytes("UTF-8");
+                exchange.sendResponseHeaders(500, errorBytes.length);
+                exchange.getResponseBody().write(errorBytes);
+                exchange.getResponseBody().flush();
+            } finally {
+                exchange.close();
             }
-            exchange.close();
         }
         
-        private String handleLectorRequest(String path, String method) {
+        private String handleLectorRequest(String path, String query, String method) {
             try {
+                System.out.println("🔍 Procesando lector: " + path);
                 edu.udelar.pap.publisher.PublisherFactory factory = edu.udelar.pap.publisher.PublisherFactory.getInstance();
                 
                 if (path.equals("/lector/cantidad")) {
                     return factory.getLectorPublisher().obtenerCantidadLectores();
                 } else if (path.equals("/lector/cantidad-activos")) {
                     return factory.getLectorPublisher().obtenerCantidadLectoresActivos();
+                } else if (path.equals("/lector/por-email")) {
+                    // Obtener email del query string
+                    if (query != null && query.contains("email=")) {
+                        String email = java.net.URLDecoder.decode(query.split("email=")[1].split("&")[0], "UTF-8");
+                        System.out.println("👤 Obteniendo lector por email: " + email);
+                        return factory.getLectorPublisher().obtenerLectorPorEmail(email);
+                    } else {
+                        return "{\"error\":\"email es requerido\"}";
+                    }
                 } else if (path.equals("/lector/lista")) {
                     // Temporal: devolver solo los primeros 3 lectores para debuggear
                     try {
@@ -245,15 +402,15 @@ public class IntegratedServer {
                     }
                 } else if (path.equals("/lector/simple")) {
                     return "{\"success\": true, \"lectores\": [{\"id\": 1, \"nombre\": \"Test\", \"email\": \"test@test.com\"}]}";
-                } else if (path.equals("/donacion/cantidad-libros")) {
-                    return "{\"success\": true, \"cantidad\": 0}";
-                } else if (path.equals("/donacion/cantidad-articulos")) {
-                    return "{\"success\": true, \"cantidad\": 0}";
+                } else if (path.equals("/lector/estado")) {
+                    return factory.getLectorPublisher().obtenerEstado();
                 } else {
                     return "{\"error\":\"Endpoint no encontrado: " + path + "\"}";
                 }
             } catch (Exception e) {
-                return "{\"error\":\"Error al procesar petición: " + e.getMessage() + "\"}";
+                System.err.println("❌ Error en handleLectorRequest: " + e.getMessage());
+                e.printStackTrace();
+                return "{\"error\":\"Error al procesar petición: " + e.getMessage().replace("\"", "'") + "\"}";
             }
         }
     }
@@ -265,37 +422,138 @@ public class IntegratedServer {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             String path = exchange.getRequestURI().getPath();
+            String query = exchange.getRequestURI().getQuery();
             String method = exchange.getRequestMethod();
             
+            System.out.println("📥 PrestamoApiHandler recibió: " + method + " " + path + (query != null ? "?" + query : ""));
+            
             try {
-                String response = handlePrestamoRequest(path, method);
+                String response = handlePrestamoRequest(path, query, method, exchange);
                 
-                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                if (response == null || response.isEmpty()) {
+                    response = "{\"error\":\"Respuesta vacía del servidor\"}";
+                }
+                
+                System.out.println("📤 Enviando respuesta (" + response.length() + " bytes)");
+                
+                exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
                 exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-                exchange.sendResponseHeaders(200, response.length());
-                exchange.getResponseBody().write(response.getBytes());
+                
+                byte[] responseBytes = response.getBytes("UTF-8");
+                exchange.sendResponseHeaders(200, responseBytes.length);
+                exchange.getResponseBody().write(responseBytes);
+                exchange.getResponseBody().flush();
             } catch (Exception e) {
-                String error = "{\"error\":\"Error interno del servidor: " + e.getMessage() + "\"}";
+                System.err.println("❌ Error en PrestamoApiHandler: " + e.getMessage());
+                e.printStackTrace();
+                
+                String error = "{\"error\":\"Error interno del servidor: " + e.getMessage().replace("\"", "'") + "\"}";
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
-                exchange.sendResponseHeaders(500, error.length());
-                exchange.getResponseBody().write(error.getBytes());
+                
+                byte[] errorBytes = error.getBytes("UTF-8");
+                exchange.sendResponseHeaders(500, errorBytes.length);
+                exchange.getResponseBody().write(errorBytes);
+                exchange.getResponseBody().flush();
+            } finally {
+                exchange.close();
             }
-            exchange.close();
         }
         
-        private String handlePrestamoRequest(String path, String method) {
+        private String handlePrestamoRequest(String path, String query, String method, HttpExchange exchange) {
             try {
+                System.out.println("🔍 Procesando préstamo: " + path + " method: " + method);
+                edu.udelar.pap.publisher.PublisherFactory factory = edu.udelar.pap.publisher.PublisherFactory.getInstance();
+                
                 if (path.equals("/prestamo/cantidad")) {
-                    return "{\"success\": true, \"cantidad\": 0}";
+                    return factory.getPrestamoPublisher().obtenerCantidadPrestamos();
                 } else if (path.equals("/prestamo/cantidad-vencidos")) {
-                    return "{\"success\": true, \"cantidad\": 0}";
-                } else if (path.equals("/prestamo/cantidad-por-estado")) {
-                    return "{\"success\": true, \"cantidad\": 0}";
+                    return factory.getPrestamoPublisher().obtenerCantidadPrestamosVencidos();
+                } else if (path.equals("/prestamo/cantidad-por-lector")) {
+                    // Obtener lectorId del query string
+                    if (query != null && query.contains("lectorId=")) {
+                        String lectorIdStr = query.split("lectorId=")[1].split("&")[0];
+                        Long lectorId = Long.parseLong(lectorIdStr);
+                        System.out.println("📚 Obteniendo cantidad de préstamos para lector ID: " + lectorId);
+                        return factory.getPrestamoPublisher().obtenerCantidadPrestamosPorLector(lectorId);
+                    } else {
+                        return "{\"error\":\"lectorId es requerido\"}";
+                    }
+                } else if (path.equals("/prestamo/por-lector")) {
+                    // Obtener lista de préstamos de un lector
+                    if (query != null && query.contains("lectorId=")) {
+                        String lectorIdStr = query.split("lectorId=")[1].split("&")[0];
+                        Long lectorId = Long.parseLong(lectorIdStr);
+                        System.out.println("📚 Obteniendo lista de préstamos para lector ID: " + lectorId);
+                        return factory.getPrestamoPublisher().obtenerPrestamosPorLector(lectorId);
+                    } else {
+                        return "{\"error\":\"lectorId es requerido\"}";
+                    }
+                } else if (path.equals("/prestamo/crear") && method.equals("POST")) {
+                    // Crear préstamo - obtener parámetros del body
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body recibido: " + body);
+                    
+                    // Parsear parámetros del body (formato: param1=value1&param2=value2)
+                    java.util.Map<String, String> params = new java.util.HashMap<>();
+                    for (String param : body.split("&")) {
+                        String[] keyValue = param.split("=");
+                        if (keyValue.length == 2) {
+                            params.put(keyValue[0], java.net.URLDecoder.decode(keyValue[1], "UTF-8"));
+                        }
+                    }
+                    
+                    String lectorId = params.get("lectorId");
+                    String materialId = params.get("materialId");
+                    String fechaDevolucion = params.get("fechaDevolucion");
+                    
+                    System.out.println("📚 IntegratedServer - Creando préstamo:");
+                    System.out.println("   Lector ID: " + lectorId);
+                    System.out.println("   Material ID: " + materialId);
+                    System.out.println("   Fecha devolución: " + fechaDevolucion);
+                    
+                    // Verificar que los parámetros no sean nulos
+                    if (lectorId == null || lectorId.isEmpty()) {
+                        System.err.println("❌ lectorId es nulo o vacío");
+                        return "{\"success\": false, \"message\": \"lectorId es requerido\"}";
+                    }
+                    if (materialId == null || materialId.isEmpty()) {
+                        System.err.println("❌ materialId es nulo o vacío");
+                        return "{\"success\": false, \"message\": \"materialId es requerido\"}";
+                    }
+                    if (fechaDevolucion == null || fechaDevolucion.isEmpty()) {
+                        System.err.println("❌ fechaDevolucion es nulo o vacío");
+                        return "{\"success\": false, \"message\": \"fechaDevolucion es requerido\"}";
+                    }
+                    
+                    // Obtener el primer bibliotecario disponible
+                    Long bibliotecarioId = factory.getBibliotecarioPublisher().obtenerPrimerBibliotecarioId();
+                    
+                    if (bibliotecarioId == null) {
+                        System.err.println("❌ No hay bibliotecarios en el sistema. Se debe crear al menos uno.");
+                        return "{\"success\": false, \"message\": \"No hay bibliotecarios disponibles en el sistema. Contacte al administrador.\"}";
+                    }
+                    
+                    System.out.println("📋 Usando bibliotecario con ID: " + bibliotecarioId);
+                    
+                    String resultado = factory.getPrestamoPublisher().crearPrestamo(
+                        Long.parseLong(lectorId),
+                        bibliotecarioId,  // Usa el primer bibliotecario disponible
+                        Long.parseLong(materialId),
+                        fechaDevolucion,
+                        "EN_CURSO"  // Estado inicial - Aprobado automáticamente
+                    );
+                    
+                    System.out.println("📚 IntegratedServer - Resultado de crearPrestamo: " + resultado);
+                    return resultado;
+                } else if (path.equals("/prestamo/estado")) {
+                    return factory.getPrestamoPublisher().obtenerEstado();
                 } else {
                     return "{\"error\":\"Endpoint no encontrado: " + path + "\"}";
                 }
             } catch (Exception e) {
-                return "{\"error\":\"Error al procesar petición: " + e.getMessage() + "\"}";
+                System.err.println("❌ Error en handlePrestamoRequest: " + e.getMessage());
+                e.printStackTrace();
+                return "{\"error\":\"Error al procesar petición: " + e.getMessage().replace("\"", "'") + "\"}";
             }
         }
     }
@@ -307,10 +565,11 @@ public class IntegratedServer {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             String path = exchange.getRequestURI().getPath();
+            String query = exchange.getRequestURI().getQuery();
             String method = exchange.getRequestMethod();
             
             try {
-                String response = handleBibliotecarioRequest(path, method);
+                String response = handleBibliotecarioRequest(path, query, method);
                 
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
                 exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
@@ -325,14 +584,38 @@ public class IntegratedServer {
             exchange.close();
         }
         
-        private String handleBibliotecarioRequest(String path, String method) {
+        private String handleBibliotecarioRequest(String path, String query, String method) {
             try {
+                edu.udelar.pap.publisher.PublisherFactory factory = edu.udelar.pap.publisher.PublisherFactory.getInstance();
+                
                 if (path.equals("/bibliotecario/cantidad")) {
-                    return "{\"success\": true, \"cantidad\": 1}";
+                    return factory.getBibliotecarioPublisher().obtenerCantidadBibliotecarios();
+                } else if (path.equals("/bibliotecario/por-email")) {
+                    // Extraer el parámetro email del query string
+                    if (query == null || !query.contains("email=")) {
+                        return "{\"error\":\"Parámetro 'email' es requerido\"}";
+                    }
+                    
+                    String email = null;
+                    for (String param : query.split("&")) {
+                        String[] keyValue = param.split("=");
+                        if (keyValue.length == 2 && keyValue[0].equals("email")) {
+                            email = java.net.URLDecoder.decode(keyValue[1], "UTF-8");
+                            break;
+                        }
+                    }
+                    
+                    if (email == null || email.trim().isEmpty()) {
+                        return "{\"error\":\"Email no puede estar vacío\"}";
+                    }
+                    
+                    System.out.println("🔍 Buscando bibliotecario por email: " + email);
+                    return factory.getBibliotecarioPublisher().obtenerBibliotecarioPorEmail(email);
                 } else {
                     return "{\"error\":\"Endpoint no encontrado: " + path + "\"}";
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 return "{\"error\":\"Error al procesar petición: " + e.getMessage() + "\"}";
             }
         }
@@ -377,33 +660,70 @@ public class IntegratedServer {
             String path = exchange.getRequestURI().getPath();
             String method = exchange.getRequestMethod();
             
+            System.out.println("📥 DonacionApiHandler recibió: " + method + " " + path);
+            
             try {
                 String response = handleDonacionRequest(path, method);
                 
-                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                if (response == null || response.isEmpty()) {
+                    response = "{\"error\":\"Respuesta vacía del servidor\"}";
+                }
+                
+                System.out.println("📤 Enviando respuesta (" + response.length() + " bytes)");
+                
+                exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
                 exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-                exchange.sendResponseHeaders(200, response.length());
-                exchange.getResponseBody().write(response.getBytes());
+                
+                byte[] responseBytes = response.getBytes("UTF-8");
+                exchange.sendResponseHeaders(200, responseBytes.length);
+                exchange.getResponseBody().write(responseBytes);
+                exchange.getResponseBody().flush();
             } catch (Exception e) {
-                String error = "{\"error\":\"Error interno del servidor: " + e.getMessage() + "\"}";
+                System.err.println("❌ Error en DonacionApiHandler: " + e.getMessage());
+                e.printStackTrace();
+                
+                String error = "{\"error\":\"Error interno del servidor: " + e.getMessage().replace("\"", "'") + "\"}";
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
-                exchange.sendResponseHeaders(500, error.length());
-                exchange.getResponseBody().write(error.getBytes());
+                
+                byte[] errorBytes = error.getBytes("UTF-8");
+                exchange.sendResponseHeaders(500, errorBytes.length);
+                exchange.getResponseBody().write(errorBytes);
+                exchange.getResponseBody().flush();
+            } finally {
+                exchange.close();
             }
-            exchange.close();
         }
         
         private String handleDonacionRequest(String path, String method) {
             try {
+                System.out.println("🔍 Procesando: " + path);
+                edu.udelar.pap.publisher.PublisherFactory factory = edu.udelar.pap.publisher.PublisherFactory.getInstance();
+                
+                String result = null;
+                
                 if (path.equals("/donacion/cantidad-libros")) {
-                    return "{\"success\": true, \"cantidad\": 0}";
+                    result = factory.getDonacionPublisher().obtenerCantidadLibros();
                 } else if (path.equals("/donacion/cantidad-articulos")) {
-                    return "{\"success\": true, \"cantidad\": 0}";
+                    result = factory.getDonacionPublisher().obtenerCantidadArticulosEspeciales();
+                } else if (path.equals("/donacion/libros")) {
+                    // ENDPOINT PARA OBTENER LISTA DE LIBROS
+                    System.out.println("📚 Obteniendo lista de libros...");
+                    result = factory.getDonacionPublisher().obtenerLibrosDisponibles();
+                    System.out.println("✅ Libros obtenidos, longitud respuesta: " + (result != null ? result.length() : "null"));
+                } else if (path.equals("/donacion/articulos")) {
+                    result = factory.getDonacionPublisher().obtenerArticulosEspecialesDisponibles();
+                } else if (path.equals("/donacion/estado")) {
+                    result = factory.getDonacionPublisher().obtenerEstado();
                 } else {
-                    return "{\"error\":\"Endpoint no encontrado: " + path + "\"}";
+                    result = "{\"error\":\"Endpoint no encontrado: " + path + "\"}";
                 }
+                
+                return result;
+                
             } catch (Exception e) {
-                return "{\"error\":\"Error al procesar petición: " + e.getMessage() + "\"}";
+                System.err.println("❌ Error en handleDonacionRequest: " + e.getMessage());
+                e.printStackTrace();
+                return "{\"error\":\"Error al procesar petición: " + e.getMessage().replace("\"", "'") + "\"}";
             }
         }
     }

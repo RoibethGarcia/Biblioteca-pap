@@ -2,6 +2,9 @@ package edu.udelar.pap.controller;
 
 import edu.udelar.pap.domain.*;
 import edu.udelar.pap.service.PrestamoService;
+import edu.udelar.pap.service.LectorService;
+import edu.udelar.pap.service.BibliotecarioService;
+import edu.udelar.pap.service.DonacionService;
 import edu.udelar.pap.ui.PrestamoUIUtil;
 import edu.udelar.pap.ui.MaterialComboBoxItem;
 import edu.udelar.pap.ui.DateTextField;
@@ -21,6 +24,9 @@ import java.util.List;
 public class PrestamoControllerUltraRefactored {
     
     private final PrestamoService prestamoService;
+    private final LectorService lectorService;
+    private final BibliotecarioService bibliotecarioService;
+    private final DonacionService donacionService;
     
     // ==================== CONSTANTES PARA COLUMNAS ====================
     private static final String[] COLUMNAS_PRESTAMOS_BASICAS = {"ID", "Lector", "Material", "Fecha Solicitud", "Fecha Devolución", "Estado", "Bibliotecario"};
@@ -37,10 +43,16 @@ public class PrestamoControllerUltraRefactored {
     
     public PrestamoControllerUltraRefactored() {
         this.prestamoService = new PrestamoService();
+        this.lectorService = new LectorService();
+        this.bibliotecarioService = new BibliotecarioService();
+        this.donacionService = new DonacionService();
     }
     
     public PrestamoControllerUltraRefactored(ControllerFactory controllerFactory) {
         this.prestamoService = new PrestamoService();
+        this.lectorService = new LectorService();
+        this.bibliotecarioService = new BibliotecarioService();
+        this.donacionService = new DonacionService();
     }
     
     // ==================== MÉTODOS PÚBLICOS PRINCIPALES ====================
@@ -1789,40 +1801,76 @@ public class PrestamoControllerUltraRefactored {
     public Long crearPrestamoWeb(Long lectorId, Long bibliotecarioId, Long materialId, 
                                 String fechaDevolucion, String estado) {
         try {
+            System.out.println("🔍 crearPrestamoWeb llamado con: lectorId=" + lectorId + ", materialId=" + materialId);
+            
             // Validaciones básicas
             if (lectorId == null || bibliotecarioId == null || materialId == null ||
                 fechaDevolucion == null || fechaDevolucion.trim().isEmpty() ||
                 estado == null || estado.trim().isEmpty()) {
+                System.out.println("❌ Parámetros inválidos");
                 return -1L;
             }
             
             // Validar fecha
             LocalDate fechaDev = ValidacionesUtil.validarFechaFutura(fechaDevolucion);
+            System.out.println("✅ Fecha validada: " + fechaDev);
             
             // Validar estado
             EstadoPrestamo estadoEnum;
             try {
                 estadoEnum = EstadoPrestamo.valueOf(estado.toUpperCase());
             } catch (IllegalArgumentException e) {
+                System.out.println("❌ Estado inválido: " + estado);
                 return -1L;
             }
             
-            // Obtener entidades (esto requiere acceso a los servicios)
-            // Por simplicidad, asumimos que las entidades existen
-            // En una implementación real, se validarían aquí
+            // Obtener entidades desde la base de datos
+            Lector lector = lectorService.obtenerLectorPorId(lectorId);
+            if (lector == null) {
+                System.out.println("❌ Lector no encontrado con ID: " + lectorId);
+                return -1L;
+            }
+            System.out.println("✅ Lector encontrado: " + lector.getNombre());
             
-            // Crear préstamo
+            Bibliotecario bibliotecario = bibliotecarioService.obtenerBibliotecarioPorId(bibliotecarioId);
+            if (bibliotecario == null) {
+                System.out.println("❌ Bibliotecario no encontrado con ID: " + bibliotecarioId);
+                return -1L;
+            }
+            System.out.println("✅ Bibliotecario encontrado: " + bibliotecario.getNombre());
+            
+            // Obtener material (puede ser Libro o ArticuloEspecial)
+            DonacionMaterial material = donacionService.obtenerLibroPorId(materialId);
+            if (material == null) {
+                // Si no es un libro, intentar como artículo especial
+                material = donacionService.obtenerArticuloEspecialPorId(materialId);
+            }
+            
+            if (material == null) {
+                System.out.println("❌ Material no encontrado con ID: " + materialId);
+                return -1L;
+            }
+            System.out.println("✅ Material encontrado: " + material.toString());
+            
+            // Crear préstamo con todas las entidades vinculadas
             Prestamo prestamo = new Prestamo();
+            prestamo.setLector(lector);
+            prestamo.setBibliotecario(bibliotecario);
+            prestamo.setMaterial(material);
             prestamo.setFechaSolicitud(LocalDate.now());
             prestamo.setFechaEstimadaDevolucion(fechaDev);
             prestamo.setEstado(estadoEnum);
             
+            System.out.println("💾 Guardando préstamo...");
             // Guardar usando el servicio
             prestamoService.guardarPrestamo(prestamo);
             
+            System.out.println("✅ Préstamo creado con ID: " + prestamo.getId());
             return prestamo.getId();
             
         } catch (Exception ex) {
+            System.err.println("❌ Error al crear préstamo: " + ex.getMessage());
+            ex.printStackTrace();
             return -1L;
         }
     }
@@ -1886,6 +1934,26 @@ public class PrestamoControllerUltraRefactored {
             return contador;
         } catch (Exception ex) {
             return 0;
+        }
+    }
+    
+    /**
+     * Obtiene la lista de préstamos activos de un lector
+     * @param lectorId ID del lector
+     * @return Lista de préstamos del lector
+     */
+    public List<Prestamo> obtenerPrestamosPorLector(Long lectorId) {
+        try {
+            List<Prestamo> prestamos = prestamoService.obtenerTodosLosPrestamosActivos();
+            List<Prestamo> prestamosPorLector = new java.util.ArrayList<>();
+            for (Prestamo prestamo : prestamos) {
+                if (prestamo.getLector().getId().equals(lectorId)) {
+                    prestamosPorLector.add(prestamo);
+                }
+            }
+            return prestamosPorLector;
+        } catch (Exception ex) {
+            return new java.util.ArrayList<>();
         }
     }
     

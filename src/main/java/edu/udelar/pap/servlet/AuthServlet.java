@@ -158,10 +158,17 @@ public class AuthServlet extends HttpServlet {
         
         String userType = request.getParameter("userType");
         
+        // Verificar si es una petición AJAX
+        boolean isAjax = "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
+        
         if (userType == null || userType.trim().isEmpty()) {
-            request.setAttribute("alertMessage", "Por favor seleccione un tipo de usuario");
-            request.setAttribute("alertType", "danger");
-            showRegisterPage(request, response);
+            if (isAjax) {
+                sendJsonResponse(response, false, "Por favor seleccione un tipo de usuario");
+            } else {
+                request.setAttribute("alertMessage", "Por favor seleccione un tipo de usuario");
+                request.setAttribute("alertType", "danger");
+                showRegisterPage(request, response);
+            }
             return;
         }
         
@@ -187,28 +194,68 @@ public class AuthServlet extends HttpServlet {
                     request.getParameter("password")
                 );
             } else {
-                request.setAttribute("alertMessage", "Tipo de usuario inválido");
-                request.setAttribute("alertType", "danger");
-                showRegisterPage(request, response);
+                if (isAjax) {
+                    sendJsonResponse(response, false, "Tipo de usuario inválido");
+                } else {
+                    request.setAttribute("alertMessage", "Tipo de usuario inválido");
+                    request.setAttribute("alertType", "danger");
+                    showRegisterPage(request, response);
+                }
                 return;
             }
             
             // Parsear resultado JSON (simplificado)
             if (result.contains("\"success\": true")) {
-                request.setAttribute("alertMessage", "Usuario registrado exitosamente. Por favor inicie sesión.");
-                request.setAttribute("alertType", "success");
-                showLoginPage(request, response);
+                if (isAjax) {
+                    sendJsonResponse(response, true, "Usuario registrado exitosamente. Por favor inicie sesión.");
+                } else {
+                    request.setAttribute("alertMessage", "Usuario registrado exitosamente. Por favor inicie sesión.");
+                    request.setAttribute("alertType", "success");
+                    showLoginPage(request, response);
+                }
             } else {
-                request.setAttribute("alertMessage", "Error al registrar usuario");
-                request.setAttribute("alertType", "danger");
-                showRegisterPage(request, response);
+                // Extraer mensaje de error del JSON
+                String errorMessage = "Error al registrar usuario";
+                if (result.contains("\"message\":")) {
+                    int start = result.indexOf("\"message\":") + 11;
+                    int end = result.indexOf("\"", start);
+                    if (end > start) {
+                        errorMessage = result.substring(start, end);
+                    }
+                }
+                
+                if (isAjax) {
+                    sendJsonResponse(response, false, errorMessage);
+                } else {
+                    request.setAttribute("alertMessage", errorMessage);
+                    request.setAttribute("alertType", "danger");
+                    showRegisterPage(request, response);
+                }
             }
             
         } catch (Exception e) {
-            request.setAttribute("alertMessage", "Error en el sistema: " + e.getMessage());
-            request.setAttribute("alertType", "danger");
-            showRegisterPage(request, response);
+            if (isAjax) {
+                sendJsonResponse(response, false, "Error en el sistema: " + e.getMessage());
+            } else {
+                request.setAttribute("alertMessage", "Error en el sistema: " + e.getMessage());
+                request.setAttribute("alertType", "danger");
+                showRegisterPage(request, response);
+            }
         }
+    }
+    
+    /**
+     * Envía una respuesta JSON al cliente
+     */
+    private void sendJsonResponse(HttpServletResponse response, boolean success, String message) 
+            throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        
+        String json = String.format("{\"success\": %s, \"message\": \"%s\"}", 
+            success, message.replace("\"", "\\\""));
+        
+        response.getWriter().write(json);
     }
     
     private void handleLogout(HttpServletRequest request, HttpServletResponse response) 

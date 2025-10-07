@@ -1,0 +1,1850 @@
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/opt/homebrew/Cellar/maven/3.9.11/libexec/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------< edu.udelar.pap:biblioteca-pap >--------------------
+[INFO] Building Biblioteca PAP 0.1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ war ]---------------------------------
+[INFO] 
+[INFO] --- exec:3.2.0:java (default-cli) @ biblioteca-pap ---
+🚀 Iniciando aplicación refactorizada...
+🖥️  Iniciando en modo aplicación de escritorio...
+✅ MainController creado exitosamente
+✅ Aplicación inicializada exitosamente
+2025-10-07 13:44:17.011 java[68657:19906505] +[IMKClient subclass]: chose IMKClient_Legacy
+2025-10-07 13:44:17.011 java[68657:19906505] +[IMKInputSession subclass]: chose IMKInputSession_Legacy
+oct 07, 2025 1:44:18 P.M. org.hibernate.Version logVersion
+INFO: HHH000412: Hibernate ORM core version 6.4.4.Final
+oct 07, 2025 1:44:18 P.M. org.hibernate.cache.internal.RegionFactoryInitiator initiateService
+INFO: HHH000026: Second-level cache disabled
+oct 07, 2025 1:44:18 P.M. org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl configure
+WARN: HHH10001002: Using built-in connection pool (not intended for production use)
+oct 07, 2025 1:44:18 P.M. org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl buildCreator
+INFO: HHH10001005: Loaded JDBC driver class: com.mysql.cj.jdbc.Driver
+oct 07, 2025 1:44:18 P.M. org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl buildCreator
+INFO: HHH10001012: Connecting with JDBC URL [jdbc:mysql://localhost:3306/BD_Pap?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC]
+oct 07, 2025 1:44:18 P.M. org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl buildCreator
+INFO: HHH10001001: Connection properties: {user=biblioteca_user, password=****}
+oct 07, 2025 1:44:18 P.M. org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl buildCreator
+INFO: HHH10001003: Autocommit mode: false
+oct 07, 2025 1:44:18 P.M. org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl$PooledConnections <init>
+INFO: HHH10001115: Connection pool size: 20 (min=1)
+oct 07, 2025 1:44:18 P.M. org.hibernate.engine.jdbc.dialect.internal.DialectFactoryImpl constructDialect
+WARN: HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+oct 07, 2025 1:44:19 P.M. org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator initiateService
+INFO: HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+oct 07, 2025 1:44:19 P.M. org.hibernate.resource.transaction.backend.jdbc.internal.DdlTransactionIsolatorNonJtaImpl getIsolatedConnection
+INFO: HHH10001501: Connection obtained from JdbcConnectionAccess [org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator$ConnectionProviderJdbcConnectionAccess@6f4ea3ef] for (non-JTA) DDL execution was not in auto-commit mode; the Connection 'local transaction' will be committed and the Connection will be set into auto-commit mode.
+Hibernate inicializado OK (h2)
+🚀 Iniciando servidor integrado...
+📋 Inicializando controladores...
+✅ Controladores inicializados
+🌐 Configurando servidor web...
+📝 Registrando rutas...
+✅ Rutas registradas
+✅ Servidor integrado iniciado exitosamente
+🖥️  Aplicación de escritorio: Ejecutándose
+🌐 Servidor web: http://localhost:8080
+🏠 Landing Page: http://localhost:8080/landing.html
+📱 SPA: http://localhost:8080/spa.html
+🧪 Test: http://localhost:8080/test-spa.html
+📋 API: http://localhost:8080/api/
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+oct 07, 2025 1:46:10 P.M. edu.udelar.pap.service.PrestamoService <init>
+INFO: PrestamoService inicializado
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=26
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 26
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (48 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=26
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 26
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (48 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=26
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 26
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (48 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/por-lector?lectorId=26
+🔍 Procesando préstamo: /prestamo/por-lector method: GET
+📚 Obteniendo lista de préstamos para lector ID: 26
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (237 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=26
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 26
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (48 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/por-lector?lectorId=26
+🔍 Procesando préstamo: /prestamo/por-lector method: GET
+📚 Obteniendo lista de préstamos para lector ID: 26
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (237 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=26
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 26
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (48 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/por-lector?lectorId=26
+🔍 Procesando préstamo: /prestamo/por-lector method: GET
+📚 Obteniendo lista de préstamos para lector ID: 26
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (237 bytes)
+📥 PrestamoApiHandler recibió: GET /prestamo/cantidad-por-lector?lectorId=1
+🔍 Procesando préstamo: /prestamo/cantidad-por-lector method: GET
+📚 Obteniendo cantidad de préstamos para lector ID: 1
+Hibernate: 
+    select
+        distinct p1_0.id,
+        p1_0.bibliotecario_id,
+        b1_0.id,
+        b1_1.email,
+        b1_1.nombre,
+        b1_1.password,
+        b1_0.numeroEmpleado,
+        p1_0.estado,
+        p1_0.fechaEstimadaDevolucion,
+        p1_0.fechaSolicitud,
+        p1_0.lector_id,
+        l1_0.id,
+        l1_1.email,
+        l1_1.nombre,
+        l1_1.password,
+        l1_0.direccion,
+        l1_0.estado,
+        l1_0.fechaRegistro,
+        l1_0.zona,
+        p1_0.material_id,
+        m1_0.id,
+        case 
+            when m1_2.id is not null 
+                then 1 
+            when m1_1.id is not null 
+                then 2 
+            when m1_0.id is not null 
+                then 0 
+            end,
+            m1_0.donante,
+            m1_0.fechaIngreso,
+            m1_1.descripcion,
+            m1_1.dimensiones,
+            m1_1.peso,
+            m1_2.paginas,
+            m1_2.titulo 
+        from
+            prestamos p1_0 
+        left join
+            (lectores l1_0 
+        join
+            usuarios l1_1 
+                on l1_0.id=l1_1.id) 
+            on l1_0.id=p1_0.lector_id 
+        left join
+            (bibliotecarios b1_0 
+        join
+            usuarios b1_1 
+                on b1_0.id=b1_1.id) 
+            on b1_0.id=p1_0.bibliotecario_id 
+        left join
+            (donaciones_material m1_0 
+        left join
+            articulos_especiales m1_1 
+                on m1_0.id=m1_1.id 
+        left join
+            libros m1_2 
+                on m1_0.id=m1_2.id) 
+            on m1_0.id=p1_0.material_id 
+        where
+            p1_0.estado=? 
+        order by
+            p1_0.fechaSolicitud desc
+📤 Enviando respuesta (47 bytes)

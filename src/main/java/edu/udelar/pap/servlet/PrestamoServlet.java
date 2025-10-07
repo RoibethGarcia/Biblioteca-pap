@@ -86,6 +86,11 @@ public class PrestamoServlet extends HttpServlet {
                 String result = factory.getPrestamoPublisher().obtenerCantidadPrestamosVencidos();
                 out.println(result);
                 
+            } else if (pathInfo.equals("/estadisticas")) {
+                // Obtener estadísticas completas de préstamos
+                String result = factory.getPrestamoPublisher().obtenerEstadisticasPrestamos();
+                out.println(result);
+                
             } else if (pathInfo.equals("/estado")) {
                 // Estado del servicio
                 String result = factory.getPrestamoPublisher().obtenerEstado();

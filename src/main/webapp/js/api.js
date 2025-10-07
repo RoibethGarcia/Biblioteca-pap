@@ -4,7 +4,7 @@ const BibliotecaAPI = {
     
     // Configuración base
     config: {
-        baseUrl: '',
+        baseUrl: '', // Vacío para servidor integrado. Usar '/biblioteca-pap-0.1.0-SNAPSHOT' para despliegue en servidor de aplicaciones
         timeout: 30000
     },
     
@@ -12,47 +12,65 @@ const BibliotecaAPI = {
     auth: {
         // Login
         login: function(userData) {
-            // Por ahora simulamos el login ya que no tenemos el backend completo
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    // Validar credenciales básicas
-                    if (userData.email && userData.password && userData.userType) {
-                        resolve({
-                            success: true,
-                            message: 'Login exitoso',
-                            user: {
-                                type: userData.userType,
-                                email: userData.email
-                            }
-                        });
-                    } else {
-                        resolve({
-                            success: false,
-                            message: 'Credenciales incompletas'
-                        });
-                    }
-                }, 1000); // Simular delay de red
+            return $.ajax({
+                url: `${BibliotecaAPI.config.baseUrl}/auth/login`,
+                method: 'POST',
+                data: {
+                    userType: userData.userType,
+                    email: userData.email,
+                    password: userData.password
+                },
+                dataType: 'json',
+                timeout: BibliotecaAPI.config.timeout
+            }).then(response => {
+                console.log('📊 Respuesta de login:', response);
+                return response;
+            }).catch(error => {
+                console.error('❌ Error en login:', error);
+                return {
+                    success: false,
+                    message: 'Error de conexión con el servidor'
+                };
             });
         },
         
         // Registro
         register: function(userData) {
-            // Por ahora simulamos el registro
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    // Validar datos básicos
-                    if (userData.nombre && userData.apellido && userData.email && userData.password) {
-                        resolve({
-                            success: true,
-                            message: 'Usuario registrado exitosamente'
-                        });
-                    } else {
-                        resolve({
-                            success: false,
-                            message: 'Faltan datos requeridos para el registro'
-                        });
-                    }
-                }, 1500); // Simular delay de red
+            // Crear objeto con los datos en formato URL-encoded
+            const data = {
+                userType: userData.userType,
+                nombre: userData.nombre,
+                apellido: userData.apellido,
+                email: userData.email,
+                password: userData.password
+            };
+            
+            // Campos específicos según tipo de usuario
+            if (userData.userType === 'LECTOR') {
+                data.telefono = userData.telefono || '';
+                data.direccion = userData.direccion || '';
+                data.zona = userData.zona || '';
+            } else if (userData.userType === 'BIBLIOTECARIO') {
+                data.numeroEmpleado = userData.numeroEmpleado || '';
+            }
+            
+            return $.ajax({
+                url: `${BibliotecaAPI.config.baseUrl}/auth/register`,
+                method: 'POST',
+                data: data,
+                dataType: 'json',
+                timeout: BibliotecaAPI.config.timeout,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => {
+                return response;
+            }).catch(error => {
+                console.error('Error en registro:', error);
+                return {
+                    success: false,
+                    message: error.responseJSON?.message || 'Error al registrar usuario. Intente nuevamente.'
+                };
             });
         }
     },
@@ -61,27 +79,20 @@ const BibliotecaAPI = {
     lectores: {
         // Obtener estadísticas
         getStats: function() {
-            return Promise.all([
-                $.ajax({
-                    url: `${BibliotecaAPI.config.baseUrl}/lector/cantidad`,
-                    method: 'GET',
-                    timeout: BibliotecaAPI.config.timeout
-                }),
-                $.ajax({
-                    url: `${BibliotecaAPI.config.baseUrl}/lector/cantidad-activos`,
-                    method: 'GET',
-                    timeout: BibliotecaAPI.config.timeout
-                })
-            ]).then(([totalResponse, activosResponse]) => {
-                const total = totalResponse.cantidad || 0;
-                const activos = activosResponse.cantidad || 0;
-                const suspendidos = total - activos;
-                
-                return {
-                    total: total,
-                    activos: activos,
-                    suspendidos: suspendidos
-                };
+            return $.ajax({
+                url: `${BibliotecaAPI.config.baseUrl}/lector/estadisticas`,
+                method: 'GET',
+                timeout: BibliotecaAPI.config.timeout
+            }).then(response => {
+                if (response.success) {
+                    return {
+                        total: response.total || 0,
+                        activos: response.activos || 0,
+                        suspendidos: response.suspendidos || 0
+                    };
+                } else {
+                    return { total: 0, activos: 0, suspendidos: 0 };
+                }
             }).catch(error => {
                 console.error('Error obteniendo estadísticas de lectores:', error);
                 return { total: 0, activos: 0, suspendidos: 0 };
@@ -99,7 +110,8 @@ const BibliotecaAPI = {
                 if (response.success && response.lectores) {
                     return response.lectores;
                 } else {
-                    throw new Error(response.message || 'Error al obtener lectores');
+                    console.warn('Respuesta sin lectores:', response);
+                    return [];
                 }
             }).catch(error => {
                 console.error('Error obteniendo lista de lectores:', error);
@@ -185,23 +197,27 @@ const BibliotecaAPI = {
         // Obtener estadísticas
         getStats: function() {
             return $.ajax({
-                url: `${BibliotecaAPI.config.baseUrl}/prestamo/cantidad`,
+                url: `${BibliotecaAPI.config.baseUrl}/prestamo/estadisticas`,
                 method: 'GET',
                 timeout: BibliotecaAPI.config.timeout
             }).then(response => {
-                return {
-                    total: response.cantidad || 0,
-                    vencidos: Math.floor((response.cantidad || 0) * 0.1), // Simular 10% vencidos
-                    enCurso: Math.floor((response.cantidad || 0) * 0.7), // Simular 70% en curso
-                    pendientes: Math.floor((response.cantidad || 0) * 0.2) // Simular 20% pendientes
-                };
+                if (response.success) {
+                    return {
+                        total: response.total || 0,
+                        vencidos: response.vencidos || 0,
+                        enCurso: response.enCurso || 0,
+                        pendientes: response.pendientes || 0
+                    };
+                } else {
+                    return { total: 0, vencidos: 0, enCurso: 0, pendientes: 0 };
+                }
             }).catch(error => {
                 console.error('Error obteniendo estadísticas de préstamos:', error);
                 return { total: 0, vencidos: 0, enCurso: 0, pendientes: 0 };
             });
         },
         
-        // Obtener préstamos por lector
+        // Obtener préstamos por lector (solo cantidad)
         getByLector: function(lectorId) {
             return $.ajax({
                 url: `${BibliotecaAPI.config.baseUrl}/prestamo/cantidad-por-lector`,
@@ -209,13 +225,34 @@ const BibliotecaAPI = {
                 data: { lectorId: lectorId },
                 timeout: BibliotecaAPI.config.timeout
             }).then(response => {
-                return {
-                    total: response.cantidad || 0,
-                    activos: Math.floor((response.cantidad || 0) * 0.6)
-                };
+                if (response.success) {
+                    return {
+                        total: response.cantidad || 0,
+                        activos: response.cantidad || 0  // La cantidad ya representa los activos
+                    };
+                } else {
+                    return { total: 0, activos: 0 };
+                }
             }).catch(error => {
                 console.error('Error obteniendo préstamos por lector:', error);
                 return { total: 0, activos: 0 };
+            });
+        },
+        
+        // Obtener lista completa de préstamos por lector
+        getListByLector: function(lectorId) {
+            console.log('📚 API: Obteniendo lista de préstamos para lector ID:', lectorId);
+            return $.ajax({
+                url: `${BibliotecaAPI.config.baseUrl}/prestamo/por-lector`,
+                method: 'GET',
+                data: { lectorId: lectorId },
+                timeout: BibliotecaAPI.config.timeout
+            }).then(response => {
+                console.log('📊 API: Respuesta de lista de préstamos:', response);
+                return response;
+            }).catch(error => {
+                console.error('❌ API: Error obteniendo lista de préstamos:', error);
+                return { success: false, message: 'Error al obtener préstamos', prestamos: [] };
             });
         },
         

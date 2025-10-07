@@ -35,6 +35,8 @@ public class LectorRequestHandler {
                 obtenerCantidadLectores(out);
             } else if (pathInfo.equals("/cantidad-activos")) {
                 obtenerCantidadLectoresActivos(out);
+            } else if (pathInfo.equals("/estadisticas")) {
+                obtenerEstadisticasLectores(out);
             } else if (pathInfo.equals("/lista")) {
                 obtenerListaLectores(out);
             } else if (pathInfo.equals("/estado")) {
@@ -111,6 +113,14 @@ public class LectorRequestHandler {
      */
     private void obtenerCantidadLectoresActivos(PrintWriter out) {
         String result = factory.getLectorPublisher().obtenerCantidadLectoresActivos();
+        out.println(result);
+    }
+    
+    /**
+     * Obtiene estadísticas completas de lectores
+     */
+    private void obtenerEstadisticasLectores(PrintWriter out) {
+        String result = factory.getLectorPublisher().obtenerEstadisticasLectores();
         out.println(result);
     }
     

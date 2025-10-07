@@ -28,14 +28,29 @@ public class PrestamoPublisher {
     public String crearPrestamo(Long lectorId, Long bibliotecarioId, Long materialId, 
                                String fechaDevolucion, String estado) {
         try {
+            System.out.println("📋 PrestamoPublisher.crearPrestamo - Parámetros recibidos:");
+            System.out.println("   lectorId: " + lectorId);
+            System.out.println("   bibliotecarioId: " + bibliotecarioId);
+            System.out.println("   materialId: " + materialId);
+            System.out.println("   fechaDevolucion: " + fechaDevolucion);
+            System.out.println("   estado: " + estado);
+            
             Long id = prestamoController.crearPrestamoWeb(lectorId, bibliotecarioId, materialId, fechaDevolucion, estado);
             
+            System.out.println("📋 PrestamoPublisher.crearPrestamo - ID retornado: " + id);
+            
             if (id > 0) {
-                return String.format("{\"success\": true, \"message\": \"Préstamo creado exitosamente\", \"id\": %d}", id);
+                String result = String.format("{\"success\": true, \"message\": \"Préstamo creado exitosamente\", \"id\": %d}", id);
+                System.out.println("✅ PrestamoPublisher.crearPrestamo - Resultado exitoso");
+                return result;
             } else {
-                return "{\"success\": false, \"message\": \"Error al crear préstamo. Verifique los datos ingresados.\"}";
+                String result = "{\"success\": false, \"message\": \"Error al crear préstamo. Verifique los datos ingresados.\"}";
+                System.out.println("❌ PrestamoPublisher.crearPrestamo - ID inválido (<=0)");
+                return result;
             }
         } catch (Exception e) {
+            System.err.println("❌ PrestamoPublisher.crearPrestamo - Excepción: " + e.getMessage());
+            e.printStackTrace();
             return String.format("{\"success\": false, \"message\": \"Error interno: %s\"}", e.getMessage());
         }
     }
@@ -97,6 +112,24 @@ public class PrestamoPublisher {
     }
     
     /**
+     * Obtiene estadísticas completas de préstamos
+     * @return JSON con total, vencidos, enCurso y pendientes
+     */
+    public String obtenerEstadisticasPrestamos() {
+        try {
+            int total = prestamoController.obtenerCantidadPrestamos();
+            int vencidos = prestamoController.obtenerCantidadPrestamosVencidos();
+            int enCurso = prestamoController.obtenerCantidadPrestamosPorEstado("EN_CURSO");
+            int pendientes = prestamoController.obtenerCantidadPrestamosPorEstado("PENDIENTE");
+            
+            return String.format("{\"success\": true, \"total\": %d, \"vencidos\": %d, \"enCurso\": %d, \"pendientes\": %d}", 
+                total, vencidos, enCurso, pendientes);
+        } catch (Exception e) {
+            return String.format("{\"success\": false, \"message\": \"Error al obtener estadísticas: %s\"}", e.getMessage());
+        }
+    }
+    
+    /**
      * Obtiene información de un préstamo
      * @param id ID del préstamo
      * @return JSON con la información
@@ -112,6 +145,72 @@ public class PrestamoPublisher {
             }
         } catch (Exception e) {
             return String.format("{\"success\": false, \"message\": \"Error al obtener información: %s\"}", e.getMessage());
+        }
+    }
+    
+    /**
+     * Obtiene la lista de préstamos de un lector
+     * @param lectorId ID del lector
+     * @return JSON con la lista de préstamos
+     */
+    public String obtenerPrestamosPorLector(Long lectorId) {
+        try {
+            java.util.List<edu.udelar.pap.domain.Prestamo> prestamos = prestamoController.obtenerPrestamosPorLector(lectorId);
+            
+            if (prestamos == null || prestamos.isEmpty()) {
+                return String.format("{\"success\": true, \"lectorId\": %d, \"prestamos\": []}", lectorId);
+            }
+            
+            StringBuilder json = new StringBuilder();
+            json.append(String.format("{\"success\": true, \"lectorId\": %d, \"prestamos\": [", lectorId));
+            
+            for (int i = 0; i < prestamos.size(); i++) {
+                edu.udelar.pap.domain.Prestamo prestamo = prestamos.get(i);
+                if (i > 0) json.append(",");
+                
+                // Determinar tipo de material
+                String tipo = "LIBRO"; // Por defecto
+                String materialNombre = "";
+                if (prestamo.getMaterial() != null) {
+                    materialNombre = prestamo.getMaterial() instanceof edu.udelar.pap.domain.Libro ? 
+                        ((edu.udelar.pap.domain.Libro) prestamo.getMaterial()).getTitulo() : 
+                        "Material especial";
+                    tipo = prestamo.getMaterial() instanceof edu.udelar.pap.domain.Libro ? "LIBRO" : "ARTICULO";
+                }
+                
+                // Calcular días restantes
+                long diasRestantes = 0;
+                if (prestamo.getFechaEstimadaDevolucion() != null) {
+                    try {
+                        java.time.LocalDate hoy = java.time.LocalDate.now();
+                        java.time.LocalDate fechaDevolucion = prestamo.getFechaEstimadaDevolucion();
+                        diasRestantes = java.time.temporal.ChronoUnit.DAYS.between(hoy, fechaDevolucion);
+                    } catch (Exception e) {
+                        System.err.println("Error calculando días restantes: " + e.getMessage());
+                    }
+                }
+                
+                // Formatear fechas
+                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                String fechaSolicitudStr = prestamo.getFechaSolicitud() != null ? prestamo.getFechaSolicitud().format(formatter) : "";
+                String fechaDevolucionStr = prestamo.getFechaEstimadaDevolucion() != null ? prestamo.getFechaEstimadaDevolucion().format(formatter) : "";
+                
+                json.append(String.format("{\"id\": %d, \"material\": \"%s\", \"tipo\": \"%s\", \"fechaSolicitud\": \"%s\", \"fechaDevolucion\": \"%s\", \"estado\": \"%s\", \"bibliotecario\": \"%s\", \"diasRestantes\": %d}", 
+                    prestamo.getId(),
+                    materialNombre.replace("\"", "\\\""),
+                    tipo,
+                    fechaSolicitudStr,
+                    fechaDevolucionStr,
+                    prestamo.getEstado(),
+                    prestamo.getBibliotecario() != null ? prestamo.getBibliotecario().getNombre() : "",
+                    diasRestantes));
+            }
+            
+            json.append("]}");
+            return json.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return String.format("{\"success\": false, \"message\": \"Error al obtener préstamos: %s\"}", e.getMessage());
         }
     }
     

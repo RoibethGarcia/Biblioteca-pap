@@ -674,6 +674,19 @@ public class LectorController {
     }
     
     /**
+     * Obtiene un lector por su email
+     * @param email Email del lector a buscar
+     * @return Lector encontrado o null si no existe
+     */
+    public Lector obtenerLectorPorEmail(String email) {
+        try {
+            return lectorService.buscarLectorPorEmail(email);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+    
+    /**
      * Cambia el estado de un lector
      * @param lectorId ID del lector
      * @param nuevoEstado Nuevo estado (ACTIVO o SUSPENDIDO)

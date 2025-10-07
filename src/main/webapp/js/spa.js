@@ -206,7 +206,7 @@ const BibliotecaSPA = {
     },
     
     // Verificar sesión de usuario
-    checkUserSession: function() {
+    checkUserSession: async function() {
         console.log('🔍 checkUserSession called');
         const userSession = sessionStorage.getItem('bibliotecaUserSession');
         console.log('🔍 userSession from storage:', userSession);
@@ -214,6 +214,36 @@ const BibliotecaSPA = {
         if (userSession) {
             this.config.userSession = JSON.parse(userSession);
             console.log('🔍 parsed userSession:', this.config.userSession);
+            
+            // Verificar si la sesión es vieja y no tiene userData
+            if (!this.config.userSession.userData || !this.config.userSession.userData.id) {
+                console.warn('⚠️ Sesión vieja detectada sin userData.id, actualizando...');
+                
+                // Obtener datos del usuario del servidor
+                const email = this.config.userSession.email;
+                const userType = this.config.userSession.userType;
+                
+                if (email && userType) {
+                    const userData = await this.getUserData(email, userType);
+                    
+                    if (userData && userData.id) {
+                        // Actualizar la sesión con los datos completos
+                        this.config.userSession.userData = userData;
+                        this.config.userSession.nombre = userData.nombre;
+                        this.config.userSession.apellido = userData.apellido || '';
+                        this.config.userSession.nombreCompleto = `${userData.nombre} ${userData.apellido || ''}`.trim();
+                        
+                        // Guardar sesión actualizada
+                        sessionStorage.setItem('bibliotecaUserSession', JSON.stringify(this.config.userSession));
+                        console.log('✅ Sesión actualizada con userData:', this.config.userSession);
+                    } else {
+                        console.error('❌ No se pudo obtener userData, forzando logout');
+                        this.logout();
+                        return;
+                    }
+                }
+            }
+            
             this.showAuthenticatedUI();
             this.updateNavigationForRole();
         } else {
@@ -374,18 +404,74 @@ const BibliotecaSPA = {
     },
     
     // Obtener datos del usuario desde el servidor
-    getUserData: function(email, userType) {
+    getUserData: async function(email, userType) {
         console.log('🔍 Getting user data for:', email, userType);
         
-        // En una implementación real, esto haría una llamada al servidor
-        // Por ahora, retornamos datos básicos sin historial
-        return {
-            nombre: 'Usuario',
-            apellido: 'Nuevo',
-            historialPrestamos: [],
-            prestamosActivos: 0,
-            prestamosCompletados: 0
-        };
+        try {
+            if (userType === 'LECTOR') {
+                // Obtener datos del lector desde el servidor
+                const response = await $.ajax({
+                    url: `/lector/por-email?email=${encodeURIComponent(email)}`,
+                    method: 'GET',
+                    dataType: 'json'
+                });
+                
+                console.log('📊 Respuesta getUserData:', response);
+                
+                if (response && response.success && response.lector) {
+                    return {
+                        id: response.lector.id,
+                        nombre: response.lector.nombre || 'Usuario',
+                        apellido: '',  // El modelo actual no tiene apellido separado
+                        email: response.lector.email,
+                        direccion: response.lector.direccion,
+                        zona: response.lector.zona,
+                        estado: response.lector.estado,
+                        historialPrestamos: [],
+                        prestamosActivos: 0,
+                        prestamosCompletados: 0
+                    };
+                } else {
+                    console.warn('⚠️ Respuesta no exitosa o sin datos de lector:', response);
+                    throw new Error('No se pudo obtener datos del lector');
+                }
+            } else if (userType === 'BIBLIOTECARIO') {
+                // Para bibliotecarios, obtener datos del servidor
+                const response = await $.ajax({
+                    url: `/bibliotecario/por-email?email=${encodeURIComponent(email)}`,
+                    method: 'GET',
+                    dataType: 'json'
+                });
+                
+                console.log('📊 Respuesta de bibliotecario por email:', response);
+                
+                if (response && response.success && response.bibliotecario) {
+                    return {
+                        id: response.bibliotecario.id,
+                        nombre: response.bibliotecario.nombre,
+                        apellido: '',
+                        nombreCompleto: response.bibliotecario.nombre,
+                        email: response.bibliotecario.email,
+                        numeroEmpleado: response.bibliotecario.numeroEmpleado,
+                        historialPrestamos: [],
+                        prestamosActivos: 0,
+                        prestamosCompletados: 0
+                    };
+                } else {
+                    console.warn('⚠️ Respuesta no exitosa o sin datos de bibliotecario:', response);
+                    throw new Error('No se pudo obtener datos del bibliotecario');
+                }
+            }
+            
+            // Fallback para otros tipos de usuario
+            console.warn('⚠️ Tipo de usuario no reconocido:', userType);
+            throw new Error('Tipo de usuario no válido');
+        } catch (error) {
+            console.error('❌ Error obteniendo datos del usuario:', error);
+            console.error('❌ Stack trace:', error.stack);
+            // Re-lanzar el error para que el login lo maneje
+            throw error;
+        }
     },
     
     // Navegar a página
@@ -702,12 +788,12 @@ const BibliotecaSPA = {
                     <div class="col-4">
                         <div class="card">
                             <div class="card-header">
-                                <h4 style="margin: 0;">📋 Catálogo</h4>
+                                <h4 style="margin: 0;">📚 Catálogo de Libros</h4>
                             </div>
                             <div class="card-body">
-                                <p>Explorar el catálogo de materiales disponibles</p>
+                                <p>Explora todos los libros disponibles en nuestra biblioteca</p>
                                 <button class="btn btn-secondary" onclick="BibliotecaSPA.verCatalogo()">
-                                    Ver Catálogo
+                                    Ver Catálogo de Libros
                                 </button>
                             </div>
                         </div>
@@ -721,25 +807,53 @@ const BibliotecaSPA = {
     },
     
     // Cargar estadísticas del lector desde el servidor
-    loadLectorStats: function() {
+    loadLectorStats: async function() {
         console.log('🔍 loadLectorStats called');
         
-        // En una implementación real, esto haría una llamada al servidor
-        // Por ahora, retornamos estadísticas vacías para usuarios nuevos
-        const stats = {
-            prestamosActivos: 0,
-            prestamosCompletados: 0,
-            prestamosVencidos: 0,
-            totalPrestamos: 0
-        };
-        
-        // Actualizar estadísticas en el dashboard
-        $('#prestamosActivos').text(stats.prestamosActivos);
-        $('#prestamosCompletados').text(stats.prestamosCompletados);
-        $('#prestamosVencidos').text(stats.prestamosVencidos);
-        $('#totalPrestamos').text(stats.totalPrestamos);
-        
-        console.log('✅ Lector stats loaded (empty for new user):', stats);
+        try {
+            // Obtener ID del lector desde la sesión
+            const userSession = this.config.userSession;
+            const lectorId = userSession && userSession.userData ? userSession.userData.id : null;
+            
+            if (!lectorId) {
+                console.warn('⚠️ No se pudo obtener el ID del lector de la sesión');
+                // Poner valores en 0 si no hay ID
+                $('#misPrestamos').text('0');
+                $('#prestamosActivos').text('0');
+                return;
+            }
+            
+            console.log('📚 Obteniendo préstamos para lector ID:', lectorId);
+            
+            // Llamar al endpoint para obtener cantidad de préstamos del lector
+            const response = await $.ajax({
+                url: `/prestamo/cantidad-por-lector?lectorId=${lectorId}`,
+                method: 'GET',
+                dataType: 'json'
+            });
+            
+            console.log('📊 Respuesta de préstamos:', response);
+            
+            if (response && response.success) {
+                const cantidad = response.cantidad || 0;
+                
+                // Actualizar estadísticas en el dashboard
+                $('#misPrestamos').text(cantidad);
+                $('#prestamosActivos').text(cantidad);  // Por ahora asumimos que todos los préstamos son activos
+                
+                console.log('✅ Lector stats loaded:', {total: cantidad, activos: cantidad});
+            } else {
+                console.warn('⚠️ Respuesta sin datos válidos');
+                $('#misPrestamos').text('0');
+                $('#prestamosActivos').text('0');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error al cargar estadísticas del lector:', error);
+            // En caso de error, mostrar 0
+            $('#misPrestamos').text('0');
+            $('#prestamosActivos').text('0');
+        }
     },
     
     // Renderizar Gestión de Lectores
@@ -1063,7 +1177,7 @@ const BibliotecaSPA = {
     },
     
     // Manejar login
-    handleLogin: function() {
+    handleLogin: async function() {
         const formData = {
             userType: $('#userType').val(),
             email: $('#email').val(),
@@ -1076,46 +1190,62 @@ const BibliotecaSPA = {
         
         this.showLoading();
         
-        BibliotecaAPI.login(formData).then(response => {
-            this.hideLoading();
+        try {
+            const response = await BibliotecaAPI.login(formData);
+            
             if (response.success) {
                 // Convertir tipo de usuario a formato estándar
                 const userType = formData.userType === 'BIBLIOTECARIO' ? 'BIBLIOTECARIO' : 'LECTOR';
                 console.log('🔍 Login successful, userType:', userType);
                 console.log('🔍 formData.userType:', formData.userType);
                 
-                // Obtener datos del usuario desde el servidor
-                const userData = this.getUserData(formData.email, userType);
-                console.log('🔍 userData:', userData);
-                
-                this.config.userSession = {
-                    userType: userType,
-                    email: formData.email,
-                    originalUserType: formData.userType,
-                    nombre: userData.nombre,
-                    apellido: userData.apellido,
-                    nombreCompleto: `${userData.nombre} ${userData.apellido}`
-                };
-                console.log('🔍 userSession created:', this.config.userSession);
-                
-                sessionStorage.setItem('bibliotecaUserSession', JSON.stringify(this.config.userSession));
-                console.log('🔍 userSession saved to storage');
-                
-                // Mostrar UI autenticada
-                this.showAuthenticatedUI();
-                this.updateNavigationForRole();
-                
-                // Navegar al dashboard y actualizar URL
-                this.navigateToPage('dashboard');
-                
-                this.showAlert('Login exitoso', 'success');
+                // Obtener datos del usuario desde el servidor (ahora es async)
+                try {
+                    const userData = await this.getUserData(formData.email, userType);
+                    console.log('🔍 userData:', userData);
+                    
+                    // Verificar que userData tenga un ID válido
+                    if (!userData || !userData.id) {
+                        throw new Error('Los datos del usuario no contienen un ID válido');
+                    }
+                    
+                    this.config.userSession = {
+                        userType: userType,
+                        email: formData.email,
+                        originalUserType: formData.userType,
+                        nombre: userData.nombre,
+                        apellido: userData.apellido,
+                        nombreCompleto: `${userData.nombre} ${userData.apellido}`,
+                        userData: userData  // Guardar todos los datos del usuario incluyendo el ID
+                    };
+                    console.log('🔍 userSession created:', this.config.userSession);
+                    
+                    sessionStorage.setItem('bibliotecaUserSession', JSON.stringify(this.config.userSession));
+                    console.log('🔍 userSession saved to storage');
+                    
+                    // Mostrar UI autenticada
+                    this.showAuthenticatedUI();
+                    this.updateNavigationForRole();
+                    
+                    // Navegar al dashboard y actualizar URL
+                    this.navigateToPage('dashboard');
+                    
+                    this.hideLoading();
+                    this.showAlert('Login exitoso', 'success');
+                } catch (userDataError) {
+                    console.error('❌ Error obteniendo datos del usuario:', userDataError);
+                    this.hideLoading();
+                    this.showAlert('Error al cargar datos del usuario: ' + userDataError.message, 'danger');
+                }
             } else {
+                this.hideLoading();
                 this.showAlert('Credenciales inválidas', 'danger');
             }
-        }).catch(error => {
+        } catch (error) {
+            console.error('❌ Error en login:', error);
             this.hideLoading();
             this.showAlert('Error en el sistema: ' + error.message, 'danger');
-        });
+        }
     },
     
     // Manejar registro
@@ -1267,12 +1397,20 @@ const BibliotecaSPA = {
             () => {
                 this.showLoading('Cambiando estado del lector...');
                 
-                // Simular llamada a API
-                setTimeout(() => {
+                // Llamar al API real
+                BibliotecaAPI.lectores.changeStatus(id, nuevoEstado).then(response => {
                     this.hideLoading();
-        this.showAlert(`Estado del lector cambiado a ${nuevoEstado}`, 'success');
-        this.loadLectoresData();
-                }, 1000);
+                    if (response.success) {
+                        this.showAlert(`Estado del lector cambiado a ${nuevoEstado}`, 'success');
+                        this.loadLectoresData();
+                    } else {
+                        this.showAlert('Error al cambiar estado: ' + (response.message || 'Error desconocido'), 'danger');
+                    }
+                }).catch(error => {
+                    this.hideLoading();
+                    this.showAlert('Error al comunicarse con el servidor', 'danger');
+                    console.error('Error cambiando estado:', error);
+                });
             }
         );
     },
@@ -1362,13 +1500,22 @@ const BibliotecaSPA = {
         
         this.showLoading('Cambiando zona del lector...');
         
-        // Simular llamada a API
-        setTimeout(() => {
+        // Llamar al API real
+        BibliotecaAPI.lectores.changeZone(lectorId, nuevaZona).then(response => {
             this.hideLoading();
             this.closeModal('zonaChangeModal');
-            this.showAlert(`Zona del lector cambiada de ${lector.zona} a ${nuevaZona}`, 'success');
-            this.loadLectoresData();
-        }, 1000);
+            if (response.success) {
+                this.showAlert(`Zona del lector cambiada de ${lector.zona} a ${nuevaZona}`, 'success');
+                this.loadLectoresData();
+            } else {
+                this.showAlert('Error al cambiar zona: ' + (response.message || 'Error desconocido'), 'danger');
+            }
+        }).catch(error => {
+            this.hideLoading();
+            this.closeModal('zonaChangeModal');
+            this.showAlert('Error al comunicarse con el servidor', 'danger');
+            console.error('Error cambiando zona:', error);
+        });
     },
     
     // Mostrar modal de confirmación
@@ -1418,6 +1565,32 @@ const BibliotecaSPA = {
         setTimeout(() => {
             $(`#${modalId}`).remove();
         }, 300);
+    },
+    
+    // Mostrar modal informativo
+    showModal: function(titulo, contenido) {
+        const modalHtml = `
+            <div id="infoModal" class="modal fade-in">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>${titulo}</h3>
+                        <button class="modal-close" onclick="BibliotecaSPA.closeModal('infoModal')">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        ${contenido}
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" onclick="BibliotecaSPA.closeModal('infoModal')">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Remover modal existente si existe
+        $('#infoModal').remove();
+        $('body').append(modalHtml);
     },
     
     // Obtener datos de lectores desde el servidor
@@ -1472,15 +1645,23 @@ const BibliotecaSPA = {
                                     <select id="tipoMaterialFilter" class="form-control">
                                         <option value="">Todos</option>
                                         <option value="LIBRO">Libros</option>
-                                        <option value="ARTICULO_ESPECIAL">Artículos Especiales</option>
+                                        <option value="ARTICULO">Artículos Especiales</option>
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-4">
+                            <div class="col-2">
                                 <div class="form-group">
                                     <label>&nbsp;</label>
                                     <button class="btn btn-primary" onclick="BibliotecaSPA.aplicarFiltrosPrestamos()" style="width: 100%;">
-                                        🔍 Aplicar Filtros
+                                        🔍 Aplicar
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-2">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <button class="btn btn-secondary" onclick="BibliotecaSPA.limpiarFiltrosPrestamos()" style="width: 100%;">
+                                        🔄 Limpiar
                                     </button>
                                 </div>
                             </div>
@@ -1525,12 +1706,11 @@ const BibliotecaSPA = {
                                         <th>Fecha Devolución</th>
                                         <th>Estado</th>
                                         <th>Días Restantes</th>
-                                        <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td colspan="8" class="text-center">
+                                        <td colspan="7" class="text-center">
                                             <div class="spinner"></div>
                                             Cargando préstamos...
                                         </td>
@@ -1552,20 +1732,60 @@ const BibliotecaSPA = {
         $(`#${pageId}`).html(content);
         this.showPage('misPrestamos');
         this.loadMisPrestamosData();
+        
+        // Agregar listeners para filtrado automático
+        setTimeout(() => {
+            $('#estadoFilterPrestamos, #tipoMaterialFilter').on('change', function() {
+                BibliotecaSPA.aplicarFiltrosPrestamos();
+            });
+        }, 100);
     },
     
     // Cargar datos de mis préstamos desde el servidor
-    loadMisPrestamosData: function() {
+    loadMisPrestamosData: async function() {
         console.log('🔍 Loading mis prestamos data from server');
         
-        // En una implementación real, esto haría una llamada al servidor
-        // Por ahora, retornamos array vacío para usuarios nuevos
-        setTimeout(() => {
-            const prestamos = [];
+        try {
+            // Obtener ID del lector desde la sesión
+            const userSession = this.config.userSession;
+            const lectorId = userSession && userSession.userData ? userSession.userData.id : null;
             
-            this.renderMisPrestamosTable(prestamos);
-            this.updateMisPrestamosStats(prestamos);
-        }, 1000);
+            if (!lectorId) {
+                console.warn('⚠️ No se pudo obtener el ID del lector de la sesión');
+                this.config.allPrestamos = []; // Guardar copia vacía
+                this.renderMisPrestamosTable([]);
+                this.updateMisPrestamosStats([]);
+                return;
+            }
+            
+            console.log('📚 Obteniendo préstamos del lector ID:', lectorId);
+            
+            // Llamar al endpoint para obtener lista de préstamos del lector
+            const response = await BibliotecaAPI.prestamos.getListByLector(lectorId);
+            
+            console.log('📊 Respuesta de préstamos del lector:', response);
+            
+            if (response.success && response.prestamos) {
+                const prestamos = response.prestamos;
+                console.log(`✅ ${prestamos.length} préstamos cargados`);
+                
+                // Guardar todos los préstamos para filtrado
+                this.config.allPrestamos = prestamos;
+                
+                this.renderMisPrestamosTable(prestamos);
+                this.updateMisPrestamosStats(prestamos);
+            } else {
+                console.warn('⚠️ No se encontraron préstamos');
+                this.config.allPrestamos = []; // Guardar copia vacía
+                this.renderMisPrestamosTable([]);
+                this.updateMisPrestamosStats([]);
+            }
+        } catch (error) {
+            console.error('❌ Error al cargar préstamos:', error);
+            this.config.allPrestamos = []; // Guardar copia vacía
+            this.renderMisPrestamosTable([]);
+            this.updateMisPrestamosStats([]);
+        }
     },
     
     // Renderizar tabla de mis préstamos
@@ -1587,16 +1807,6 @@ const BibliotecaSPA = {
                     <td>${prestamo.fechaDevolucion}</td>
                     <td>${estadoBadge}</td>
                     <td class="${diasClass}">${diasRestantes}</td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="BibliotecaSPA.verDetallesPrestamo(${prestamo.id})">
-                            👁️ Ver
-                        </button>
-                        ${prestamo.estado === 'EN_CURSO' ? 
-                            `<button class="btn btn-success btn-sm" onclick="BibliotecaSPA.renovarPrestamo(${prestamo.id})">
-                                🔄 Renovar
-                            </button>` : ''
-                        }
-                    </td>
                 </tr>
             `;
             tbody.append(row);
@@ -1612,6 +1822,19 @@ const BibliotecaSPA = {
             'VENCIDO': '<span class="badge badge-danger">Vencido</span>'
         };
         return badges[estado] || '<span class="badge badge-secondary">Desconocido</span>';
+    },
+    
+    // Convertir fecha de formato YYYY-MM-DD a DD/MM/YYYY para el servidor
+    convertDateToServerFormat: function(dateString) {
+        if (!dateString) return '';
+        
+        // dateString viene en formato YYYY-MM-DD del input type="date"
+        const parts = dateString.split('-');
+        if (parts.length !== 3) return dateString;
+        
+        const [year, month, day] = parts;
+        // Retornar en formato DD/MM/YYYY
+        return `${day}/${month}/${year}`;
     },
     
     // Actualizar estadísticas de mis préstamos
@@ -1840,14 +2063,49 @@ const BibliotecaSPA = {
     },
     
     // Cargar préstamos activos del usuario
-    cargarPrestamosActivos: function() {
-        // Simular datos
-        const prestamosActivos = 2; // Simular 2 préstamos activos
-        $('#prestamosActivosCount').text(prestamosActivos);
+    cargarPrestamosActivos: async function() {
+        console.log('🔍 cargarPrestamosActivos called');
+        
+        try {
+            // Obtener ID del lector desde la sesión
+            const userSession = this.config.userSession;
+            const lectorId = userSession && userSession.userData ? userSession.userData.id : null;
+            
+            if (!lectorId) {
+                console.warn('⚠️ No se pudo obtener el ID del lector de la sesión');
+                $('#prestamosActivosCount').text('0');
+                return;
+            }
+            
+            console.log('📚 Obteniendo préstamos activos para lector ID:', lectorId);
+            
+            // Llamar al endpoint para obtener cantidad de préstamos del lector
+            const response = await $.ajax({
+                url: `/prestamo/cantidad-por-lector?lectorId=${lectorId}`,
+                method: 'GET',
+                dataType: 'json'
+            });
+            
+            console.log('📊 Respuesta de préstamos activos:', response);
+            
+            if (response && response.success) {
+                const cantidad = response.cantidad || 0;
+                $('#prestamosActivosCount').text(cantidad);
+                console.log('✅ Préstamos activos cargados:', cantidad);
+            } else {
+                $('#prestamosActivosCount').text('0');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error al cargar préstamos activos:', error);
+            $('#prestamosActivosCount').text('0');
+        }
     },
     
     // Procesar solicitud de préstamo
-    procesarSolicitudPrestamo: function() {
+    procesarSolicitudPrestamo: async function() {
+        console.log('📝 procesarSolicitudPrestamo iniciado');
+        
         const formData = {
             tipoMaterial: $('#tipoMaterial').val(),
             materialId: $('#materialSeleccionado').val(),
@@ -1855,18 +2113,63 @@ const BibliotecaSPA = {
             motivo: $('#motivoPrestamo').val()
         };
         
+        console.log('📝 Datos del formulario:', formData);
+        
         if (!this.validarSolicitudPrestamo(formData)) {
+            console.log('❌ Validación de formulario falló');
             return;
         }
         
-        this.showLoading('Procesando solicitud...');
+        // Obtener ID del lector desde la sesión
+        const userSession = this.config.userSession;
+        const lectorId = userSession && userSession.userData ? userSession.userData.id : null;
         
-        // Simular procesamiento
-        setTimeout(() => {
+        console.log('👤 Lector ID desde sesión:', lectorId);
+        
+        if (!lectorId) {
+            this.showAlert('Error: No se pudo identificar al usuario. Por favor, vuelva a iniciar sesión.', 'danger');
+            return;
+        }
+        
+        this.showLoading('Procesando solicitud de préstamo...');
+        
+        try {
+            // Convertir fecha de YYYY-MM-DD a DD/MM/YYYY para el servidor
+            const fechaDevolucionFormatted = this.convertDateToServerFormat(formData.fechaDevolucion);
+            
+            console.log('📅 Fecha original:', formData.fechaDevolucion);
+            console.log('📅 Fecha formateada:', fechaDevolucionFormatted);
+            
+            // Crear préstamo usando la API
+            const response = await BibliotecaAPI.prestamos.create({
+                lectorId: lectorId,
+                materialId: formData.materialId,
+                fechaDevolucion: fechaDevolucionFormatted
+            });
+            
+            console.log('📊 Respuesta crear préstamo:', response);
+            
             this.hideLoading();
-            this.showAlert('¡Solicitud de préstamo enviada exitosamente!', 'success');
-            this.navigateToPage('dashboard');
-        }, 2000);
+            
+            if (response.success || (response.data && response.data.success)) {
+                this.showAlert('¡Préstamo aprobado y creado exitosamente! Puede ver los detalles en "Mis Préstamos".', 'success');
+                
+                // Actualizar estadísticas del dashboard
+                await this.loadLectorStats();
+                
+                // Redirigir a "Mis Préstamos" para ver el nuevo préstamo
+                setTimeout(() => {
+                    this.verMisPrestamos();
+                }, 1500);
+            } else {
+                const message = response.message || (response.data && response.data.message) || 'Error desconocido al crear préstamo';
+                this.showAlert('Error al solicitar préstamo: ' + message, 'danger');
+            }
+        } catch (error) {
+            console.error('❌ Error al procesar solicitud:', error);
+            this.hideLoading();
+            this.showAlert('Error al procesar la solicitud: ' + error.message, 'danger');
+        }
     },
     
     // Validar solicitud de préstamo
@@ -1918,46 +2221,26 @@ const BibliotecaSPA = {
     renderCatalogo: function() {
         const content = `
             <div class="fade-in-up">
-                <h2 class="text-gradient mb-3">📋 Catálogo de Materiales</h2>
+                <h2 class="text-gradient mb-3">📚 Catálogo de Libros</h2>
                 
                 <!-- Filtros de búsqueda -->
                 <div class="card mb-3">
                     <div class="card-header">
-                        <h4 style="margin: 0;">🔍 Búsqueda y Filtros</h4>
+                        <h4 style="margin: 0;">🔍 Buscar Libros</h4>
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-4">
+                            <div class="col-8">
                                 <div class="form-group">
                                     <label for="buscarCatalogo">Buscar:</label>
-                                    <input type="text" id="buscarCatalogo" class="form-control" placeholder="Título, autor, descripción...">
+                                    <input type="text" id="buscarCatalogo" class="form-control" placeholder="Buscar por título o donante..." onkeyup="BibliotecaSPA.buscarCatalogoEnTiempoReal()">
                                 </div>
                             </div>
-                            <div class="col-3">
-                                <div class="form-group">
-                                    <label for="tipoCatalogo">Tipo:</label>
-                                    <select id="tipoCatalogo" class="form-control">
-                                        <option value="">Todos</option>
-                                        <option value="LIBRO">📚 Libros</option>
-                                        <option value="ARTICULO_ESPECIAL">🎨 Artículos Especiales</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-3">
-                                <div class="form-group">
-                                    <label for="disponibilidadCatalogo">Disponibilidad:</label>
-                                    <select id="disponibilidadCatalogo" class="form-control">
-                                        <option value="">Todos</option>
-                                        <option value="DISPONIBLE">Disponible</option>
-                                        <option value="PRESTADO">Prestado</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-2">
+                            <div class="col-4">
                                 <div class="form-group">
                                     <label>&nbsp;</label>
-                                    <button class="btn btn-primary" onclick="BibliotecaSPA.buscarCatalogo()" style="width: 100%;">
-                                        🔍 Buscar
+                                    <button class="btn btn-secondary" onclick="BibliotecaSPA.limpiarBusquedaCatalogo()" style="width: 100%;">
+                                        🔄 Limpiar Búsqueda
                                     </button>
                                 </div>
                             </div>
@@ -1968,27 +2251,19 @@ const BibliotecaSPA = {
                 <!-- Estadísticas del catálogo -->
                 <div class="stats-grid mb-3">
                     <div class="stat-card">
-                        <div class="stat-number" id="totalMateriales">-</div>
-                        <div class="stat-label">Total Materiales</div>
+                        <div class="stat-number" id="totalLibros">0</div>
+                        <div class="stat-label">Total de Libros</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number" id="librosDisponibles">-</div>
-                        <div class="stat-label">Libros Disponibles</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="articulosDisponibles">-</div>
-                        <div class="stat-label">Artículos Disponibles</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="materialesPrestados">-</div>
-                        <div class="stat-label">Prestados</div>
+                        <div class="stat-number" id="librosMostrados">0</div>
+                        <div class="stat-label">Libros Mostrados</div>
                     </div>
                 </div>
                 
-                <!-- Lista de materiales -->
+                <!-- Lista de libros -->
                 <div class="card">
                     <div class="card-header">
-                        <h4 style="margin: 0;">📚 Materiales Disponibles</h4>
+                        <h4 style="margin: 0;">📖 Listado de Libros</h4>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -1997,15 +2272,14 @@ const BibliotecaSPA = {
                                     <tr>
                                         <th>ID</th>
                                         <th>Título</th>
-                                        <th>Tipo</th>
-                                        <th>Autor/Descripción</th>
-                                        <th>Disponibilidad</th>
-                                        <th>Acciones</th>
+                                        <th>Páginas</th>
+                                        <th>Donante</th>
+                                        <th>Fecha de Ingreso</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td colspan="6" class="text-center">
+                                        <td colspan="5" class="text-center">
                                             <div class="spinner"></div>
                                             Cargando catálogo...
                                         </td>
@@ -2030,50 +2304,59 @@ const BibliotecaSPA = {
     },
     
     // Cargar datos del catálogo
-    loadCatalogoData: function() {
-        setTimeout(() => {
-            const materiales = this.getTodosLosMateriales();
-            this.renderCatalogoTable(materiales);
-            this.updateCatalogoStats(materiales);
-        }, 1000);
-    },
-    
-    // Obtener todos los materiales (fallback cuando el backend no está disponible)
-    getTodosLosMateriales: function() {
-        console.log('🔍 Getting todos los materiales (fallback - empty for new system)');
-        // Retornar array vacío para sistema nuevo sin datos precargados
-        return [];
+    loadCatalogoData: async function() {
+        console.log('🔍 Cargando catálogo de libros desde el backend...');
+        
+        try {
+            // Obtener libros desde el API (sin contexto /biblioteca-pap para servidor integrado)
+            const response = await $.ajax({
+                url: '/donacion/libros',
+                method: 'GET',
+                dataType: 'json'
+            });
+            
+            console.log('📚 Respuesta del servidor:', response);
+            
+            if (response && response.success && response.libros) {
+                console.log('✅ Libros cargados:', response.libros.length);
+                this.todosLosLibros = response.libros;
+                this.librosFiltrados = response.libros;
+                this.renderCatalogoTable(response.libros);
+                this.updateCatalogoStats(response.libros);
+            } else {
+                console.warn('⚠️ Respuesta sin libros:', response);
+                this.todosLosLibros = [];
+                this.librosFiltrados = [];
+                this.renderCatalogoTable([]);
+                this.updateCatalogoStats([]);
+            }
+        } catch (error) {
+            console.error('❌ Error cargando datos del catálogo:', error);
+            $('#catalogoTable tbody').html('<tr><td colspan="5" class="text-center alert alert-danger">Error al cargar el catálogo. Por favor, intente nuevamente.<br>Error: ' + error.message + '</td></tr>');
+            $('#totalLibros').text('0');
+            $('#librosMostrados').text('0');
+        }
     },
     
     // Renderizar tabla del catálogo
-    renderCatalogoTable: function(materiales) {
+    renderCatalogoTable: function(libros) {
         const tbody = $('#catalogoTable tbody');
         tbody.empty();
         
-        materiales.forEach(material => {
-            const tipoIcon = material.tipo === 'LIBRO' ? '📚' : '🎨';
-            const disponibilidadBadge = material.disponibilidad === 'DISPONIBLE' ? 
-                '<span class="badge badge-success">Disponible</span>' : 
-                '<span class="badge badge-warning">Prestado</span>';
-            
+        if (!libros || libros.length === 0) {
+            tbody.html('<tr><td colspan="5" class="text-center">No se encontraron libros en el catálogo</td></tr>');
+            return;
+        }
+        
+        libros.forEach(libro => {
+            const fechaFormateada = this.formatDateSimple(libro.fechaIngreso);
             const row = `
                 <tr>
-                    <td>${material.id}</td>
-                    <td>${material.titulo}</td>
-                    <td>${tipoIcon} ${material.tipo === 'LIBRO' ? 'Libro' : 'Artículo'}</td>
-                    <td>${material.autor}</td>
-                    <td>${disponibilidadBadge}</td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="BibliotecaSPA.verDetallesMaterial(${material.id})">
-                            👁️ Ver
-                        </button>
-                        ${material.disponibilidad === 'DISPONIBLE' ? 
-                            `<button class="btn btn-success btn-sm" onclick="BibliotecaSPA.solicitarMaterial(${material.id})">
-                                📖 Solicitar
-                            </button>` : 
-                            '<span class="text-muted">No disponible</span>'
-                        }
-                    </td>
+                    <td>${libro.id}</td>
+                    <td><strong>${libro.titulo}</strong></td>
+                    <td>${libro.paginas}</td>
+                    <td>${libro.donante || 'Anónimo'}</td>
+                    <td>${fechaFormateada}</td>
                 </tr>
             `;
             tbody.append(row);
@@ -2081,30 +2364,112 @@ const BibliotecaSPA = {
     },
     
     // Actualizar estadísticas del catálogo
-    updateCatalogoStats: function(materiales) {
-        const total = materiales.length;
-        const libros = materiales.filter(m => m.tipo === 'LIBRO');
-        const articulos = materiales.filter(m => m.tipo === 'ARTICULO_ESPECIAL');
-        const prestados = materiales.filter(m => m.disponibilidad === 'PRESTADO');
+    updateCatalogoStats: function(libros) {
+        const totalMostrados = libros ? libros.length : 0;
+        const totalLibros = this.todosLosLibros ? this.todosLosLibros.length : 0;
         
-        $('#totalMateriales').text(total);
-        $('#librosDisponibles').text(libros.filter(m => m.disponibilidad === 'DISPONIBLE').length);
-        $('#articulosDisponibles').text(articulos.filter(m => m.disponibilidad === 'DISPONIBLE').length);
-        $('#materialesPrestados').text(prestados.length);
+        console.log('📊 Actualizando estadísticas - Mostrando', totalMostrados, 'de', totalLibros, 'libros');
+        $('#totalLibros').text(totalLibros);
+        $('#librosMostrados').text(totalMostrados);
+        
+        // Cambiar color si hay filtro activo
+        const searchTerm = $('#buscarCatalogo').val().trim();
+        if (searchTerm !== '' && totalMostrados < totalLibros) {
+            $('#librosMostrados').css('color', '#007bff');
+        } else {
+            $('#librosMostrados').css('color', '');
+        }
     },
     
     // Funciones auxiliares para el catálogo
     buscarCatalogo: function() {
-        this.showAlert('Función de búsqueda en desarrollo', 'info');
+        const searchTerm = $('#buscarCatalogo').val().toLowerCase().trim();
+        console.log('🔍 Buscando:', searchTerm);
+        
+        if (!this.todosLosLibros || this.todosLosLibros.length === 0) {
+            console.warn('⚠️ No hay libros cargados');
+            return;
+        }
+        
+        if (searchTerm === '') {
+            this.librosFiltrados = this.todosLosLibros;
+        } else {
+            this.librosFiltrados = this.todosLosLibros.filter(libro => 
+                libro.titulo.toLowerCase().includes(searchTerm) ||
+                (libro.donante && libro.donante.toLowerCase().includes(searchTerm))
+            );
+        }
+        
+        console.log('✅ Libros filtrados:', this.librosFiltrados.length, 'de', this.todosLosLibros.length);
+        this.renderCatalogoTable(this.librosFiltrados);
+        this.updateCatalogoStats(this.librosFiltrados);
+        
+        // Mostrar mensaje si no se encontraron resultados
+        if (this.librosFiltrados.length === 0 && searchTerm !== '') {
+            $('#catalogoTable tbody').html('<tr><td colspan="5" class="text-center text-muted">No se encontraron libros que coincidan con "' + searchTerm + '"</td></tr>');
+        }
     },
     
-    verDetallesMaterial: function(id) {
-        this.showAlert(`Ver detalles del material ID: ${id}`, 'info');
+    // Búsqueda en tiempo real con debounce
+    buscarCatalogoEnTiempoReal: function() {
+        // Cancelar búsqueda anterior si existe
+        if (this.searchTimeout) {
+            clearTimeout(this.searchTimeout);
+        }
+        
+        // Esperar 300ms después de que el usuario deje de escribir
+        this.searchTimeout = setTimeout(() => {
+            this.buscarCatalogo();
+        }, 300);
     },
     
-    solicitarMaterial: function(id) {
-        this.showAlert(`Solicitar material ID: ${id}`, 'info');
-        // Aquí se podría redirigir al formulario de solicitud con el material preseleccionado
+    limpiarBusquedaCatalogo: function() {
+        console.log('🔄 Limpiando búsqueda');
+        $('#buscarCatalogo').val('');
+        if (this.todosLosLibros) {
+            this.librosFiltrados = this.todosLosLibros;
+            this.renderCatalogoTable(this.todosLosLibros);
+            this.updateCatalogoStats(this.todosLosLibros);
+            console.log('✅ Mostrando todos los libros:', this.todosLosLibros.length);
+        }
+        // Enfocar de nuevo en el input de búsqueda
+        $('#buscarCatalogo').focus();
+    },
+    
+    verDetallesLibro: function(id) {
+        const libro = this.todosLosLibros ? this.todosLosLibros.find(l => l.id === id) : null;
+        
+        if (libro) {
+            const fechaFormateada = this.formatDateSimple(libro.fechaIngreso);
+            const detalles = `
+                <div style="text-align: left;">
+                    <p><strong>ID:</strong> ${libro.id}</p>
+                    <p><strong>Título:</strong> ${libro.titulo}</p>
+                    <p><strong>Páginas:</strong> ${libro.paginas}</p>
+                    <p><strong>Donante:</strong> ${libro.donante || 'Anónimo'}</p>
+                    <p><strong>Fecha de Ingreso:</strong> ${fechaFormateada}</p>
+                </div>
+            `;
+            this.showModal('Detalles del Libro', detalles);
+        } else {
+            this.showAlert(`No se encontró el libro con ID: ${id}`, 'warning');
+        }
+    },
+    
+    // Función auxiliar para formatear fechas
+    formatDateSimple: function(dateString) {
+        if (!dateString) return '-';
+        
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-ES', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        } catch (error) {
+            return dateString;
+        }
     },
     
     verDetallesPrestamo: function(id) {
@@ -2116,7 +2481,68 @@ const BibliotecaSPA = {
     },
     
     aplicarFiltrosPrestamos: function() {
-        this.showAlert('Aplicando filtros a mis préstamos...', 'info');
+        console.log('🔍 Aplicando filtros a mis préstamos...');
+        
+        // Obtener valores de los filtros
+        const estadoFiltro = $('#estadoFilterPrestamos').val();
+        const tipoFiltro = $('#tipoMaterialFilter').val();
+        
+        console.log('📋 Filtros seleccionados:', { estado: estadoFiltro, tipo: tipoFiltro });
+        
+        // Obtener todos los préstamos originales
+        const todosLosPrestamos = this.config.allPrestamos || [];
+        
+        if (todosLosPrestamos.length === 0) {
+            console.warn('⚠️ No hay préstamos para filtrar');
+            this.showAlert('No hay préstamos para filtrar', 'warning');
+            return;
+        }
+        
+        // Aplicar filtros
+        let prestamosFiltrados = todosLosPrestamos.filter(prestamo => {
+            let cumpleFiltros = true;
+            
+            // Filtro por estado
+            if (estadoFiltro && estadoFiltro !== '') {
+                cumpleFiltros = cumpleFiltros && prestamo.estado === estadoFiltro;
+            }
+            
+            // Filtro por tipo
+            if (tipoFiltro && tipoFiltro !== '') {
+                cumpleFiltros = cumpleFiltros && prestamo.tipo === tipoFiltro;
+            }
+            
+            return cumpleFiltros;
+        });
+        
+        console.log(`✅ ${prestamosFiltrados.length} de ${todosLosPrestamos.length} préstamos después de filtrar`);
+        
+        // Actualizar la tabla con los préstamos filtrados
+        this.renderMisPrestamosTable(prestamosFiltrados);
+        this.updateMisPrestamosStats(prestamosFiltrados);
+        
+        // Mostrar mensaje de resultado
+        if (prestamosFiltrados.length === 0) {
+            this.showAlert('No se encontraron préstamos con los filtros seleccionados', 'info');
+        } else {
+            this.showAlert(`Se encontraron ${prestamosFiltrados.length} préstamo(s)`, 'success');
+        }
+    },
+    
+    // Limpiar filtros de préstamos
+    limpiarFiltrosPrestamos: function() {
+        console.log('🔄 Limpiando filtros...');
+        
+        // Resetear los selectores
+        $('#estadoFilterPrestamos').val('');
+        $('#tipoMaterialFilter').val('');
+        
+        // Mostrar todos los préstamos
+        const todosLosPrestamos = this.config.allPrestamos || [];
+        this.renderMisPrestamosTable(todosLosPrestamos);
+        this.updateMisPrestamosStats(todosLosPrestamos);
+        
+        this.showAlert('Filtros limpiados', 'info');
     },
     
     // Manejo de temas

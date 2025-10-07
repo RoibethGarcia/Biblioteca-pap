@@ -448,4 +448,17 @@ public class BibliotecarioController {
             return null;
         }
     }
+    
+    /**
+     * Obtiene un bibliotecario por su email
+     * @param email Email del bibliotecario a buscar
+     * @return Bibliotecario encontrado o null si no existe
+     */
+    public Bibliotecario obtenerBibliotecarioPorEmail(String email) {
+        try {
+            return bibliotecarioService.buscarBibliotecarioPorEmail(email);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
 }
