@@ -61,3 +61,20 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# Security - Sensitive files
+*.env
+.env
+.env.local
+.env.production
+config/secrets.properties
+config/credentials.properties
+server-logs.txt
+**/secrets/
+**/credentials/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+h2db/

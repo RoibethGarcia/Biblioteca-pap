@@ -4,8 +4,10 @@ FROM bibliotecarios b
 JOIN usuarios u ON b.id = u.id;
 
 -- Si no hay ninguno, crear uno
+-- NOTA: La contraseña debe ser hasheada con BCrypt antes de insertar
+-- Esta es solo una referencia - usar la aplicación Java para crear usuarios
 INSERT INTO usuarios (nombre, email, password) 
-SELECT 'Admin Biblioteca', 'admin@biblioteca.com', 'admin123'
+SELECT 'Admin Biblioteca', 'admin@biblioteca.com', '$2a$10$CHANGE_THIS_HASH'
 WHERE NOT EXISTS (SELECT 1 FROM bibliotecarios);
 
 -- Obtener el ID del último usuario insertado

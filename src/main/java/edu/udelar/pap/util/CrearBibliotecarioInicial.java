@@ -19,19 +19,26 @@ public class CrearBibliotecarioInicial {
             if (cantidad == 0) {
                 System.out.println("⚠️  No hay bibliotecarios. Creando uno por defecto...");
                 
+                // NOTA: Usar una contraseña segura en producción
+                String defaultPassword = System.getenv("ADMIN_DEFAULT_PASSWORD");
+                if (defaultPassword == null || defaultPassword.isEmpty()) {
+                    defaultPassword = "ChangeMe123!"; // Cambiar inmediatamente después del primer login
+                }
+                
                 Long id = controller.crearBibliotecarioWeb(
                     "Admin",
                     "Sistema",
                     "admin@biblioteca.com",
                     "EMP001",
-                    "admin123"
+                    defaultPassword
                 );
                 
                 if (id > 0) {
                     System.out.println("✅ Bibliotecario creado exitosamente con ID: " + id);
                     System.out.println("📧 Email: admin@biblioteca.com");
-                    System.out.println("🔑 Password: admin123");
+                    System.out.println("🔑 Password: [OCULTO POR SEGURIDAD]");
                     System.out.println("💼 Número de empleado: EMP001");
+                    System.out.println("⚠️  IMPORTANTE: Cambiar la contraseña por defecto después del primer login");
                 } else {
                     System.err.println("❌ Error al crear bibliotecario");
                 }
