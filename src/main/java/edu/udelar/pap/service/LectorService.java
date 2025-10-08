@@ -43,11 +43,6 @@ public class LectorService {
             throw new IllegalStateException("La dirección del lector es obligatoria");
         }
         
-        // Verificar que el email no esté ya en uso
-        if (existeLectorConEmail(lector.getEmail())) {
-            throw new IllegalStateException("Ya existe un lector con el email: " + lector.getEmail());
-        }
-        
         // Validar formato de email básico
         if (!lector.getEmail().contains("@") || !lector.getEmail().contains(".")) {
             throw new IllegalStateException("El formato del email no es válido");
@@ -55,8 +50,24 @@ public class LectorService {
         
         try (Session session = sessionFactory.openSession()) {
             Transaction tx = session.beginTransaction();
-            session.persist(lector);
-            tx.commit();
+            try {
+                // Verificar que el email no esté ya en uso (dentro de la misma sesión)
+                Lector existente = session.createQuery(
+                    "FROM Lector WHERE email = :email", 
+                    Lector.class)
+                    .setParameter("email", lector.getEmail())
+                    .uniqueResult();
+                
+                if (existente != null) {
+                    throw new IllegalStateException("Ya existe un lector con el email: " + lector.getEmail());
+                }
+                
+                session.persist(lector);
+                tx.commit();
+            } catch (Exception e) {
+                tx.rollback();
+                throw e;
+            }
         }
     }
     

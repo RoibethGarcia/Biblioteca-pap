@@ -8,16 +8,13 @@ public class PublisherFactory {
     
     private static PublisherFactory instance;
     
-    private final BibliotecarioPublisher bibliotecarioPublisher;
-    private final LectorPublisher lectorPublisher;
-    private final PrestamoPublisher prestamoPublisher;
-    private final DonacionPublisher donacionPublisher;
+    private volatile BibliotecarioPublisher bibliotecarioPublisher;
+    private volatile LectorPublisher lectorPublisher;
+    private volatile PrestamoPublisher prestamoPublisher;
+    private volatile DonacionPublisher donacionPublisher;
     
     private PublisherFactory() {
-        this.bibliotecarioPublisher = new BibliotecarioPublisher();
-        this.lectorPublisher = new LectorPublisher();
-        this.prestamoPublisher = new PrestamoPublisher();
-        this.donacionPublisher = new DonacionPublisher();
+        // Lazy initialization in getters to avoid heavy startup / blocking
     }
     
     /**
@@ -36,7 +33,16 @@ public class PublisherFactory {
      * @return Instancia del BibliotecarioPublisher
      */
     public BibliotecarioPublisher getBibliotecarioPublisher() {
-        return bibliotecarioPublisher;
+        BibliotecarioPublisher local = bibliotecarioPublisher;
+        if (local == null) {
+            synchronized (this) {
+                local = bibliotecarioPublisher;
+                if (local == null) {
+                    bibliotecarioPublisher = local = new BibliotecarioPublisher();
+                }
+            }
+        }
+        return local;
     }
     
     /**
@@ -44,7 +50,16 @@ public class PublisherFactory {
      * @return Instancia del LectorPublisher
      */
     public LectorPublisher getLectorPublisher() {
-        return lectorPublisher;
+        LectorPublisher local = lectorPublisher;
+        if (local == null) {
+            synchronized (this) {
+                local = lectorPublisher;
+                if (local == null) {
+                    lectorPublisher = local = new LectorPublisher();
+                }
+            }
+        }
+        return local;
     }
     
     /**
@@ -52,7 +67,16 @@ public class PublisherFactory {
      * @return Instancia del PrestamoPublisher
      */
     public PrestamoPublisher getPrestamoPublisher() {
-        return prestamoPublisher;
+        PrestamoPublisher local = prestamoPublisher;
+        if (local == null) {
+            synchronized (this) {
+                local = prestamoPublisher;
+                if (local == null) {
+                    prestamoPublisher = local = new PrestamoPublisher();
+                }
+            }
+        }
+        return local;
     }
     
     /**
@@ -60,7 +84,16 @@ public class PublisherFactory {
      * @return Instancia del DonacionPublisher
      */
     public DonacionPublisher getDonacionPublisher() {
-        return donacionPublisher;
+        DonacionPublisher local = donacionPublisher;
+        if (local == null) {
+            synchronized (this) {
+                local = donacionPublisher;
+                if (local == null) {
+                    donacionPublisher = local = new DonacionPublisher();
+                }
+            }
+        }
+        return local;
     }
     
     /**

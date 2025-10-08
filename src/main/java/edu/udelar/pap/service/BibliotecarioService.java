@@ -41,16 +41,6 @@ public class BibliotecarioService {
             throw new IllegalStateException("El número de empleado es obligatorio");
         }
         
-        // Verificar que el email no esté ya en uso
-        if (existeBibliotecarioConEmail(bibliotecario.getEmail())) {
-            throw new IllegalStateException("Ya existe un bibliotecario con el email: " + bibliotecario.getEmail());
-        }
-        
-        // Verificar que el número de empleado no esté ya en uso
-        if (existeBibliotecarioConNumeroEmpleado(bibliotecario.getNumeroEmpleado())) {
-            throw new IllegalStateException("Ya existe un bibliotecario con el número de empleado: " + bibliotecario.getNumeroEmpleado());
-        }
-        
         // Validar formato de email básico
         if (!bibliotecario.getEmail().contains("@") || !bibliotecario.getEmail().contains(".")) {
             throw new IllegalStateException("El formato del email no es válido");
@@ -63,8 +53,35 @@ public class BibliotecarioService {
         
         try (Session session = sessionFactory.openSession()) {
             Transaction tx = session.beginTransaction();
-            session.persist(bibliotecario);
-            tx.commit();
+            try {
+                // Verificar que el email no esté ya en uso (dentro de la misma sesión)
+                Bibliotecario existente = session.createQuery(
+                    "FROM Bibliotecario WHERE email = :email", 
+                    Bibliotecario.class)
+                    .setParameter("email", bibliotecario.getEmail())
+                    .uniqueResult();
+                
+                if (existente != null) {
+                    throw new IllegalStateException("Ya existe un bibliotecario con el email: " + bibliotecario.getEmail());
+                }
+                
+                // Verificar que el número de empleado no esté ya en uso (dentro de la misma sesión)
+                existente = session.createQuery(
+                    "FROM Bibliotecario WHERE numeroEmpleado = :numeroEmpleado", 
+                    Bibliotecario.class)
+                    .setParameter("numeroEmpleado", bibliotecario.getNumeroEmpleado())
+                    .uniqueResult();
+                
+                if (existente != null) {
+                    throw new IllegalStateException("Ya existe un bibliotecario con el número de empleado: " + bibliotecario.getNumeroEmpleado());
+                }
+                
+                session.persist(bibliotecario);
+                tx.commit();
+            } catch (Exception e) {
+                tx.rollback();
+                throw e;
+            }
         }
     }
     

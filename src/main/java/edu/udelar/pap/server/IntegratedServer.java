@@ -27,6 +27,16 @@ public class IntegratedServer {
         try {
             System.out.println("🚀 Iniciando servidor integrado...");
             
+            // 0. Pre-inicializar Hibernate para evitar hangs en primera petición
+            System.out.println("🗄️ Pre-inicializando Hibernate...");
+            try {
+                edu.udelar.pap.persistence.HibernateUtil.getSessionFactory();
+                System.out.println("✅ Hibernate pre-inicializado");
+            } catch (Exception e) {
+                System.err.println("⚠️ Error pre-inicializando Hibernate: " + e.getMessage());
+                e.printStackTrace();
+            }
+            
             // 1. Inicializar la lógica de negocio (como en la aplicación de escritorio)
             System.out.println("📋 Inicializando controladores...");
             mainController = new MainController();
@@ -177,7 +187,7 @@ public class IntegratedServer {
                 String response = handleAuthRequest(path, method, exchange);
                 
                 if (response == null || response.isEmpty()) {
-                    response = "{\"error\":\"Respuesta vacía del servidor\"}";
+                    response = "{\"success\": false, \"message\": \"Respuesta vacía del servidor\"}";
                 }
                 
                 System.out.println("📤 Enviando respuesta de auth (" + response.length() + " bytes)");
@@ -326,7 +336,7 @@ public class IntegratedServer {
                 System.err.println("❌ Error en LectorApiHandler: " + e.getMessage());
                 e.printStackTrace();
                 
-                String error = "{\"error\":\"Error interno del servidor: " + e.getMessage().replace("\"", "'") + "\"}";
+                String error = "{\"success\": false, \"message\": \"Error interno del servidor: " + e.getMessage().replace("\"", "'") + "\"}";
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
                 
                 byte[] errorBytes = error.getBytes("UTF-8");
@@ -422,14 +432,14 @@ public class IntegratedServer {
                         System.out.println("👤 Obteniendo lector por email: " + email);
                         return factory.getLectorPublisher().obtenerLectorPorEmail(email);
                     } else {
-                        return "{\"error\":\"email es requerido\"}";
+                        return "{\"success\": false, \"message\": \"email es requerido\"}";
                     }
                 } else if (path.equals("/lector/lista")) {
                     // Devolver todos los lectores desde la base de datos
                     try {
                         return factory.getLectorPublisher().obtenerListaLectores();
                     } catch (Exception e) {
-                        return "{\"success\": false, \"message\": \"Error: " + e.getMessage() + "\"}";
+                        return "{\"success\": false, \"message\": \"Error: " + e.getMessage().replace("\"", "'") + "\"}";
                     }
                 } else if (path.equals("/lector/bibliotecario-referencia")) {
                     // Obtener bibliotecario de referencia de un lector
@@ -439,7 +449,7 @@ public class IntegratedServer {
                         System.out.println("👤 Obteniendo bibliotecario de referencia para lector ID: " + lectorId);
                         return factory.getLectorPublisher().obtenerBibliotecarioReferencia(lectorId);
                     } else {
-                        return "{\"error\":\"lectorId es requerido\"}";
+                        return "{\"success\": false, \"message\": \"lectorId es requerido\"}";
                     }
                 } else if (path.equals("/lector/test")) {
                     return "{\"success\": true, \"message\": \"Test endpoint working\"}";
@@ -454,12 +464,12 @@ public class IntegratedServer {
                 } else if (path.equals("/lector/estado")) {
                     return factory.getLectorPublisher().obtenerEstado();
                 } else {
-                    return "{\"error\":\"Endpoint no encontrado: " + path + "\"}";
+                    return "{\"success\": false, \"message\": \"Endpoint no encontrado: " + path + "\"}";
                 }
             } catch (Exception e) {
                 System.err.println("❌ Error en handleLectorRequest: " + e.getMessage());
                 e.printStackTrace();
-                return "{\"error\":\"Error al procesar petición: " + e.getMessage().replace("\"", "'") + "\"}";
+                return "{\"success\": false, \"message\": \"Error al procesar petición: " + e.getMessage().replace("\"", "'") + "\"}";
             }
         }
     }

@@ -5,7 +5,7 @@
 <hibernate-configuration>
     <session-factory>
         <property name="hibernate.connection.driver_class">com.mysql.cj.jdbc.Driver</property>
-        <property name="hibernate.connection.url">jdbc:mysql://localhost:3306/BD_Pap?useSSL=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC</property>
+        <property name="hibernate.connection.url">jdbc:mysql://127.0.0.1:3306/BD_Pap?useSSL=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC&amp;connectTimeout=5000&amp;socketTimeout=5000</property>
         <property name="hibernate.connection.username">biblioteca_user</property>
         <property name="hibernate.connection.password">biblioteca_pass</property>
 
@@ -13,6 +13,11 @@
         <property name="hibernate.hbm2ddl.auto">update</property>
         <property name="hibernate.show_sql">true</property>
         <property name="hibernate.format_sql">true</property>
+        
+        <!-- Connection pool settings to avoid hangs -->
+        <property name="hibernate.connection.pool_size">5</property>
+        <property name="hibernate.connection.autocommit">false</property>
+        <property name="hibernate.current_session_context_class">thread</property>
 
         <mapping class="edu.udelar.pap.domain.Usuario"/>
         <mapping class="edu.udelar.pap.domain.Lector"/>
