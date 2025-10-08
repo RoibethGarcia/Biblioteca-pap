@@ -264,6 +264,30 @@ public class LectorPublisher {
         }
     }
     
+    /**
+     * Obtiene el bibliotecario de referencia de un lector
+     * (El bibliotecario que más préstamos ha gestionado para ese lector)
+     * @param lectorId ID del lector
+     * @return JSON con información del bibliotecario de referencia
+     */
+    public String obtenerBibliotecarioReferencia(Long lectorId) {
+        try {
+            edu.udelar.pap.domain.Bibliotecario bibliotecario = lectorController.obtenerBibliotecarioReferencia(lectorId);
+            
+            if (bibliotecario != null) {
+                return String.format("{\"success\": true, \"bibliotecario\": {\"id\": %d, \"nombre\": \"%s\", \"email\": \"%s\", \"numeroEmpleado\": \"%s\"}}", 
+                    bibliotecario.getId(),
+                    bibliotecario.getNombre(),
+                    bibliotecario.getEmail(),
+                    bibliotecario.getNumeroEmpleado());
+            } else {
+                return "{\"success\": false, \"message\": \"No hay bibliotecario de referencia asignado\"}";
+            }
+        } catch (Exception e) {
+            return String.format("{\"success\": false, \"message\": \"Error al obtener bibliotecario: %s\"}", e.getMessage());
+        }
+    }
+    
     // ==================== MÉTODOS DE ESTADO ====================
     
     /**

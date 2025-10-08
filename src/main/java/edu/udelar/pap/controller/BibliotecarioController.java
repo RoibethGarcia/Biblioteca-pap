@@ -412,18 +412,35 @@ public class BibliotecarioController {
      */
     public Long autenticarBibliotecario(String email, String password) {
         try {
+            System.out.println("🔍 DEBUG BibliotecarioController.autenticarBibliotecario");
+            System.out.println("   Email recibido: '" + email + "'");
+            System.out.println("   Password recibido: '" + password + "'");
+            
             List<Bibliotecario> bibliotecarios = bibliotecarioService.obtenerTodosLosBibliotecarios();
+            System.out.println("   Total bibliotecarios en BD: " + bibliotecarios.size());
+            
             for (Bibliotecario bibliotecario : bibliotecarios) {
+                System.out.println("   Comparando con: '" + bibliotecario.getEmail() + "'");
+                
                 if (bibliotecario.getEmail().equalsIgnoreCase(email.trim())) {
+                    System.out.println("   ✓ Usuario encontrado!");
+                    System.out.println("   Password en BD: " + bibliotecario.getPassword().substring(0, Math.min(20, bibliotecario.getPassword().length())) + "...");
+                    System.out.println("   ¿Empieza con $2a$? " + bibliotecario.getPassword().startsWith("$2a$"));
+                    
                     if (bibliotecario.verificarPassword(password)) {
+                        System.out.println("   ✅ Password verificado correctamente!");
                         return bibliotecario.getId();
                     } else {
+                        System.out.println("   ❌ Password NO coincide");
                         return -1L; // Password incorrecto
                     }
                 }
             }
+            System.out.println("   ❌ Usuario no encontrado");
             return -1L; // Usuario no encontrado
         } catch (Exception ex) {
+            System.err.println("   ❌ ERROR en autenticación: " + ex.getMessage());
+            ex.printStackTrace();
             return -1L;
         }
     }

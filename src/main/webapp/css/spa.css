@@ -1183,3 +1183,41 @@
         margin-bottom: 10px;
     }
 }
+
+/* Close button for modals */
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: white;
+    cursor: pointer;
+    padding: 0;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    opacity: 0.8;
+}
+
+.close-btn:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg);
+}
+
+/* Required field indicator */
+.required {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* Form text helper */
+.form-text {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}

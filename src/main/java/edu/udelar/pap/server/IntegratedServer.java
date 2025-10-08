@@ -307,7 +307,7 @@ public class IntegratedServer {
             System.out.println("📥 LectorApiHandler recibió: " + method + " " + path + (query != null ? "?" + query : ""));
             
             try {
-                String response = handleLectorRequest(path, query, method);
+                String response = handleLectorRequest(exchange, path, query, method);
                 
                 if (response == null || response.isEmpty()) {
                     response = "{\"error\":\"Respuesta vacía del servidor\"}";
@@ -338,12 +338,80 @@ public class IntegratedServer {
             }
         }
         
-        private String handleLectorRequest(String path, String query, String method) {
+        private String handleLectorRequest(HttpExchange exchange, String path, String query, String method) throws IOException {
             try {
-                System.out.println("🔍 Procesando lector: " + path);
+                System.out.println("🔍 Procesando lector: " + path + " method: " + method);
                 edu.udelar.pap.publisher.PublisherFactory factory = edu.udelar.pap.publisher.PublisherFactory.getInstance();
                 
-                if (path.equals("/lector/cantidad")) {
+                // Endpoints POST
+                if (method.equals("POST") && path.equals("/lector/cambiar-estado")) {
+                    // Leer el cuerpo de la petición
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body recibido para cambiar estado: " + body);
+                    
+                    // Parsear parámetros del body
+                    java.util.Map<String, String> params = new java.util.HashMap<>();
+                    if (body != null && !body.isEmpty()) {
+                        for (String param : body.split("&")) {
+                            String[] keyValue = param.split("=");
+                            if (keyValue.length == 2) {
+                                String key = java.net.URLDecoder.decode(keyValue[0], "UTF-8");
+                                String value = java.net.URLDecoder.decode(keyValue[1], "UTF-8");
+                                params.put(key, value);
+                            }
+                        }
+                    }
+                    
+                    String lectorIdStr = params.get("lectorId");
+                    String nuevoEstado = params.get("nuevoEstado");
+                    
+                    System.out.println("🔄 Cambiando estado: lectorId=" + lectorIdStr + ", nuevoEstado=" + nuevoEstado);
+                    
+                    if (lectorIdStr == null || lectorIdStr.trim().isEmpty()) {
+                        return "{\"success\": false, \"message\": \"El ID del lector es requerido\"}";
+                    }
+                    if (nuevoEstado == null || nuevoEstado.trim().isEmpty()) {
+                        return "{\"success\": false, \"message\": \"El nuevo estado es requerido\"}";
+                    }
+                    
+                    Long lectorId = Long.parseLong(lectorIdStr);
+                    return factory.getLectorPublisher().cambiarEstadoLector(lectorId, nuevoEstado);
+                }
+                else if (method.equals("POST") && path.equals("/lector/cambiar-zona")) {
+                    // Leer el cuerpo de la petición
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body recibido para cambiar zona: " + body);
+                    
+                    // Parsear parámetros del body
+                    java.util.Map<String, String> params = new java.util.HashMap<>();
+                    if (body != null && !body.isEmpty()) {
+                        for (String param : body.split("&")) {
+                            String[] keyValue = param.split("=");
+                            if (keyValue.length == 2) {
+                                String key = java.net.URLDecoder.decode(keyValue[0], "UTF-8");
+                                String value = java.net.URLDecoder.decode(keyValue[1], "UTF-8");
+                                params.put(key, value);
+                            }
+                        }
+                    }
+                    
+                    String lectorIdStr = params.get("lectorId");
+                    String nuevaZona = params.get("nuevaZona");
+                    
+                    System.out.println("📍 Cambiando zona: lectorId=" + lectorIdStr + ", nuevaZona=" + nuevaZona);
+                    
+                    if (lectorIdStr == null || lectorIdStr.trim().isEmpty()) {
+                        return "{\"success\": false, \"message\": \"El ID del lector es requerido\"}";
+                    }
+                    if (nuevaZona == null || nuevaZona.trim().isEmpty()) {
+                        return "{\"success\": false, \"message\": \"La nueva zona es requerida\"}";
+                    }
+                    
+                    Long lectorId = Long.parseLong(lectorIdStr);
+                    return factory.getLectorPublisher().cambiarZonaLector(lectorId, nuevaZona);
+                }
+                // Endpoints GET
+                else if (path.equals("/lector/cantidad")) {
                     return factory.getLectorPublisher().obtenerCantidadLectores();
                 } else if (path.equals("/lector/cantidad-activos")) {
                     return factory.getLectorPublisher().obtenerCantidadLectoresActivos();
@@ -357,40 +425,21 @@ public class IntegratedServer {
                         return "{\"error\":\"email es requerido\"}";
                     }
                 } else if (path.equals("/lector/lista")) {
-                    // Temporal: devolver solo los primeros 3 lectores para debuggear
+                    // Devolver todos los lectores desde la base de datos
                     try {
-                        // Usar el método del publisher directamente
-                        String response = factory.getLectorPublisher().obtenerListaLectores();
-                        // Parsear y limitar a 3 lectores
-                        if (response.contains("\"lectores\": [")) {
-                            // Extraer solo los primeros 3 lectores del JSON
-                            int startIndex = response.indexOf("\"lectores\": [") + 13;
-                            int endIndex = response.lastIndexOf("]");
-                            if (startIndex > 12 && endIndex > startIndex) {
-                                String lectoresJson = response.substring(startIndex, endIndex);
-                                String[] lectoresArray = lectoresJson.split("\\},\\{");
-                                StringBuilder limitedJson = new StringBuilder();
-                                limitedJson.append("{\"success\": true, \"lectores\": [");
-                                
-                                int maxLectores = Math.min(3, lectoresArray.length);
-                                for (int i = 0; i < maxLectores; i++) {
-                                    if (i > 0) limitedJson.append(",");
-                                    if (i == 0 && lectoresArray[i].startsWith("{")) {
-                                        limitedJson.append(lectoresArray[i]);
-                                    } else {
-                                        limitedJson.append("{").append(lectoresArray[i]);
-                                    }
-                                    if (!lectoresArray[i].endsWith("}")) {
-                                        limitedJson.append("}");
-                                    }
-                                }
-                                limitedJson.append("]}");
-                                return limitedJson.toString();
-                            }
-                        }
-                        return response;
+                        return factory.getLectorPublisher().obtenerListaLectores();
                     } catch (Exception e) {
                         return "{\"success\": false, \"message\": \"Error: " + e.getMessage() + "\"}";
+                    }
+                } else if (path.equals("/lector/bibliotecario-referencia")) {
+                    // Obtener bibliotecario de referencia de un lector
+                    if (query != null && query.contains("lectorId=")) {
+                        String lectorIdStr = query.split("lectorId=")[1].split("&")[0];
+                        Long lectorId = Long.parseLong(lectorIdStr);
+                        System.out.println("👤 Obteniendo bibliotecario de referencia para lector ID: " + lectorId);
+                        return factory.getLectorPublisher().obtenerBibliotecarioReferencia(lectorId);
+                    } else {
+                        return "{\"error\":\"lectorId es requerido\"}";
                     }
                 } else if (path.equals("/lector/test")) {
                     return "{\"success\": true, \"message\": \"Test endpoint working\"}";
@@ -464,7 +513,11 @@ public class IntegratedServer {
                 System.out.println("🔍 Procesando préstamo: " + path + " method: " + method);
                 edu.udelar.pap.publisher.PublisherFactory factory = edu.udelar.pap.publisher.PublisherFactory.getInstance();
                 
-                if (path.equals("/prestamo/cantidad")) {
+                if (path.equals("/prestamo/lista")) {
+                    // Obtener todos los préstamos del sistema
+                    System.out.println("📚 Obteniendo lista completa de préstamos...");
+                    return factory.getPrestamoPublisher().obtenerListaPrestamos();
+                } else if (path.equals("/prestamo/cantidad")) {
                     return factory.getPrestamoPublisher().obtenerCantidadPrestamos();
                 } else if (path.equals("/prestamo/cantidad-vencidos")) {
                     return factory.getPrestamoPublisher().obtenerCantidadPrestamosVencidos();
@@ -488,6 +541,37 @@ public class IntegratedServer {
                     } else {
                         return "{\"error\":\"lectorId es requerido\"}";
                     }
+                } else if (path.equals("/prestamo/cambiar-estado") && method.equals("POST")) {
+                    // Cambiar estado de préstamo
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body recibido para cambiar estado: " + body);
+                    
+                    java.util.Map<String, String> params = new java.util.HashMap<>();
+                    if (body != null && !body.isEmpty()) {
+                        for (String param : body.split("&")) {
+                            String[] keyValue = param.split("=");
+                            if (keyValue.length == 2) {
+                                String key = java.net.URLDecoder.decode(keyValue[0], "UTF-8");
+                                String value = java.net.URLDecoder.decode(keyValue[1], "UTF-8");
+                                params.put(key, value);
+                            }
+                        }
+                    }
+                    
+                    String prestamoIdStr = params.get("prestamoId");
+                    String nuevoEstado = params.get("nuevoEstado");
+                    
+                    System.out.println("🔄 Cambiando estado préstamo: prestamoId=" + prestamoIdStr + ", nuevoEstado=" + nuevoEstado);
+                    
+                    if (prestamoIdStr == null || prestamoIdStr.trim().isEmpty()) {
+                        return "{\"success\": false, \"message\": \"El ID del préstamo es requerido\"}";
+                    }
+                    if (nuevoEstado == null || nuevoEstado.trim().isEmpty()) {
+                        return "{\"success\": false, \"message\": \"El nuevo estado es requerido\"}";
+                    }
+                    
+                    Long prestamoId = Long.parseLong(prestamoIdStr);
+                    return factory.getPrestamoPublisher().cambiarEstadoPrestamo(prestamoId, nuevoEstado);
                 } else if (path.equals("/prestamo/crear") && method.equals("POST")) {
                     // Crear préstamo - obtener parámetros del body
                     String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
@@ -503,11 +587,13 @@ public class IntegratedServer {
                     }
                     
                     String lectorId = params.get("lectorId");
+                    String bibliotecarioIdParam = params.get("bibliotecarioId");
                     String materialId = params.get("materialId");
                     String fechaDevolucion = params.get("fechaDevolucion");
                     
                     System.out.println("📚 IntegratedServer - Creando préstamo:");
                     System.out.println("   Lector ID: " + lectorId);
+                    System.out.println("   Bibliotecario ID (del formulario): " + bibliotecarioIdParam);
                     System.out.println("   Material ID: " + materialId);
                     System.out.println("   Fecha devolución: " + fechaDevolucion);
                     
@@ -525,19 +611,25 @@ public class IntegratedServer {
                         return "{\"success\": false, \"message\": \"fechaDevolucion es requerido\"}";
                     }
                     
-                    // Obtener el primer bibliotecario disponible
-                    Long bibliotecarioId = factory.getBibliotecarioPublisher().obtenerPrimerBibliotecarioId();
-                    
-                    if (bibliotecarioId == null) {
-                        System.err.println("❌ No hay bibliotecarios en el sistema. Se debe crear al menos uno.");
-                        return "{\"success\": false, \"message\": \"No hay bibliotecarios disponibles en el sistema. Contacte al administrador.\"}";
+                    // Usar el bibliotecarioId del formulario si está presente, sino obtener el primero disponible
+                    Long bibliotecarioId;
+                    if (bibliotecarioIdParam != null && !bibliotecarioIdParam.isEmpty()) {
+                        bibliotecarioId = Long.parseLong(bibliotecarioIdParam);
+                        System.out.println("✅ Usando bibliotecario seleccionado por el usuario: ID " + bibliotecarioId);
+                    } else {
+                        // Fallback: obtener el primer bibliotecario disponible
+                        bibliotecarioId = factory.getBibliotecarioPublisher().obtenerPrimerBibliotecarioId();
+                        System.out.println("⚠️ No se proporcionó bibliotecarioId, usando el primero disponible: ID " + bibliotecarioId);
+                        
+                        if (bibliotecarioId == null) {
+                            System.err.println("❌ No hay bibliotecarios en el sistema. Se debe crear al menos uno.");
+                            return "{\"success\": false, \"message\": \"No hay bibliotecarios disponibles en el sistema. Contacte al administrador.\"}";
+                        }
                     }
-                    
-                    System.out.println("📋 Usando bibliotecario con ID: " + bibliotecarioId);
                     
                     String resultado = factory.getPrestamoPublisher().crearPrestamo(
                         Long.parseLong(lectorId),
-                        bibliotecarioId,  // Usa el primer bibliotecario disponible
+                        bibliotecarioId,  // Usa el bibliotecario seleccionado por el usuario
                         Long.parseLong(materialId),
                         fechaDevolucion,
                         "EN_CURSO"  // Estado inicial - Aprobado automáticamente
@@ -611,6 +703,9 @@ public class IntegratedServer {
                     
                     System.out.println("🔍 Buscando bibliotecario por email: " + email);
                     return factory.getBibliotecarioPublisher().obtenerBibliotecarioPorEmail(email);
+                } else if (path.equals("/bibliotecario/lista")) {
+                    System.out.println("📚 Obteniendo lista de bibliotecarios...");
+                    return factory.getBibliotecarioPublisher().obtenerListaBibliotecarios();
                 } else {
                     return "{\"error\":\"Endpoint no encontrado: " + path + "\"}";
                 }
@@ -663,7 +758,7 @@ public class IntegratedServer {
             System.out.println("📥 DonacionApiHandler recibió: " + method + " " + path);
             
             try {
-                String response = handleDonacionRequest(path, method);
+                String response = handleDonacionRequest(exchange, path, method);
                 
                 if (response == null || response.isEmpty()) {
                     response = "{\"error\":\"Respuesta vacía del servidor\"}";
@@ -694,24 +789,100 @@ public class IntegratedServer {
             }
         }
         
-        private String handleDonacionRequest(String path, String method) {
+        private String handleDonacionRequest(HttpExchange exchange, String path, String method) throws IOException {
             try {
-                System.out.println("🔍 Procesando: " + path);
+                System.out.println("🔍 Procesando donacion: " + path + " method: " + method);
                 edu.udelar.pap.publisher.PublisherFactory factory = edu.udelar.pap.publisher.PublisherFactory.getInstance();
                 
                 String result = null;
                 
-                if (path.equals("/donacion/cantidad-libros")) {
+                // Endpoints POST
+                if (method.equals("POST") && path.equals("/donacion/crear-libro")) {
+                    // Leer el cuerpo de la petición
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body recibido para crear libro: " + body);
+                    
+                    // Parsear parámetros del body (formato: titulo=xxx&paginas=xxx&donante=xxx)
+                    java.util.Map<String, String> params = new java.util.HashMap<>();
+                    if (body != null && !body.isEmpty()) {
+                        for (String param : body.split("&")) {
+                            String[] keyValue = param.split("=");
+                            if (keyValue.length == 2) {
+                                String key = java.net.URLDecoder.decode(keyValue[0], "UTF-8");
+                                String value = java.net.URLDecoder.decode(keyValue[1], "UTF-8");
+                                params.put(key, value);
+                            }
+                        }
+                    }
+                    
+                    String titulo = params.get("titulo");
+                    String paginas = params.get("paginas");
+                    String donante = params.getOrDefault("donante", "Anónimo");
+                    
+                    System.out.println("📖 Creando libro: titulo=" + titulo + ", paginas=" + paginas + ", donante=" + donante);
+                    
+                    if (titulo == null || titulo.trim().isEmpty()) {
+                        result = "{\"success\": false, \"message\": \"El título es requerido\"}";
+                    } else if (paginas == null || paginas.trim().isEmpty()) {
+                        result = "{\"success\": false, \"message\": \"El número de páginas es requerido\"}";
+                    } else {
+                        result = factory.getDonacionPublisher().crearLibro(titulo, paginas);
+                    }
+                }
+                else if (method.equals("POST") && path.equals("/donacion/crear-articulo")) {
+                    // Leer el cuerpo de la petición
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body recibido para crear artículo: " + body);
+                    
+                    // Parsear parámetros del body
+                    java.util.Map<String, String> params = new java.util.HashMap<>();
+                    if (body != null && !body.isEmpty()) {
+                        for (String param : body.split("&")) {
+                            String[] keyValue = param.split("=");
+                            if (keyValue.length == 2) {
+                                String key = java.net.URLDecoder.decode(keyValue[0], "UTF-8");
+                                String value = java.net.URLDecoder.decode(keyValue[1], "UTF-8");
+                                params.put(key, value);
+                            }
+                        }
+                    }
+                    
+                    String descripcion = params.get("descripcion");
+                    String peso = params.get("peso");
+                    String dimensiones = params.get("dimensiones");
+                    String donante = params.getOrDefault("donante", "Anónimo");
+                    
+                    System.out.println("🎨 Creando artículo: descripcion=" + descripcion + ", peso=" + peso + ", dimensiones=" + dimensiones + ", donante=" + donante);
+                    
+                    if (descripcion == null || descripcion.trim().isEmpty()) {
+                        result = "{\"success\": false, \"message\": \"La descripción es requerida\"}";
+                    } else if (peso == null || peso.trim().isEmpty()) {
+                        result = "{\"success\": false, \"message\": \"El peso es requerido\"}";
+                    } else if (dimensiones == null || dimensiones.trim().isEmpty()) {
+                        result = "{\"success\": false, \"message\": \"Las dimensiones son requeridas\"}";
+                    } else {
+                        result = factory.getDonacionPublisher().crearArticuloEspecial(descripcion, peso, dimensiones);
+                    }
+                }
+                // Endpoints GET
+                else if (path.equals("/donacion/cantidad-libros")) {
                     result = factory.getDonacionPublisher().obtenerCantidadLibros();
                 } else if (path.equals("/donacion/cantidad-articulos")) {
                     result = factory.getDonacionPublisher().obtenerCantidadArticulosEspeciales();
+                } else if (path.equals("/donacion/inventario")) {
+                    result = factory.getDonacionPublisher().obtenerInventarioCompleto();
                 } else if (path.equals("/donacion/libros")) {
-                    // ENDPOINT PARA OBTENER LISTA DE LIBROS
                     System.out.println("📚 Obteniendo lista de libros...");
                     result = factory.getDonacionPublisher().obtenerLibrosDisponibles();
                     System.out.println("✅ Libros obtenidos, longitud respuesta: " + (result != null ? result.length() : "null"));
                 } else if (path.equals("/donacion/articulos")) {
                     result = factory.getDonacionPublisher().obtenerArticulosEspecialesDisponibles();
+                } else if (path.equals("/donacion/lista")) {
+                    // Obtener todas las donaciones (libros + artículos)
+                    System.out.println("📚 Obteniendo lista completa de donaciones...");
+                    String librosJson = factory.getDonacionPublisher().obtenerLibrosDisponibles();
+                    String articulosJson = factory.getDonacionPublisher().obtenerArticulosEspecialesDisponibles();
+                    result = combinarDonaciones(librosJson, articulosJson);
                 } else if (path.equals("/donacion/estado")) {
                     result = factory.getDonacionPublisher().obtenerEstado();
                 } else {
@@ -724,6 +895,57 @@ public class IntegratedServer {
                 System.err.println("❌ Error en handleDonacionRequest: " + e.getMessage());
                 e.printStackTrace();
                 return "{\"error\":\"Error al procesar petición: " + e.getMessage().replace("\"", "'") + "\"}";
+            }
+        }
+        
+        private String combinarDonaciones(String librosJson, String articulosJson) {
+            try {
+                // Parsear JSON manualmente para combinar libros y artículos
+                java.util.List<String> donaciones = new java.util.ArrayList<>();
+                
+                // Extraer libros
+                if (librosJson.contains("\"libros\": [")) {
+                    int start = librosJson.indexOf("\"libros\": [") + 11;
+                    int end = librosJson.lastIndexOf("]");
+                    if (start > 10 && end > start) {
+                        String librosArray = librosJson.substring(start, end).trim();
+                        if (!librosArray.isEmpty()) {
+                            String[] libros = librosArray.split("\\},\\s*\\{");
+                            for (String libro : libros) {
+                                String libroCompleto = libro.trim();
+                                if (!libroCompleto.startsWith("{")) libroCompleto = "{" + libroCompleto;
+                                if (!libroCompleto.endsWith("}")) libroCompleto = libroCompleto + "}";
+                                // Agregar tipo: "LIBRO"
+                                libroCompleto = libroCompleto.substring(0, libroCompleto.length() - 1) + ", \"tipo\": \"LIBRO\"}";
+                                donaciones.add(libroCompleto);
+                            }
+                        }
+                    }
+                }
+                
+                // Extraer artículos
+                if (articulosJson.contains("\"articulos\": [")) {
+                    int start = articulosJson.indexOf("\"articulos\": [") + 14;
+                    int end = articulosJson.lastIndexOf("]");
+                    if (start > 13 && end > start) {
+                        String articulosArray = articulosJson.substring(start, end).trim();
+                        if (!articulosArray.isEmpty()) {
+                            String[] articulos = articulosArray.split("\\},\\s*\\{");
+                            for (String articulo : articulos) {
+                                String articuloCompleto = articulo.trim();
+                                if (!articuloCompleto.startsWith("{")) articuloCompleto = "{" + articuloCompleto;
+                                if (!articuloCompleto.endsWith("}")) articuloCompleto = articuloCompleto + "}";
+                                // Agregar tipo: "ARTICULO"
+                                articuloCompleto = articuloCompleto.substring(0, articuloCompleto.length() - 1) + ", \"tipo\": \"ARTICULO\"}";
+                                donaciones.add(articuloCompleto);
+                            }
+                        }
+                    }
+                }
+                
+                return "{\"success\": true, \"donaciones\": [" + String.join(", ", donaciones) + "]}";
+            } catch (Exception e) {
+                return "{\"success\": false, \"message\": \"Error combinando donaciones: " + e.getMessage() + "\"}";
             }
         }
     }

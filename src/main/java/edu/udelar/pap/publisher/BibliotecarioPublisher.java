@@ -150,6 +150,38 @@ public class BibliotecarioPublisher {
         }
     }
     
+    /**
+     * Obtiene la lista de todos los bibliotecarios
+     * @return JSON con la lista de bibliotecarios
+     */
+    public String obtenerListaBibliotecarios() {
+        try {
+            java.util.List<edu.udelar.pap.domain.Bibliotecario> bibliotecarios = bibliotecarioController.obtenerBibliotecarios();
+            
+            if (bibliotecarios == null || bibliotecarios.isEmpty()) {
+                return "{\"success\": true, \"bibliotecarios\": []}";
+            }
+            
+            StringBuilder json = new StringBuilder();
+            json.append("{\"success\": true, \"bibliotecarios\": [");
+            
+            for (int i = 0; i < bibliotecarios.size(); i++) {
+                edu.udelar.pap.domain.Bibliotecario bib = bibliotecarios.get(i);
+                if (i > 0) json.append(",");
+                json.append(String.format("{\"id\": %d, \"nombre\": \"%s\", \"email\": \"%s\", \"numeroEmpleado\": \"%s\"}", 
+                    bib.getId(),
+                    bib.getNombre(),
+                    bib.getEmail(),
+                    bib.getNumeroEmpleado()));
+            }
+            
+            json.append("]}");
+            return json.toString();
+        } catch (Exception e) {
+            return String.format("{\"success\": false, \"message\": \"Error al obtener lista: %s\"}", e.getMessage());
+        }
+    }
+    
     // ==================== MÉTODOS DE AUTENTICACIÓN ====================
     
     /**

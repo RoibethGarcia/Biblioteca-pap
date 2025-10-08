@@ -149,6 +149,105 @@ public class PrestamoPublisher {
     }
     
     /**
+     * Obtiene la lista de TODOS los préstamos del sistema
+     * @return JSON con la lista de préstamos
+     */
+    public String obtenerListaPrestamos() {
+        try {
+            java.util.List<edu.udelar.pap.domain.Prestamo> prestamos = prestamoController.obtenerTodosPrestamos();
+            
+            if (prestamos == null || prestamos.isEmpty()) {
+                return "{\"success\": true, \"prestamos\": []}";
+            }
+            
+            StringBuilder json = new StringBuilder();
+            json.append("{\"success\": true, \"prestamos\": [");
+            
+            for (int i = 0; i < prestamos.size(); i++) {
+                edu.udelar.pap.domain.Prestamo prestamo = prestamos.get(i);
+                if (i > 0) json.append(",");
+                
+                // Determinar tipo de material
+                String tipo = "LIBRO";
+                String materialNombre = "";
+                Long materialId = null;
+                if (prestamo.getMaterial() != null) {
+                    materialId = prestamo.getMaterial().getId();
+                    if (prestamo.getMaterial() instanceof edu.udelar.pap.domain.Libro) {
+                        edu.udelar.pap.domain.Libro libro = (edu.udelar.pap.domain.Libro) prestamo.getMaterial();
+                        materialNombre = libro.getTitulo();
+                        tipo = "LIBRO";
+                    } else if (prestamo.getMaterial() instanceof edu.udelar.pap.domain.ArticuloEspecial) {
+                        edu.udelar.pap.domain.ArticuloEspecial articulo = (edu.udelar.pap.domain.ArticuloEspecial) prestamo.getMaterial();
+                        materialNombre = articulo.getDescripcion();
+                        tipo = "ARTICULO";
+                    }
+                }
+                
+                // Calcular días restantes
+                long diasRestantes = 0;
+                if (prestamo.getFechaEstimadaDevolucion() != null) {
+                    try {
+                        java.time.LocalDate hoy = java.time.LocalDate.now();
+                        java.time.LocalDate fechaDevolucion = prestamo.getFechaEstimadaDevolucion();
+                        diasRestantes = java.time.temporal.ChronoUnit.DAYS.between(hoy, fechaDevolucion);
+                    } catch (Exception e) {
+                        System.err.println("Error calculando días restantes: " + e.getMessage());
+                    }
+                }
+                
+                // Formatear fechas
+                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                String fechaSolicitudStr = prestamo.getFechaSolicitud() != null ? prestamo.getFechaSolicitud().format(formatter) : "";
+                String fechaDevolucionStr = prestamo.getFechaEstimadaDevolucion() != null ? prestamo.getFechaEstimadaDevolucion().format(formatter) : "";
+                
+                // Información del lector
+                String lectorNombre = "";
+                String lectorEmail = "";
+                Long lectorId = null;
+                if (prestamo.getLector() != null) {
+                    lectorNombre = prestamo.getLector().getNombre();
+                    lectorEmail = prestamo.getLector().getEmail();
+                    lectorId = prestamo.getLector().getId();
+                }
+                
+                // Información del bibliotecario
+                String bibliotecarioNombre = "";
+                Long bibliotecarioId = null;
+                if (prestamo.getBibliotecario() != null) {
+                    bibliotecarioNombre = prestamo.getBibliotecario().getNombre();
+                    bibliotecarioId = prestamo.getBibliotecario().getId();
+                }
+                
+                json.append(String.format(
+                    "{\"id\": %d, \"lectorId\": %d, \"lectorNombre\": \"%s\", \"lectorEmail\": \"%s\", " +
+                    "\"materialId\": %d, \"material\": \"%s\", \"tipo\": \"%s\", " +
+                    "\"fechaSolicitud\": \"%s\", \"fechaDevolucion\": \"%s\", \"estado\": \"%s\", " +
+                    "\"bibliotecarioId\": %d, \"bibliotecario\": \"%s\", \"diasRestantes\": %d}", 
+                    prestamo.getId(),
+                    lectorId != null ? lectorId : 0,
+                    lectorNombre.replace("\"", "\\\""),
+                    lectorEmail.replace("\"", "\\\""),
+                    materialId != null ? materialId : 0,
+                    materialNombre.replace("\"", "\\\""),
+                    tipo,
+                    fechaSolicitudStr,
+                    fechaDevolucionStr,
+                    prestamo.getEstado(),
+                    bibliotecarioId != null ? bibliotecarioId : 0,
+                    bibliotecarioNombre.replace("\"", "\\\""),
+                    diasRestantes));
+            }
+            
+            json.append("]}");
+            return json.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return String.format("{\"success\": false, \"message\": \"Error al obtener préstamos: %s\"}", e.getMessage());
+        }
+    }
+    
+    /**
      * Obtiene la lista de préstamos de un lector
      * @param lectorId ID del lector
      * @return JSON con la lista de préstamos

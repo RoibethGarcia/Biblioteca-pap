@@ -1705,12 +1705,13 @@ const BibliotecaSPA = {
                                         <th>Fecha Solicitud</th>
                                         <th>Fecha Devolución</th>
                                         <th>Estado</th>
+                                        <th>Bibliotecario</th>
                                         <th>Días Restantes</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td colspan="7" class="text-center">
+                                        <td colspan="8" class="text-center">
                                             <div class="spinner"></div>
                                             Cargando préstamos...
                                         </td>
@@ -1798,6 +1799,8 @@ const BibliotecaSPA = {
             const diasRestantes = prestamo.diasRestantes > 0 ? prestamo.diasRestantes : 'Vencido';
             const diasClass = prestamo.diasRestantes <= 0 ? 'text-danger' : prestamo.diasRestantes <= 3 ? 'text-warning' : '';
             
+            const bibliotecario = prestamo.bibliotecario || 'No asignado';
+            
             const row = `
                 <tr>
                     <td>${prestamo.id}</td>
@@ -1806,6 +1809,7 @@ const BibliotecaSPA = {
                     <td>${prestamo.fechaSolicitud}</td>
                     <td>${prestamo.fechaDevolucion}</td>
                     <td>${estadoBadge}</td>
+                    <td>👨‍💼 ${bibliotecario}</td>
                     <td class="${diasClass}">${diasRestantes}</td>
                 </tr>
             `;
@@ -1891,6 +1895,14 @@ const BibliotecaSPA = {
                                     </div>
                                     
                                     <div class="form-group">
+                                        <label for="bibliotecarioSeleccionado">Bibliotecario Responsable:</label>
+                                        <select id="bibliotecarioSeleccionado" class="form-control" required>
+                                            <option value="">Cargando bibliotecarios...</option>
+                                        </select>
+                                        <small class="form-text text-muted">Seleccione el bibliotecario que gestionará su préstamo</small>
+                                    </div>
+                                    
+                                    <div class="form-group">
                                         <label for="fechaDevolucion">Fecha de Devolución Deseada:</label>
                                         <input type="date" id="fechaDevolucion" class="form-control" required>
                                     </div>
@@ -1958,10 +1970,12 @@ const BibliotecaSPA = {
             this.procesarSolicitudPrestamo();
         });
         
-        // Establecer fecha mínima (mañana)
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        $('#fechaDevolucion').attr('min', tomorrow.toISOString().split('T')[0]);
+        // Establecer fecha mínima (hoy)
+        const today = new Date();
+        $('#fechaDevolucion').attr('min', today.toISOString().split('T')[0]);
+        
+        // Cargar bibliotecarios disponibles
+        this.cargarBibliotecarios();
     },
     
     // Cargar materiales según el tipo seleccionado
@@ -2003,6 +2017,40 @@ const BibliotecaSPA = {
             });
             
             select.html(options);
+        });
+    },
+    
+    // Cargar bibliotecarios disponibles
+    cargarBibliotecarios: function() {
+        const select = $('#bibliotecarioSeleccionado');
+        
+        select.html('<option value="">Cargando bibliotecarios...</option>');
+        
+        // Obtener bibliotecarios del backend
+        $.ajax({
+            url: this.config.apiBaseUrl + '/bibliotecario/lista',
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                console.log('📋 Bibliotecarios recibidos:', response);
+                
+                if (response.success && response.bibliotecarios && response.bibliotecarios.length > 0) {
+                    let options = '<option value="">Seleccione un bibliotecario...</option>';
+                    response.bibliotecarios.forEach(bib => {
+                        options += `<option value="${bib.id}">${bib.nombre} - ${bib.numeroEmpleado}</option>`;
+                    });
+                    select.html(options);
+                } else {
+                    // Si no hay bibliotecarios disponibles, usar el primero como default
+                    select.html('<option value="1">Bibliotecario Predeterminado</option>');
+                    console.warn('⚠️ No hay bibliotecarios disponibles, usando default');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('❌ Error al cargar bibliotecarios:', error);
+                // Usar bibliotecario por defecto si falla
+                select.html('<option value="1">Bibliotecario Predeterminado</option>');
+            }
         });
     },
     
@@ -2109,6 +2157,7 @@ const BibliotecaSPA = {
         const formData = {
             tipoMaterial: $('#tipoMaterial').val(),
             materialId: $('#materialSeleccionado').val(),
+            bibliotecarioId: $('#bibliotecarioSeleccionado').val(),
             fechaDevolucion: $('#fechaDevolucion').val(),
             motivo: $('#motivoPrestamo').val()
         };
@@ -2125,9 +2174,15 @@ const BibliotecaSPA = {
         const lectorId = userSession && userSession.userData ? userSession.userData.id : null;
         
         console.log('👤 Lector ID desde sesión:', lectorId);
+        console.log('👨‍💼 Bibliotecario ID:', formData.bibliotecarioId);
         
         if (!lectorId) {
             this.showAlert('Error: No se pudo identificar al usuario. Por favor, vuelva a iniciar sesión.', 'danger');
+            return;
+        }
+        
+        if (!formData.bibliotecarioId) {
+            this.showAlert('Error: Debe seleccionar un bibliotecario responsable.', 'danger');
             return;
         }
         
@@ -2143,8 +2198,10 @@ const BibliotecaSPA = {
             // Crear préstamo usando la API
             const response = await BibliotecaAPI.prestamos.create({
                 lectorId: lectorId,
+                bibliotecarioId: formData.bibliotecarioId,
                 materialId: formData.materialId,
-                fechaDevolucion: fechaDevolucionFormatted
+                fechaDevolucion: fechaDevolucionFormatted,
+                estado: 'EN_CURSO'
             });
             
             console.log('📊 Respuesta crear préstamo:', response);
@@ -2181,6 +2238,11 @@ const BibliotecaSPA = {
         
         if (!data.materialId) {
             this.showAlert('Por favor seleccione un material', 'danger');
+            return false;
+        }
+        
+        if (!data.bibliotecarioId) {
+            this.showAlert('Por favor seleccione un bibliotecario responsable', 'danger');
             return false;
         }
         

@@ -526,6 +526,54 @@ public class LectorController {
         }
     }
     
+    /**
+     * Obtiene el bibliotecario de referencia para un lector
+     * (El bibliotecario que más préstamos ha gestionado para ese lector)
+     * @param lectorId ID del lector
+     * @return Bibliotecario de referencia o null si no hay
+     */
+    public edu.udelar.pap.domain.Bibliotecario obtenerBibliotecarioReferencia(Long lectorId) {
+        try {
+            // Obtener el lector
+            Lector lector = lectorService.obtenerLectorPorId(lectorId);
+            if (lector == null) {
+                return null;
+            }
+            
+            // Obtener todos los préstamos del lector
+            edu.udelar.pap.service.PrestamoService prestamoService = new edu.udelar.pap.service.PrestamoService();
+            java.util.List<edu.udelar.pap.domain.Prestamo> prestamos = prestamoService.obtenerPrestamosPorLector(lector);
+            
+            if (prestamos == null || prestamos.isEmpty()) {
+                return null;
+            }
+            
+            // Contar préstamos por bibliotecario
+            java.util.Map<edu.udelar.pap.domain.Bibliotecario, Integer> conteo = new java.util.HashMap<>();
+            for (edu.udelar.pap.domain.Prestamo prestamo : prestamos) {
+                if (prestamo.getBibliotecario() != null) {
+                    conteo.put(prestamo.getBibliotecario(), 
+                              conteo.getOrDefault(prestamo.getBibliotecario(), 0) + 1);
+                }
+            }
+            
+            // Encontrar el bibliotecario con más préstamos
+            edu.udelar.pap.domain.Bibliotecario bibliotecarioReferencia = null;
+            int maxPrestamos = 0;
+            for (java.util.Map.Entry<edu.udelar.pap.domain.Bibliotecario, Integer> entry : conteo.entrySet()) {
+                if (entry.getValue() > maxPrestamos) {
+                    maxPrestamos = entry.getValue();
+                    bibliotecarioReferencia = entry.getKey();
+                }
+            }
+            
+            return bibliotecarioReferencia;
+        } catch (Exception e) {
+            System.err.println("Error al obtener bibliotecario de referencia: " + e.getMessage());
+            return null;
+        }
+    }
+    
     // ==================== MÉTODOS PARA APLICACIÓN WEB ====================
     
     /**
@@ -633,18 +681,35 @@ public class LectorController {
      */
     public Long autenticarLector(String email, String password) {
         try {
+            System.out.println("🔍 DEBUG LectorController.autenticarLector");
+            System.out.println("   Email recibido: '" + email + "'");
+            System.out.println("   Password recibido: '" + password + "'");
+            
             List<Lector> lectores = lectorService.obtenerTodosLosLectores();
+            System.out.println("   Total lectores en BD: " + lectores.size());
+            
             for (Lector lector : lectores) {
+                System.out.println("   Comparando con: '" + lector.getEmail() + "'");
+                
                 if (lector.getEmail().equalsIgnoreCase(email.trim())) {
+                    System.out.println("   ✓ Usuario encontrado!");
+                    System.out.println("   Password en BD: " + lector.getPassword().substring(0, Math.min(20, lector.getPassword().length())) + "...");
+                    System.out.println("   ¿Empieza con $2a$? " + lector.getPassword().startsWith("$2a$"));
+                    
                     if (lector.verificarPassword(password)) {
+                        System.out.println("   ✅ Password verificado correctamente!");
                         return lector.getId();
                     } else {
+                        System.out.println("   ❌ Password NO coincide");
                         return -1L; // Password incorrecto
                     }
                 }
             }
+            System.out.println("   ❌ Usuario no encontrado");
             return -1L; // Usuario no encontrado
         } catch (Exception ex) {
+            System.err.println("   ❌ ERROR en autenticación: " + ex.getMessage());
+            ex.printStackTrace();
             return -1L;
         }
     }

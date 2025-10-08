@@ -88,10 +88,11 @@ public class PrestamoService {
             throw new IllegalStateException("No se puede crear un préstamo para un lector suspendido");
         }
         
+        // COMENTADO: Permitir préstamos múltiples del mismo material según requisitos
         // Verificar que el material no esté ya prestado
-        if (materialEstaPrestado(prestamo.getMaterial())) {
-            throw new IllegalStateException("El material seleccionado ya está prestado");
-        }
+        // if (materialEstaPrestado(prestamo.getMaterial())) {
+        //     throw new IllegalStateException("El material seleccionado ya está prestado");
+        // }
         
         // Verificar límite de préstamos por lector (máximo 3 préstamos activos)
         long prestamosActivos = obtenerNumeroPrestamosActivos(prestamo.getLector());
@@ -101,11 +102,28 @@ public class PrestamoService {
         
         try (Session session = sessionFactory.openSession()) {
             Transaction tx = session.beginTransaction();
-            session.persist(prestamo);
-            tx.commit();
-            logger.info("Préstamo creado exitosamente - ID: " + prestamo.getId() + 
-                       ", Lector: " + prestamo.getLector().getNombre() + 
-                       ", Material: " + prestamo.getMaterial().getClass().getSimpleName());
+            try {
+                // Recargar las entidades dentro de esta sesión para evitar problemas con objetos detached
+                Lector lectorManaged = session.merge(prestamo.getLector());
+                Bibliotecario bibliotecarioManaged = session.merge(prestamo.getBibliotecario());
+                edu.udelar.pap.domain.DonacionMaterial materialManaged = session.merge(prestamo.getMaterial());
+                
+                // Actualizar el préstamo con las entidades managed
+                prestamo.setLector(lectorManaged);
+                prestamo.setBibliotecario(bibliotecarioManaged);
+                prestamo.setMaterial(materialManaged);
+                
+                // Persistir el préstamo
+                session.persist(prestamo);
+                tx.commit();
+                
+                logger.info("Préstamo creado exitosamente - ID: " + prestamo.getId() + 
+                           ", Lector: " + prestamo.getLector().getNombre() + 
+                           ", Material: " + prestamo.getMaterial().getClass().getSimpleName());
+            } catch (Exception e) {
+                tx.rollback();
+                throw e;
+            }
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error al guardar préstamo", e);
             throw e;

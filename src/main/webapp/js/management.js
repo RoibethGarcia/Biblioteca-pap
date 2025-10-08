@@ -557,10 +557,11 @@ const managementStyles = `
 // Agregar estilos
 $('head').append(managementStyles);
 
-// Inicializar cuando el DOM esté listo
-$(document).ready(function() {
-    BibliotecaManagement.init();
-});
+// NO auto-inicializar para evitar conflictos con spa.js
+// BibliotecaManagement debe ser inicializado manualmente si es necesario
+// $(document).ready(function() {
+//     BibliotecaManagement.init();
+// });
 
 // Hacer disponible globalmente
 window.BibliotecaManagement = BibliotecaManagement;

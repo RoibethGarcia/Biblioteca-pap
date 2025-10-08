@@ -670,16 +670,13 @@ public class PrestamoControllerUltraRefactored {
         
         // Validación de fecha de devolución
         try {
-            LocalDate fechaDevolucion = ValidacionesUtil.validarFechaFutura(fechaDevolucionStr);
-            
-            if (fechaDevolucion.isBefore(LocalDate.now()) || fechaDevolucion.isEqual(LocalDate.now())) {
-                ValidacionesUtil.mostrarError(internal, "La fecha de devolución debe ser futura");
-                return false;
-            }
+            // ValidacionesUtil.validarFechaFutura ya valida que la fecha sea hoy o futura
+            ValidacionesUtil.validarFechaFutura(fechaDevolucionStr);
         } catch (Exception ex) {
             ValidacionesUtil.mostrarErrorFecha(internal, 
                 "Formato de fecha inválido. Use DD/MM/AAAA\n" +
-                "Ejemplo: 15/12/2024");
+                "La fecha debe ser hoy o en el futuro (máximo 5 años)\n" +
+                "Ejemplo: " + LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")));
             return false;
         }
         
@@ -1953,6 +1950,20 @@ public class PrestamoControllerUltraRefactored {
             }
             return prestamosPorLector;
         } catch (Exception ex) {
+            return new java.util.ArrayList<>();
+        }
+    }
+    
+    /**
+     * Obtiene TODOS los préstamos del sistema (activos, pendientes y devueltos)
+     * @return Lista de todos los préstamos
+     */
+    public List<Prestamo> obtenerTodosPrestamos() {
+        try {
+            return prestamoService.obtenerTodosLosPrestamos();
+        } catch (Exception ex) {
+            System.err.println("Error al obtener todos los préstamos: " + ex.getMessage());
+            ex.printStackTrace();
             return new java.util.ArrayList<>();
         }
     }
