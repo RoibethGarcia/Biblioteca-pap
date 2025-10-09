@@ -117,8 +117,7 @@
         </configuration>
       </plugin>
       <!-- Plugin para JAX-WS -->
-      <!-- JAX-WS Plugin deshabilitado temporalmente para evitar errores de compilación -->
-      <!--
+      <!-- Genera WSDLs automáticamente desde las implementaciones de Web Services -->
       <plugin>
         <groupId>com.sun.xml.ws</groupId>
         <artifactId>jaxws-maven-plugin</artifactId>
@@ -170,7 +169,6 @@
           </execution>
         </executions>
       </plugin>
-      -->
       <!-- Plugin para compilar WAR -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

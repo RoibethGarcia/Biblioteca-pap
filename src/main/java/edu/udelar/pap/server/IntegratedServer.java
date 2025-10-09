@@ -260,26 +260,24 @@ public class IntegratedServer {
                     
                     if ("LECTOR".equalsIgnoreCase(userType)) {
                         String nombre = params.get("nombre");
-                        String apellido = params.get("apellido");
                         String email = params.get("email");
-                        String telefono = params.get("telefono");
                         String direccion = params.get("direccion");
                         String zona = params.get("zona");
                         String password = params.get("password");
                         
-                        System.out.println("📝 Creando lector: " + nombre + " " + apellido + ", email: " + email);
+                        System.out.println("📝 Creando lector: " + nombre + ", email: " + email);
                         
-                        return factory.getLectorPublisher().crearLector(nombre, apellido, email, telefono, direccion, zona, password);
+                        // Parámetro fechaNacimiento no utilizado, se pasa vacío
+                        return factory.getLectorPublisher().crearLector(nombre, "", email, "", direccion, zona, password);
                     } else if ("BIBLIOTECARIO".equalsIgnoreCase(userType)) {
                         String nombre = params.get("nombre");
-                        String apellido = params.get("apellido");
                         String email = params.get("email");
                         String numeroEmpleado = params.get("numeroEmpleado");
                         String password = params.get("password");
                         
-                        System.out.println("📝 Creando bibliotecario: " + nombre + " " + apellido + ", email: " + email);
+                        System.out.println("📝 Creando bibliotecario: " + nombre + ", email: " + email);
                         
-                        return factory.getBibliotecarioPublisher().crearBibliotecario(nombre, apellido, email, numeroEmpleado, password);
+                        return factory.getBibliotecarioPublisher().crearBibliotecario(nombre, "", email, numeroEmpleado, password);
                     } else {
                         return "{\"success\": false, \"message\": \"Tipo de usuario no válido\"}";
                     }
@@ -864,6 +862,61 @@ public class IntegratedServer {
                         result = factory.getDonacionPublisher().crearArticuloEspecial(descripcion, peso, dimensiones);
                     }
                 }
+                // Nuevos endpoints que aceptan JSON
+                else if (method.equals("POST") && path.equals("/donacion/registrar-libro")) {
+                    // Leer el cuerpo de la petición JSON
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body JSON recibido para registrar libro: [" + body + "]");
+                    System.out.println("📝 Longitud del body: " + body.length());
+                    
+                    try {
+                        // Parsear JSON manualmente
+                        String titulo = extractJsonValue(body, "titulo");
+                        String paginas = extractJsonValue(body, "paginas");
+                        String donante = extractJsonValue(body, "donante");
+                        
+                        System.out.println("📖 Valores parseados - titulo=[" + titulo + "], paginas=[" + paginas + "], donante=[" + donante + "]");
+                        
+                        if (titulo == null || titulo.trim().isEmpty()) {
+                            result = "{\"success\": false, \"message\": \"El título es requerido\"}";
+                        } else if (paginas == null || paginas.trim().isEmpty()) {
+                            result = "{\"success\": false, \"message\": \"El número de páginas es requerido\"}";
+                        } else {
+                            result = factory.getDonacionPublisher().crearLibro(titulo, paginas);
+                        }
+                    } catch (Exception e) {
+                        result = "{\"success\": false, \"message\": \"Error al parsear JSON: " + e.getMessage() + "\"}";
+                    }
+                }
+                else if (method.equals("POST") && path.equals("/donacion/registrar-articulo")) {
+                    // Leer el cuerpo de la petición JSON
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body JSON recibido para registrar artículo: " + body);
+                    
+                    try {
+                        // Parsear JSON manualmente
+                        String descripcion = extractJsonValue(body, "descripcion");
+                        String peso = extractJsonValue(body, "peso");
+                        String dimensiones = extractJsonValue(body, "dimensiones");
+                        String donante = extractJsonValue(body, "donante");
+                        
+                        System.out.println("🎨 Registrando artículo: descripcion=" + descripcion + ", peso=" + peso + ", dimensiones=" + dimensiones + ", donante=" + donante);
+                        
+                        if (descripcion == null || descripcion.trim().isEmpty()) {
+                            result = "{\"success\": false, \"message\": \"La descripción es requerida\"}";
+                        } else if (peso == null || peso.trim().isEmpty()) {
+                            result = "{\"success\": false, \"message\": \"El peso es requerido\"}";
+                        } else {
+                            // Dimensiones son opcionales, usar "N/A" si no se proporcionan
+                            if (dimensiones == null || dimensiones.trim().isEmpty()) {
+                                dimensiones = "N/A";
+                            }
+                            result = factory.getDonacionPublisher().crearArticuloEspecial(descripcion, peso, dimensiones);
+                        }
+                    } catch (Exception e) {
+                        result = "{\"success\": false, \"message\": \"Error al parsear JSON: " + e.getMessage() + "\"}";
+                    }
+                }
                 // Endpoints GET
                 else if (path.equals("/donacion/cantidad-libros")) {
                     result = factory.getDonacionPublisher().obtenerCantidadLibros();
@@ -946,6 +999,71 @@ public class IntegratedServer {
                 return "{\"success\": true, \"donaciones\": [" + String.join(", ", donaciones) + "]}";
             } catch (Exception e) {
                 return "{\"success\": false, \"message\": \"Error combinando donaciones: " + e.getMessage() + "\"}";
+            }
+        }
+        
+        /**
+         * Extrae el valor de un campo JSON simple
+         * @param json String JSON
+         * @param fieldName Nombre del campo
+         * @return Valor del campo o null si no se encuentra
+         */
+        private String extractJsonValue(String json, String fieldName) {
+            try {
+                // Buscar "fieldName" (con o sin espacios alrededor de :)
+                String searchPattern = "\"" + fieldName + "\"";
+                int fieldIndex = json.indexOf(searchPattern);
+                
+                if (fieldIndex == -1) {
+                    System.out.println("❌ Campo '" + fieldName + "' no encontrado en JSON");
+                    return null;
+                }
+                
+                // Buscar los dos puntos después del nombre del campo
+                int colonIndex = json.indexOf(":", fieldIndex);
+                if (colonIndex == -1) {
+                    System.out.println("❌ No se encontró ':' después de '" + fieldName + "'");
+                    return null;
+                }
+                
+                // Saltar espacios en blanco después de los dos puntos
+                int valueStart = colonIndex + 1;
+                while (valueStart < json.length() && Character.isWhitespace(json.charAt(valueStart))) {
+                    valueStart++;
+                }
+                
+                if (valueStart >= json.length()) {
+                    return null;
+                }
+                
+                // Verificar si el valor está entre comillas
+                if (json.charAt(valueStart) == '"') {
+                    // Valor de tipo string
+                    valueStart++; // Saltar la comilla de apertura
+                    int endQuote = json.indexOf("\"", valueStart);
+                    if (endQuote == -1) {
+                        return null;
+                    }
+                    String value = json.substring(valueStart, endQuote);
+                    System.out.println("✅ Campo '" + fieldName + "' = '" + value + "'");
+                    return value;
+                } else {
+                    // Valor numérico o booleano
+                    int endIndex = valueStart;
+                    while (endIndex < json.length() && 
+                           json.charAt(endIndex) != ',' && 
+                           json.charAt(endIndex) != '}' && 
+                           json.charAt(endIndex) != ']') {
+                        endIndex++;
+                    }
+                    String value = json.substring(valueStart, endIndex).trim();
+                    System.out.println("✅ Campo '" + fieldName + "' = '" + value + "'");
+                    return value;
+                }
+            } catch (Exception e) {
+                System.err.println("❌ Error extrayendo valor JSON para campo '" + fieldName + "': " + e.getMessage());
+                e.printStackTrace();
+                return null;
             }
         }
     }

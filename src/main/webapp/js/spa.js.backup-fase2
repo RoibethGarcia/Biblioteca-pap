@@ -93,28 +93,6 @@ const BibliotecaSPA = {
                 $('#lectorFields').hide();
             }
         });
-        
-        // ==================== EVENT DELEGATION PARA BOTONES DE GESTIÓN ====================
-        
-        // Botón cambiar estado de lector (en tabla de gestión)
-        const self = this; // Guardar referencia a BibliotecaSPA
-        $(document).on('click', '.btn-cambiar-estado', function(e) {
-            e.preventDefault();
-            const $btn = $(this);
-            const id = parseInt($btn.data('lector-id'));
-            const estado = $btn.data('lector-estado');
-            console.log('🔄 Click en cambiar estado - ID:', id, 'Estado actual:', estado);
-            BibliotecaSPA.cambiarEstadoLector(id, estado);
-        });
-        
-        // Botón cambiar zona de lector (en tabla de gestión)
-        $(document).on('click', '.btn-cambiar-zona', function(e) {
-            e.preventDefault();
-            const $btn = $(this);
-            const id = parseInt($btn.data('lector-id'));
-            console.log('📍 Click en cambiar zona - ID:', id);
-            BibliotecaSPA.cambiarZonaLector(id);
-        });
     },
     
     // Configurar History API para navegación SPA
@@ -251,11 +229,6 @@ const BibliotecaSPA = {
                     if (userData && userData.id) {
                         // Actualizar la sesión con los datos completos
                         this.config.userSession.userData = userData;
-                        this.config.userSession.userId = userData.id;  // ✅ PermissionManager espera 'userId'
-                        this.config.userSession.userEmail = email;  // ✅ PermissionManager espera 'userEmail'
-                        this.config.userSession.userName = userData.nombre;  // ✅ PermissionManager espera 'userName'
-                        this.config.userSession.userLastName = userData.apellido || '';  // ✅ PermissionManager espera 'userLastName'
-                        this.config.userSession.userZona = userData.zona || null;  // ✅ Incluir zona si existe
                         this.config.userSession.nombre = userData.nombre;
                         this.config.userSession.apellido = userData.apellido || '';
                         this.config.userSession.nombreCompleto = `${userData.nombre} ${userData.apellido || ''}`.trim();
@@ -804,12 +777,12 @@ const BibliotecaSPA = {
                     <div class="col-4">
                         <div class="card">
                             <div class="card-header">
-                                <h4 style="margin: 0;">📚 Catálogo de Materiales</h4>
+                                <h4 style="margin: 0;">📚 Catálogo de Libros</h4>
                             </div>
                             <div class="card-body">
-                                <p>Explora todos los libros y artículos especiales disponibles</p>
+                                <p>Explora todos los libros disponibles en nuestra biblioteca</p>
                                 <button class="btn btn-secondary" onclick="BibliotecaSPA.verCatalogo()">
-                                    Ver Catálogo Completo
+                                    Ver Catálogo de Libros
                                 </button>
                             </div>
                         </div>
@@ -874,8 +847,10 @@ const BibliotecaSPA = {
     
     // Renderizar Gestión de Lectores
     renderLectoresManagement: function() {
-        // ✨ REFACTORIZADO: Usar PermissionManager (Fase 2)
-        if (!PermissionManager.requireBibliotecario('gestionar lectores')) {
+        // Verificar que el usuario es bibliotecario
+        if (!this.config.userSession || this.config.userSession.userType !== 'BIBLIOTECARIO') {
+            this.showAlert('Acceso denegado. Solo bibliotecarios pueden gestionar lectores.', 'danger');
+            this.navigateToPage('dashboard');
             return;
         }
         const content = `
@@ -937,16 +912,30 @@ const BibliotecaSPA = {
                             <div class="col-2">
                                 <div class="form-group">
                                     <label>&nbsp;</label>
-                                    <button id="searchBtn" class="btn btn-primary" style="width: 100%;">🔍 Buscar</button>
+                                    <button id="searchBtn" class="btn btn-primary" style="width: 100%;">Buscar</button>
                                 </div>
                             </div>
                         </div>
-                        <div class="row mt-2">
-                            <div class="col-12">
-                                <button onclick="BibliotecaSPA.limpiarFiltrosLectores()" class="btn btn-secondary btn-sm">
-                                    🔄 Limpiar Filtros
+                    </div>
+                </div>
+
+                <!-- Acciones rápidas -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 style="margin: 0;">⚡ Acciones Rápidas</h4>
+                            </div>
+                            <div class="card-body">
+                                <button class="btn btn-success" onclick="BibliotecaSPA.showRegistrarLectorModal()">
+                                    ➕ Registrar Nuevo Lector
                                 </button>
-                                <span id="contadorLectores" class="ml-3" style="font-weight: bold; color: #666;"></span>
+                                <button class="btn btn-primary" onclick="BibliotecaSPA.exportarLectores()">
+                                    📊 Exportar Lista
+                                </button>
+                                <button class="btn btn-secondary" onclick="BibliotecaSPA.actualizarLista()">
+                                    🔄 Actualizar Lista
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -965,6 +954,7 @@ const BibliotecaSPA = {
                                         <th>ID</th>
                                         <th>Nombre</th>
                                         <th>Email</th>
+                                        <th>Teléfono</th>
                                         <th>Zona</th>
                                         <th>Estado</th>
                                         <th>Acciones</th>
@@ -972,7 +962,7 @@ const BibliotecaSPA = {
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td colspan="6" class="text-center">
+                                        <td colspan="7" class="text-center">
                                             <div class="spinner"></div>
                                             Cargando lectores...
                                         </td>
@@ -988,110 +978,95 @@ const BibliotecaSPA = {
         $('#lectoresContent').html(content);
         this.loadLectoresData();
         this.loadLectoresManagementStats();
-        
-        // Agregar listeners para búsqueda y filtros
-        setTimeout(() => {
-            $('#searchInput').on('keyup', function(e) {
-                if (e.key === 'Enter') {
-                    BibliotecaSPA.aplicarFiltrosLectores();
-                }
-            });
-            
-            $('#estadoFilter, #zonaFilter').on('change', function() {
-                BibliotecaSPA.aplicarFiltrosLectores();
-            });
-            
-            $('#searchBtn').on('click', function() {
-                BibliotecaSPA.aplicarFiltrosLectores();
-            });
-        }, 100);
     },
     
     // Cargar estadísticas del dashboard
-    // ✨ REFACTORIZADO: Usar ApiService (Fase 3)
-    loadDashboardStats: async function() {
+    loadDashboardStats: function() {
         const isBibliotecario = this.config.userSession?.userType === 'BIBLIOTECARIO';
         
-        try {
         if (isBibliotecario) {
-                // Cargar estadísticas para bibliotecario con ApiService
-                await bibliotecaApi.loadAndUpdateStats({
-                    '#totalLectores': '/lector/cantidad',
-                    '#lectoresActivos': '/lector/cantidad-activos',
-                    '#totalPrestamos': '/prestamo/cantidad',
-                    '#prestamosVencidos': '/prestamo/cantidad-vencidos'
+            // Cargar estadísticas para bibliotecario
+            BibliotecaAPI.getLectorStats().then(stats => {
+                $('#totalLectores').text(stats.total || 0);
+                $('#lectoresActivos').text(stats.activos || 0);
+            });
+            
+            BibliotecaAPI.getPrestamoStats().then(stats => {
+                $('#totalPrestamos').text(stats.total || 0);
+                $('#prestamosVencidos').text(stats.vencidos || 0);
             });
         } else {
-                // Cargar estadísticas para lector con ApiService
-                await bibliotecaApi.loadAndUpdateStats({
-                    '#misPrestamos': '/prestamo/mis-prestamos/cantidad',
-                    '#prestamosActivos': '/prestamo/mis-prestamos/activos'
-                });
-            }
-            console.log('✅ Dashboard stats loaded successfully');
-        } catch (error) {
-            console.error('❌ Error loading dashboard stats:', error);
-            // Fallback: mostrar ceros en caso de error
-            if (isBibliotecario) {
-                $('#totalLectores, #lectoresActivos, #totalPrestamos, #prestamosVencidos').text('0');
-            } else {
-                $('#misPrestamos, #prestamosActivos').text('0');
-            }
+            // Cargar estadísticas para lector
+            BibliotecaAPI.getMisPrestamoStats().then(stats => {
+                $('#misPrestamos').text(stats.total || 0);
+                $('#prestamosActivos').text(stats.activos || 0);
+            });
         }
     },
     
-    // ✨ REFACTORIZADO: Usar ApiService + TableRenderer (Fase 2)
-    loadLectoresData: async function() {
+    // Cargar datos de lectores
+    loadLectoresData: function() {
         console.log('🔍 loadLectoresData called');
         
-        const renderer = new TableRenderer('#lectoresTable');
-        renderer.showLoading(7, 'Cargando lectores...');
-        
-        try {
-            const data = await bibliotecaApi.lectores.lista();
-            const lectores = data.lectores || [];
-            console.log('✅ Lectores loaded from server:', lectores.length);
-            
-            // Guardar todos los lectores para filtrado posterior
-            this.todosLosLectores = lectores;
-            
-            this.renderLectoresTable(lectores);
-            this.actualizarContadorLectores(lectores.length);
-        } catch (error) {
-            console.error('❌ Error loading lectores:', error);
-            renderer.showError('Error al cargar los lectores: ' + error.message, 7);
-        }
+        // Cargar datos reales desde el servidor
+        fetch('/lector/lista')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data.success) {
+                    throw new Error(data.message || 'Error al cargar lectores');
+                }
+                
+                const lectores = data.lectores || [];
+                console.log('✅ Lectores loaded from server:', lectores.length);
+                this.renderLectoresTable(lectores);
+            })
+            .catch(error => {
+                console.error('❌ Error loading lectores:', error);
+                // En caso de error, mostrar mensaje
+                const tbody = $('#lectoresTable tbody');
+                tbody.html('<tr><td colspan="7" class="text-center">Error al cargar los lectores: ' + error.message + '</td></tr>');
+            });
     },
     
-    // ✨ REFACTORIZADO: Usar ApiService.loadAndUpdateStats() (Fase 2)
-    loadLectoresManagementStats: async function() {
+    // Cargar estadísticas para la gestión de lectores
+    loadLectoresManagementStats: function() {
         console.log('🔍 loadLectoresManagementStats called');
         
-        try {
-            await bibliotecaApi.loadAndUpdateStats({
-                '#totalLectores': '/lector/cantidad',
-                '#lectoresActivos': '/lector/cantidad-activos'
-            });
-            
-            // Calcular suspendidos
-            const total = parseInt($('#totalLectores').text()) || 0;
-            const activos = parseInt($('#lectoresActivos').text()) || 0;
+        // Cargar estadísticas reales desde el servidor
+        Promise.all([
+            fetch('/lector/cantidad').then(r => r.json()),
+            fetch('/lector/cantidad-activos').then(r => r.json())
+        ]).then(([totalResponse, activosResponse]) => {
+            const total = totalResponse.cantidad || 0;
+            const activos = activosResponse.cantidad || 0;
             const suspendidos = total - activos;
+            
+            // Actualizar estadísticas en la gestión de lectores
+            $('#totalLectores').text(total);
+            $('#lectoresActivos').text(activos);
             $('#lectoresSuspendidos').text(suspendidos);
             
             console.log('✅ Lectores management stats loaded:', { total, activos, suspendidos });
-        } catch (error) {
+        }).catch(error => {
             console.error('❌ Error loading lectores management stats:', error);
+            // En caso de error, mostrar ceros
             $('#totalLectores').text('0');
             $('#lectoresActivos').text('0');
             $('#lectoresSuspendidos').text('0');
-        }
+        });
     },
     
     // Renderizar gestión de préstamos
     renderPrestamosManagement: function() {
-        // ✨ REFACTORIZADO: Usar PermissionManager (Fase 2)
-        if (!PermissionManager.requireBibliotecario('gestionar préstamos')) {
+        // Verificar que el usuario es bibliotecario
+        if (!this.config.userSession || this.config.userSession.userType !== 'BIBLIOTECARIO') {
+            this.showAlert('Acceso denegado. Solo bibliotecarios pueden gestionar préstamos.', 'danger');
+            this.navigateToPage('dashboard');
             return;
         }
         
@@ -1225,259 +1200,109 @@ const BibliotecaSPA = {
         this.loadPrestamosGestionStats();
     },
     
-    // ✨ REFACTORIZADO: Usar ApiService + TableRenderer (Fase 2)
-    loadPrestamosGestionData: async function() {
+    // Cargar datos de préstamos para gestión
+    loadPrestamosGestionData: function() {
         console.log('🔍 loadPrestamosGestionData called');
         
-        const renderer = new TableRenderer('#prestamosGestionTable');
-        renderer.showLoading(7, 'Cargando préstamos...');
-        
-        try {
-            const data = await bibliotecaApi.prestamos.lista();
-            const prestamos = data.prestamos || [];
-            console.log('✅ Préstamos loaded from server:', prestamos.length);
-            this.renderPrestamosGestionTable(prestamos);
-        } catch (error) {
-            console.error('❌ Error loading préstamos:', error);
-            renderer.showError('Error al cargar los préstamos: ' + error.message, 7);
-        }
+        fetch('/prestamo/lista')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    throw new Error(data.message || 'Error al cargar préstamos');
+                }
+                
+                const prestamos = data.prestamos || [];
+                console.log('✅ Préstamos loaded from server:', prestamos.length);
+                this.renderPrestamosGestionTable(prestamos);
+            })
+            .catch(error => {
+                console.error('❌ Error loading préstamos:', error);
+                const tbody = $('#prestamosGestionTable tbody');
+                tbody.html('<tr><td colspan="7" class="text-center">Error al cargar los préstamos: ' + error.message + '</td></tr>');
+            });
     },
     
-    // ✨ REFACTORIZADO: Usar ApiService.loadAndUpdateStats() (Fase 2)
-    loadPrestamosGestionStats: async function() {
+    // Cargar estadísticas de préstamos
+    loadPrestamosGestionStats: function() {
         console.log('🔍 loadPrestamosGestionStats called');
         
-        try {
-            await bibliotecaApi.loadAndUpdateStats({
-                '#totalPrestamosGestion': '/prestamo/cantidad',
-                '#prestamosActivosGestion': '/prestamo/cantidad-activos',
-                '#prestamosVencidosGestion': '/prestamo/cantidad-vencidos',
-                '#prestamosCompletadosGestion': '/prestamo/cantidad-completados'
-            });
+        Promise.all([
+            fetch('/prestamo/cantidad').then(r => r.json()),
+            fetch('/prestamo/cantidad-activos').then(r => r.json()),
+            fetch('/prestamo/cantidad-vencidos').then(r => r.json()),
+            fetch('/prestamo/cantidad-completados').then(r => r.json())
+        ]).then(([totalResponse, activosResponse, vencidosResponse, completadosResponse]) => {
+            const total = totalResponse.cantidad || 0;
+            const activos = activosResponse.cantidad || 0;
+            const vencidos = vencidosResponse.cantidad || 0;
+            const completados = completadosResponse.cantidad || 0;
             
-            const total = parseInt($('#totalPrestamosGestion').text()) || 0;
-            const activos = parseInt($('#prestamosActivosGestion').text()) || 0;
-            const vencidos = parseInt($('#prestamosVencidosGestion').text()) || 0;
-            const completados = parseInt($('#prestamosCompletadosGestion').text()) || 0;
+            $('#totalPrestamosGestion').text(total);
+            $('#prestamosActivosGestion').text(activos);
+            $('#prestamosVencidosGestion').text(vencidos);
+            $('#prestamosCompletadosGestion').text(completados);
             
             console.log('✅ Préstamos stats loaded:', { total, activos, vencidos, completados });
-        } catch (error) {
+        }).catch(error => {
             console.error('❌ Error loading préstamos stats:', error);
             $('#totalPrestamosGestion').text('0');
             $('#prestamosActivosGestion').text('0');
             $('#prestamosVencidosGestion').text('0');
             $('#prestamosCompletadosGestion').text('0');
-        }
+        });
     },
     
-    // ✨ REFACTORIZADO: Usar TableRenderer (Fase 2)
+    // Renderizar tabla de préstamos
     renderPrestamosGestionTable: function(prestamos) {
-        const renderer = new TableRenderer('#prestamosGestionTable', {
-            emptyMessage: 'No hay préstamos registrados'
-        });
+        const tbody = $('#prestamosGestionTable tbody');
+        tbody.empty();
         
-        renderer.render(prestamos, [
-            { field: 'id', header: 'ID', width: '60px' },
-            { field: 'lectorNombre', header: 'Lector',
-              render: (p) => p.lectorNombre || 'N/A' },
-            { field: 'materialTitulo', header: 'Material',
-              render: (p) => p.materialTitulo || 'N/A' },
-            { field: 'fechaSolicitud', header: 'Fecha Solicitud', width: '120px',
-              render: (p) => BibliotecaFormatter.formatDate(p.fechaSolicitud) },
-            { field: 'fechaDevolucion', header: 'Fecha Devolución', width: '120px',
-              render: (p) => BibliotecaFormatter.formatDate(p.fechaDevolucion) },
-            { field: 'estado', header: 'Estado', width: '120px',
-              render: (p) => BibliotecaFormatter.getEstadoBadge(p.estado) },
-            { field: 'acciones', header: 'Acciones', width: '280px',
-              render: (p) => `
-                <button class="btn btn-primary btn-sm" onclick="BibliotecaSPA.verDetallesPrestamo(${p.id})">
+        if (prestamos.length === 0) {
+            tbody.html('<tr><td colspan="7" class="text-center">No hay préstamos registrados</td></tr>');
+            return;
+        }
+        
+        prestamos.forEach(prestamo => {
+            let estadoBadge = '';
+            if (prestamo.estado === 'ACTIVO') {
+                estadoBadge = '<span class="badge badge-success">Activo</span>';
+            } else if (prestamo.estado === 'VENCIDO') {
+                estadoBadge = '<span class="badge badge-danger">Vencido</span>';
+            } else if (prestamo.estado === 'COMPLETADO') {
+                estadoBadge = '<span class="badge badge-info">Completado</span>';
+            }
+            
+            const row = `
+                <tr>
+                    <td>${prestamo.id}</td>
+                    <td>${prestamo.lectorNombre || 'N/A'}</td>
+                    <td>${prestamo.materialTitulo || 'N/A'}</td>
+                    <td>${prestamo.fechaSolicitud || 'N/A'}</td>
+                    <td>${prestamo.fechaDevolucion || 'N/A'}</td>
+                    <td>${estadoBadge}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="BibliotecaSPA.verDetallesPrestamo(${prestamo.id})">
                             👁️ Ver
                         </button>
-                <button class="btn btn-success btn-sm" onclick="BibliotecaSPA.procesarDevolucion(${p.id})">
-                    ↩️ Devolver
+                        <button class="btn btn-success btn-sm" onclick="BibliotecaSPA.procesarDevolucion(${prestamo.id})">
+                            ↩️ Devolver
                         </button>
-                <button class="btn btn-warning btn-sm" onclick="BibliotecaSPA.renovarPrestamo(${p.id})">
-                    🔄 Renovar
+                        <button class="btn btn-warning btn-sm" onclick="BibliotecaSPA.renovarPrestamo(${prestamo.id})">
+                            🔄 Renovar
                         </button>
-              `}
-        ]);
-    },
-    
-    // ✨ NUEVO: Registrar nuevo préstamo (Fase 2)
-    registrarNuevoPrestamo: function() {
-        ModalManager.showForm(
-            '📚 Registrar Nuevo Préstamo',
-            [
-                { name: 'idLector', label: 'ID del Lector', type: 'number', required: true,
-                  placeholder: 'Ingrese el ID del lector' },
-                { name: 'idMaterial', label: 'ID del Material', type: 'number', required: true,
-                  placeholder: 'Ingrese el ID del libro/material' },
-                { name: 'fechaDevolucion', label: 'Fecha de Devolución', type: 'date', required: true },
-                { name: 'observaciones', label: 'Observaciones', type: 'textarea', rows: 3,
-                  placeholder: 'Observaciones opcionales...' }
-            ],
-            async (formData) => {
-                try {
-                    const response = await bibliotecaApi.prestamos.crear(formData);
-                    this.showAlert('Préstamo registrado exitosamente', 'success');
-                    this.loadPrestamosGestionData();
-                    this.loadPrestamosGestionStats();
-                    return true; // Cerrar modal
-                } catch (error) {
-                    this.showAlert('Error al registrar préstamo: ' + error.message, 'danger');
-                    return false; // No cerrar modal
-                }
-            },
-            {
-                submitText: 'Registrar Préstamo',
-                cancelText: 'Cancelar'
-            }
-        );
-    },
-    
-    // ✨ NUEVO: Ver detalles de préstamo (Fase 2)
-    verDetallesPrestamo: async function(idPrestamo) {
-        try {
-            const data = await bibliotecaApi.prestamos.info(idPrestamo);
-            const prestamo = data.prestamo || data;
-            
-            const detalles = `
-                <div style="text-align: left;">
-                    <h5>📋 Información del Préstamo</h5>
-                    <p><strong>ID:</strong> ${prestamo.id}</p>
-                    <p><strong>Estado:</strong> ${BibliotecaFormatter.getEstadoBadge(prestamo.estado)}</p>
-                    
-                    <hr>
-                    <h5>👤 Información del Lector</h5>
-                    <p><strong>Nombre:</strong> ${prestamo.lectorNombre || 'N/A'}</p>
-                    <p><strong>Email:</strong> ${prestamo.lectorEmail || 'N/A'}</p>
-                    
-                    <hr>
-                    <h5>📚 Información del Material</h5>
-                    <p><strong>Título:</strong> ${prestamo.materialTitulo || 'N/A'}</p>
-                    <p><strong>Tipo:</strong> ${prestamo.materialTipo || 'N/A'}</p>
-                    
-                    <hr>
-                    <h5>📅 Fechas</h5>
-                    <p><strong>Fecha de Solicitud:</strong> ${BibliotecaFormatter.formatDate(prestamo.fechaSolicitud)}</p>
-                    <p><strong>Fecha de Devolución:</strong> ${BibliotecaFormatter.formatDate(prestamo.fechaDevolucion)}</p>
-                    ${prestamo.fechaDevolucionReal ? `<p><strong>Fecha Real de Devolución:</strong> ${BibliotecaFormatter.formatDate(prestamo.fechaDevolucionReal)}</p>` : ''}
-                    
-                    ${prestamo.observaciones ? `<hr><p><strong>Observaciones:</strong> ${prestamo.observaciones}</p>` : ''}
-                </div>
+                    </td>
+                </tr>
             `;
-            
-            ModalManager.show({
-                title: '📚 Detalles del Préstamo',
-                body: detalles,
-                footer: `<button class="btn btn-secondary" onclick="ModalManager.close('modal-prestamo-${idPrestamo}')">Cerrar</button>`,
-                id: 'modal-prestamo-' + idPrestamo,
-                size: 'lg'
-            });
-        } catch (error) {
-            console.error('Error al cargar detalles del préstamo:', error);
-            this.showAlert('Error al cargar detalles del préstamo: ' + error.message, 'danger');
-        }
-    },
-    
-    // ✨ NUEVO: Procesar devolución (Fase 2)
-    procesarDevolucion: function(idPrestamo) {
-        ModalManager.showConfirm(
-            '↩️ Procesar Devolución',
-            '¿Está seguro que desea procesar la devolución de este préstamo?',
-            async () => {
-                try {
-                    await bibliotecaApi.prestamos.devolver(idPrestamo);
-                    this.showAlert('Devolución procesada exitosamente', 'success');
-                    this.loadPrestamosGestionData();
-                    this.loadPrestamosGestionStats();
-                } catch (error) {
-                    this.showAlert('Error al procesar devolución: ' + error.message, 'danger');
-                }
-            },
-            {
-                confirmText: 'Procesar Devolución',
-                cancelText: 'Cancelar',
-                confirmClass: 'btn-success',
-                icon: '↩️'
-            }
-        );
-    },
-    
-    // ✨ NUEVO: Renovar préstamo (Fase 2)
-    renovarPrestamo: function(idPrestamo) {
-        ModalManager.showForm(
-            '🔄 Renovar Préstamo',
-            [
-                { name: 'nuevaFechaDevolucion', label: 'Nueva Fecha de Devolución', 
-                  type: 'date', required: true },
-                { name: 'motivo', label: 'Motivo de Renovación', 
-                  type: 'textarea', rows: 3, placeholder: 'Opcional...' }
-            ],
-            async (formData) => {
-                try {
-                    await bibliotecaApi.prestamos.renovar(idPrestamo, formData);
-                    this.showAlert('Préstamo renovado exitosamente', 'success');
-                    this.loadPrestamosGestionData();
-                    this.loadPrestamosGestionStats();
-                    return true;
-                } catch (error) {
-                    this.showAlert('Error al renovar préstamo: ' + error.message, 'danger');
-                    return false;
-                }
-            },
-            {
-                submitText: 'Renovar',
-                cancelText: 'Cancelar'
-            }
-        );
-    },
-    
-    // ✨ NUEVO: Exportar préstamos (Fase 2)
-    exportarPrestamos: async function() {
-        try {
-            this.showAlert('Generando exportación...', 'info');
-            
-            const data = await bibliotecaApi.prestamos.lista();
-            const prestamos = data.prestamos || [];
-            
-            // Crear CSV
-            let csv = 'ID,Lector,Material,Fecha Solicitud,Fecha Devolución,Estado\n';
-            
-            prestamos.forEach(p => {
-                csv += `${p.id},"${p.lectorNombre || 'N/A'}","${p.materialTitulo || 'N/A'}",`;
-                csv += `"${p.fechaSolicitud || 'N/A'}","${p.fechaDevolucion || 'N/A'}","${p.estado || 'N/A'}"\n`;
-            });
-            
-            // Descargar archivo
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `prestamos_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            this.showAlert('Exportación completada exitosamente', 'success');
-        } catch (error) {
-            console.error('Error al exportar préstamos:', error);
-            this.showAlert('Error al exportar préstamos: ' + error.message, 'danger');
-        }
-    },
-    
-    // ✨ NUEVO: Actualizar lista de préstamos (Fase 2)
-    actualizarListaPrestamos: function() {
-        this.showAlert('Actualizando listado...', 'info');
-        this.loadPrestamosGestionData();
-        this.loadPrestamosGestionStats();
+            tbody.append(row);
+        });
     },
     
     // Renderizar gestión de donaciones
     renderDonacionesManagement: function() {
-        // ✨ REFACTORIZADO: Usar PermissionManager (Fase 2)
-        if (!PermissionManager.requireBibliotecario('gestionar donaciones')) {
+        // Verificar que el usuario es bibliotecario
+        if (!this.config.userSession || this.config.userSession.userType !== 'BIBLIOTECARIO') {
+            this.showAlert('Acceso denegado. Solo bibliotecarios pueden gestionar donaciones.', 'danger');
+            this.navigateToPage('dashboard');
             return;
         }
         
@@ -1498,18 +1323,6 @@ const BibliotecaSPA = {
                     <div class="stat-card">
                         <div class="stat-number" id="donacionesDisponibles">-</div>
                         <div class="stat-label">Donaciones Disponibles</div>
-                    </div>
-                </div>
-
-                <!-- Botón para agregar material -->
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <button class="btn btn-success" onclick="BibliotecaSPA.showAgregarMaterialModal()">
-                            ➕ Agregar Nuevo Material
-                        </button>
-                        <span class="ml-3" style="color: #666;">
-                            Registra libros donados o artículos especiales en el sistema
-                        </span>
                     </div>
                 </div>
 
@@ -1549,8 +1362,8 @@ const BibliotecaSPA = {
                                                 <td colspan="5" class="text-center">
                                                     <div class="spinner"></div>
                                                     Cargando libros donados...
-                    </td>
-                </tr>
+                                                </td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -1612,486 +1425,137 @@ const BibliotecaSPA = {
         });
     },
     
-    // ✨ REFACTORIZADO: Usar ApiService (Fase 2)
-    loadDonacionesData: async function() {
+    // Cargar datos de donaciones
+    loadDonacionesData: function() {
         console.log('🔍 loadDonacionesData called');
         
         // Cargar libros donados
-        const librosRenderer = new TableRenderer('#librosDonadosTable');
-        librosRenderer.showLoading(5, 'Cargando libros donados...');
-        
-        try {
-            const librosData = await bibliotecaApi.donaciones.libros();
-            const libros = librosData.libros || [];
-            console.log('✅ Libros donados loaded:', libros.length);
-            this.renderLibrosDonadosTable(libros);
-        } catch (error) {
-            console.error('❌ Error loading libros donados:', error);
-            librosRenderer.showError('Error al cargar los libros donados', 5);
-        }
+        fetch('/donacion/libros')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.libros) {
+                    console.log('✅ Libros donados loaded:', data.libros.length);
+                    this.renderLibrosDonadosTable(data.libros);
+                } else {
+                    throw new Error(data.message || 'Error al cargar libros donados');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error loading libros donados:', error);
+                const tbody = $('#librosDonadosTable tbody');
+                tbody.html('<tr><td colspan="5" class="text-center">Error al cargar los libros donados</td></tr>');
+            });
         
         // Cargar artículos donados
-        const articulosRenderer = new TableRenderer('#articulosDonadosTable');
-        articulosRenderer.showLoading(6, 'Cargando artículos donados...');
-        
-        try {
-            const articulosData = await bibliotecaApi.donaciones.articulos();
-            const articulos = articulosData.articulos || [];
-            console.log('✅ Artículos donados loaded:', articulos.length);
-            this.renderArticulosDonadosTable(articulos);
-        } catch (error) {
-            console.error('❌ Error loading artículos donados:', error);
-            articulosRenderer.showError('Error al cargar los artículos donados', 6);
-        }
+        fetch('/donacion/articulos')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.articulos) {
+                    console.log('✅ Artículos donados loaded:', data.articulos.length);
+                    this.renderArticulosDonadosTable(data.articulos);
+                } else {
+                    throw new Error(data.message || 'Error al cargar artículos donados');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error loading artículos donados:', error);
+                const tbody = $('#articulosDonadosTable tbody');
+                tbody.html('<tr><td colspan="6" class="text-center">Error al cargar los artículos donados</td></tr>');
+            });
     },
     
-    // ✨ REFACTORIZADO: Usar ApiService (Fase 2)
-    loadDonacionesStats: async function() {
+    // Cargar estadísticas de donaciones
+    loadDonacionesStats: function() {
         console.log('🔍 loadDonacionesStats called');
         
-        try {
-            await bibliotecaApi.loadAndUpdateStats({
-                '#totalLibrosDonados': '/donacion/cantidad-libros',
-                '#totalArticulosDonados': '/donacion/cantidad-articulos'
-            });
-            
-            // Calcular total disponible
-            const totalLibros = parseInt($('#totalLibrosDonados').text()) || 0;
-            const totalArticulos = parseInt($('#totalArticulosDonados').text()) || 0;
+        Promise.all([
+            fetch('/donacion/cantidad-libros').then(r => r.json()),
+            fetch('/donacion/cantidad-articulos').then(r => r.json())
+        ]).then(([librosResponse, articulosResponse]) => {
+            const totalLibros = librosResponse.cantidad || 0;
+            const totalArticulos = articulosResponse.cantidad || 0;
             const totalDisponibles = totalLibros + totalArticulos;
+            
+            $('#totalLibrosDonados').text(totalLibros);
+            $('#totalArticulosDonados').text(totalArticulos);
             $('#donacionesDisponibles').text(totalDisponibles);
             
             console.log('✅ Donaciones stats loaded:', { totalLibros, totalArticulos, totalDisponibles });
-        } catch (error) {
+        }).catch(error => {
             console.error('❌ Error loading donaciones stats:', error);
             $('#totalLibrosDonados').text('0');
             $('#totalArticulosDonados').text('0');
             $('#donacionesDisponibles').text('0');
-        }
+        });
     },
     
-    // ✨ REFACTORIZADO: Usar TableRenderer (Fase 2)
+    // Renderizar tabla de libros donados
     renderLibrosDonadosTable: function(libros) {
-        const renderer = new TableRenderer('#librosDonadosTable', {
-            emptyMessage: 'No hay libros donados registrados'
-        });
+        const tbody = $('#librosDonadosTable tbody');
+        tbody.empty();
         
-        renderer.render(libros, [
-            { field: 'id', header: 'ID', width: '60px' },
-            { field: 'titulo', header: 'Título', 
-              render: (libro) => libro.titulo || 'N/A' },
-            { field: 'paginas', header: 'Páginas', width: '100px',
-              render: (libro) => libro.paginas || 'N/A' },
-            { field: 'estado', header: 'Estado', width: '120px',
-              render: () => BibliotecaFormatter.getEstadoBadge('DISPONIBLE') },
-            { field: 'acciones', header: 'Acciones', width: '100px',
-              render: (libro) => `
-                <button class="btn btn-primary btn-sm" onclick="BibliotecaSPA.verDetallesLibroDonado(${libro.id})">
-                    👁️ Ver
-                </button>
-              `}
-        ]);
-    },
-    
-    // ✨ REFACTORIZADO: Usar TableRenderer (Fase 2)
-    renderArticulosDonadosTable: function(articulos) {
-        const renderer = new TableRenderer('#articulosDonadosTable', {
-            emptyMessage: 'No hay artículos donados registrados'
-        });
-        
-        renderer.render(articulos, [
-            { field: 'id', header: 'ID', width: '60px' },
-            { field: 'descripcion', header: 'Descripción',
-              render: (art) => art.descripcion || 'N/A' },
-            { field: 'peso', header: 'Peso', width: '100px',
-              render: (art) => art.peso ? `${art.peso} kg` : 'N/A' },
-            { field: 'dimensiones', header: 'Dimensiones', width: '150px',
-              render: (art) => art.dimensiones || 'N/A' },
-            { field: 'estado', header: 'Estado', width: '120px',
-              render: () => BibliotecaFormatter.getEstadoBadge('DISPONIBLE') },
-            { field: 'acciones', header: 'Acciones', width: '100px',
-              render: (art) => `
-                <button class="btn btn-primary btn-sm" onclick="BibliotecaSPA.verDetallesArticuloDonado(${art.id})">
-                    👁️ Ver
-                </button>
-              `}
-        ]);
-    },
-    
-    // ✨ NUEVO: Ver detalles de libro donado (Fase 2)
-    verDetallesLibroDonado: async function(idLibro) {
-        try {
-            const data = await bibliotecaApi.donaciones.infoLibro(idLibro);
-            const libro = data.libro || data;
-            
-            const detalles = `
-                <div style="text-align: left;">
-                    <p><strong>ID:</strong> ${libro.id}</p>
-                    <p><strong>Título:</strong> ${libro.titulo || 'N/A'}</p>
-                    <p><strong>Páginas:</strong> ${libro.paginas || 'N/A'}</p>
-                    <p><strong>ISBN:</strong> ${libro.isbn || 'N/A'}</p>
-                    <p><strong>Autor:</strong> ${libro.autor || 'N/A'}</p>
-                    <p><strong>Editorial:</strong> ${libro.editorial || 'N/A'}</p>
-                    <p><strong>Fecha de Ingreso:</strong> ${BibliotecaFormatter.formatDate(libro.fechaIngreso)}</p>
-                    <p><strong>Estado:</strong> ${BibliotecaFormatter.getEstadoBadge('DISPONIBLE')}</p>
-                </div>
-            `;
-            
-            ModalManager.show({
-                title: '📚 Detalles del Libro Donado',
-                body: detalles,
-                footer: '<button class="btn btn-secondary" onclick="ModalManager.close(\'modal-libro-' + idLibro + '\')">Cerrar</button>',
-                id: 'modal-libro-' + idLibro,
-                size: 'md'
-            });
-        } catch (error) {
-            console.error('Error al cargar detalles del libro:', error);
-            this.showAlert('Error al cargar detalles del libro: ' + error.message, 'danger');
-        }
-    },
-    
-    // ✨ NUEVO: Ver detalles de artículo donado (Fase 2)
-    verDetallesArticuloDonado: async function(idArticulo) {
-        try {
-            const data = await bibliotecaApi.donaciones.infoArticulo(idArticulo);
-            const articulo = data.articulo || data;
-            
-            const detalles = `
-                <div style="text-align: left;">
-                    <p><strong>ID:</strong> ${articulo.id}</p>
-                    <p><strong>Descripción:</strong> ${articulo.descripcion || 'N/A'}</p>
-                    <p><strong>Peso:</strong> ${articulo.peso ? articulo.peso + ' kg' : 'N/A'}</p>
-                    <p><strong>Dimensiones:</strong> ${articulo.dimensiones || 'N/A'}</p>
-                    <p><strong>Fecha de Ingreso:</strong> ${BibliotecaFormatter.formatDate(articulo.fechaIngreso)}</p>
-                    <p><strong>Estado:</strong> ${BibliotecaFormatter.getEstadoBadge('DISPONIBLE')}</p>
-                </div>
-            `;
-            
-            ModalManager.show({
-                title: '📄 Detalles del Artículo Donado',
-                body: detalles,
-                footer: '<button class="btn btn-secondary" onclick="ModalManager.close(\'modal-articulo-' + idArticulo + '\')">Cerrar</button>',
-                id: 'modal-articulo-' + idArticulo,
-                size: 'md'
-            });
-        } catch (error) {
-            console.error('Error al cargar detalles del artículo:', error);
-            this.showAlert('Error al cargar detalles del artículo: ' + error.message, 'danger');
-        }
-    },
-    
-    // ✨ NUEVO: Registrar nueva donación (Fase 2)
-    registrarNuevaDonacion: function() {
-        ModalManager.showForm(
-            '🎁 Registrar Nueva Donación',
-            [
-                { name: 'tipo', label: 'Tipo de Donación', type: 'select', required: true,
-                  options: [
-                      { value: 'libro', label: 'Libro' },
-                      { value: 'articulo', label: 'Artículo Especial' }
-                  ]
-                },
-                { name: 'titulo', label: 'Título/Descripción', type: 'text', required: true },
-                { name: 'detalles', label: 'Detalles Adicionales', type: 'textarea', rows: 3 }
-            ],
-            async (formData) => {
-                try {
-                    const response = await bibliotecaApi.donaciones.registrar(formData);
-                    this.showAlert('Donación registrada exitosamente', 'success');
-                    this.loadDonacionesData();
-                    this.loadDonacionesStats();
-                    return true; // Cerrar modal
-                } catch (error) {
-                    this.showAlert('Error al registrar donación: ' + error.message, 'danger');
-                    return false; // No cerrar modal
-                }
-            },
-            {
-                submitText: 'Registrar',
-                cancelText: 'Cancelar'
-            }
-        );
-    },
-    
-    // ✨ NUEVO: Exportar donaciones (Fase 2)
-    exportarDonaciones: async function() {
-        try {
-            this.showAlert('Generando exportación...', 'info');
-            
-            // Cargar todos los datos
-            const [librosData, articulosData] = await Promise.all([
-                bibliotecaApi.donaciones.libros(),
-                bibliotecaApi.donaciones.articulos()
-            ]);
-            
-            const libros = librosData.libros || [];
-            const articulos = articulosData.articulos || [];
-            
-            // Crear CSV
-            let csv = 'Tipo,ID,Título/Descripción,Detalles,Estado\n';
-            
-            libros.forEach(libro => {
-                csv += `Libro,${libro.id},"${libro.titulo || 'N/A'}","${libro.paginas || 'N/A'} páginas",Disponible\n`;
-            });
-            
-            articulos.forEach(art => {
-                csv += `Artículo,${art.id},"${art.descripcion || 'N/A'}","${art.peso || 'N/A'} kg",Disponible\n`;
-            });
-            
-            // Descargar archivo
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `donaciones_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            this.showAlert('Exportación completada exitosamente', 'success');
-        } catch (error) {
-            console.error('Error al exportar donaciones:', error);
-            this.showAlert('Error al exportar donaciones: ' + error.message, 'danger');
-        }
-    },
-    
-    // ✨ NUEVO: Actualizar lista de donaciones (Fase 2)
-    actualizarListaDonaciones: function() {
-        this.showAlert('Actualizando listado...', 'info');
-        this.loadDonacionesData();
-        this.loadDonacionesStats();
-    },
-    
-    // ✨ NUEVO: Generar reporte de donaciones (Fase 2)
-    generarReporteDonaciones: async function() {
-        try {
-            const data = await bibliotecaApi.reportes.donaciones({});
-            
-            if (data.success) {
-                ModalManager.showAlert(
-                    'Reporte Generado',
-                    'El reporte de donaciones se ha generado exitosamente.',
-                    'success'
-                );
-            } else {
-                throw new Error(data.message || 'Error al generar reporte');
-            }
-        } catch (error) {
-            console.error('Error al generar reporte:', error);
-            this.showAlert('Error al generar reporte: ' + error.message, 'danger');
-        }
-    },
-    
-    // ✨ NUEVO: Modal mejorado para agregar materiales (Libros o Artículos)
-    showAgregarMaterialModal: function() {
-        console.log('🔍 Abriendo modal de agregar material...');
-        
-        const modalHtml = `
-            <div id="agregarMaterialModal" class="modal" style="position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; background-color: rgba(0,0,0,0.5) !important; display: flex !important; justify-content: center !important; align-items: center !important; z-index: 10000 !important; opacity: 1 !important; visibility: visible !important;">
-                <div class="modal-content" style="max-width: 600px; width: 90%; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; visibility: visible;">
-                    <div class="modal-header">
-                        <h3>➕ Agregar Nuevo Material</h3>
-                        <button class="modal-close" onclick="BibliotecaSPA.closeModal('agregarMaterialModal')">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <!-- Selector de tipo de material -->
-                        <div class="form-group">
-                            <label for="tipoMaterial">Tipo de Material:</label>
-                            <select id="tipoMaterial" class="form-control" onchange="BibliotecaSPA.cambiarFormularioMaterial()">
-                                <option value="">Seleccione el tipo...</option>
-                                <option value="LIBRO">📚 Libro</option>
-                                <option value="ARTICULO">📄 Artículo Especial</option>
-                            </select>
-                        </div>
-                        
-                        <!-- Formulario para Libro -->
-                        <div id="formularioLibro" style="display: none;">
-                            <h4 class="mt-3">📚 Datos del Libro</h4>
-                            <div class="form-group">
-                                <label for="tituloLibro">Título del Libro: *</label>
-                                <input type="text" id="tituloLibro" class="form-control" placeholder="Ej: Don Quijote de la Mancha" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="paginasLibro">Número de Páginas: *</label>
-                                <input type="number" id="paginasLibro" class="form-control" placeholder="Ej: 250" min="1" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="donanteLibro">Donante (opcional):</label>
-                                <input type="text" id="donanteLibro" class="form-control" placeholder="Nombre del donante">
-                            </div>
-                        </div>
-                        
-                        <!-- Formulario para Artículo -->
-                        <div id="formularioArticulo" style="display: none;">
-                            <h4 class="mt-3">📄 Datos del Artículo Especial</h4>
-                            <div class="form-group">
-                                <label for="descripcionArticulo">Descripción del Artículo: *</label>
-                                <input type="text" id="descripcionArticulo" class="form-control" placeholder="Ej: Microscopio Óptico" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="pesoArticulo">Peso (kg): *</label>
-                                <input type="number" id="pesoArticulo" class="form-control" placeholder="Ej: 2.5" step="0.1" min="0" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="dimensionesArticulo">Dimensiones (opcional):</label>
-                                <input type="text" id="dimensionesArticulo" class="form-control" placeholder="Ej: 30x20x15 cm">
-                            </div>
-                            <div class="form-group">
-                                <label for="donanteArticulo">Donante (opcional):</label>
-                                <input type="text" id="donanteArticulo" class="form-control" placeholder="Nombre del donante">
-                            </div>
-                        </div>
-                        
-                        <div class="alert alert-info mt-3" style="display: none;" id="mensajeInfo">
-                            <small>* Campos obligatorios</small>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" onclick="BibliotecaSPA.closeModal('agregarMaterialModal')">
-                            Cancelar
-                        </button>
-                        <button class="btn btn-success" onclick="BibliotecaSPA.guardarNuevoMaterial()">
-                            ✅ Guardar Material
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Remover modal existente si existe
-        $('#agregarMaterialModal').remove();
-        
-        // Agregar modal al body
-        $('body').append(modalHtml);
-        
-        console.log('✅ Modal agregado al DOM');
-        console.log('🔍 Verificando elemento en DOM:', document.getElementById('agregarMaterialModal'));
-        
-        // Prevenir el scroll del body cuando el modal está abierto
-        $('body').css('overflow', 'hidden');
-    },
-    
-    // Cambiar formulario según el tipo de material seleccionado
-    cambiarFormularioMaterial: function() {
-        const tipo = $('#tipoMaterial').val();
-        console.log('🔄 Cambiando formulario a tipo:', tipo);
-        
-        $('#formularioLibro').hide();
-        $('#formularioArticulo').hide();
-        $('#mensajeInfo').hide();
-        
-        if (tipo === 'LIBRO') {
-            console.log('📚 Mostrando formulario de libro');
-            $('#formularioLibro').show();
-            $('#mensajeInfo').show();
-        } else if (tipo === 'ARTICULO') {
-            console.log('📄 Mostrando formulario de artículo');
-            $('#formularioArticulo').show();
-            $('#mensajeInfo').show();
-        }
-    },
-    
-    // Guardar nuevo material en la base de datos
-    guardarNuevoMaterial: async function() {
-        console.log('💾 Intentando guardar nuevo material...');
-        const tipo = $('#tipoMaterial').val();
-        console.log('📋 Tipo seleccionado:', tipo);
-        
-        if (!tipo) {
-            this.showAlert('Por favor seleccione el tipo de material', 'warning');
+        if (libros.length === 0) {
+            tbody.html('<tr><td colspan="5" class="text-center">No hay libros donados registrados</td></tr>');
             return;
         }
         
-        try {
-            this.showLoading('Guardando material...');
+        libros.forEach(libro => {
+            const estadoBadge = '<span class="badge badge-success">Disponible</span>';
             
-            if (tipo === 'LIBRO') {
-                // Validar campos de libro
-                const titulo = $('#tituloLibro').val().trim();
-                const paginas = $('#paginasLibro').val();
-                const donante = $('#donanteLibro').val().trim();
-                
-                if (!titulo) {
-                    this.hideLoading();
-                    this.showAlert('El título del libro es obligatorio', 'warning');
-                    return;
-                }
-                
-                if (!paginas || paginas <= 0) {
-                    this.hideLoading();
-                    this.showAlert('El número de páginas debe ser mayor a 0', 'warning');
-                    return;
-                }
-                
-                // Enviar al backend
-                const response = await bibliotecaApi.donaciones.registrarLibro({
-                    titulo: titulo,
-                    paginas: parseInt(paginas),
-                    donante: donante || 'Anónimo'
-                });
-                
-                this.hideLoading();
-                
-                if (response.success) {
-                    this.showAlert('✅ Libro registrado exitosamente', 'success');
-                    this.closeModal('agregarMaterialModal');
-                    this.loadDonacionesData();
-                    this.loadDonacionesStats();
-                } else {
-                    this.showAlert('Error: ' + (response.message || 'No se pudo registrar el libro'), 'danger');
-                }
-                
-            } else if (tipo === 'ARTICULO') {
-                // Validar campos de artículo
-                const descripcion = $('#descripcionArticulo').val().trim();
-                const peso = $('#pesoArticulo').val();
-                const dimensiones = $('#dimensionesArticulo').val().trim();
-                const donante = $('#donanteArticulo').val().trim();
-                
-                if (!descripcion) {
-                    this.hideLoading();
-                    this.showAlert('La descripción del artículo es obligatoria', 'warning');
-                    return;
-                }
-                
-                if (!peso || peso < 0) {
-                    this.hideLoading();
-                    this.showAlert('El peso debe ser un valor positivo', 'warning');
-                    return;
-                }
-                
-                // Enviar al backend
-                const response = await bibliotecaApi.donaciones.registrarArticulo({
-                    descripcion: descripcion,
-                    peso: parseFloat(peso),
-                    dimensiones: dimensiones || 'N/A',
-                    donante: donante || 'Anónimo'
-                });
-                
-                this.hideLoading();
-                
-                if (response.success) {
-                    this.showAlert('✅ Artículo especial registrado exitosamente', 'success');
-                    this.closeModal('agregarMaterialModal');
-                    this.loadDonacionesData();
-                    this.loadDonacionesStats();
-                } else {
-                    this.showAlert('Error: ' + (response.message || 'No se pudo registrar el artículo'), 'danger');
-                }
-            }
-            
-        } catch (error) {
-            this.hideLoading();
-            console.error('Error al guardar material:', error);
-            this.showAlert('Error al guardar el material: ' + error.message, 'danger');
+            const row = `
+                <tr>
+                    <td>${libro.id}</td>
+                    <td>${libro.titulo || 'N/A'}</td>
+                    <td>${libro.paginas || 'N/A'}</td>
+                    <td>${estadoBadge}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="BibliotecaSPA.verDetallesLibroDonado(${libro.id})">
+                            👁️ Ver
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+    },
+    
+    // Renderizar tabla de artículos donados
+    renderArticulosDonadosTable: function(articulos) {
+        const tbody = $('#articulosDonadosTable tbody');
+        tbody.empty();
+        
+        if (articulos.length === 0) {
+            tbody.html('<tr><td colspan="6" class="text-center">No hay artículos donados registrados</td></tr>');
+            return;
         }
+        
+        articulos.forEach(articulo => {
+            const estadoBadge = '<span class="badge badge-success">Disponible</span>';
+            
+            const row = `
+                <tr>
+                    <td>${articulo.id}</td>
+                    <td>${articulo.descripcion || 'N/A'}</td>
+                    <td>${articulo.peso || 'N/A'} kg</td>
+                    <td>${articulo.dimensiones || 'N/A'}</td>
+                    <td>${estadoBadge}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="BibliotecaSPA.verDetallesArticuloDonado(${articulo.id})">
+                            👁️ Ver
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
     },
     
     // Renderizar reportes
-    // ✨ REFACTORIZADO: Usar PermissionManager (Fase 2)
     renderReportes: function() {
-        if (!PermissionManager.requireBibliotecario('ver reportes')) {
+        // Verificar que el usuario es bibliotecario
+        if (!this.config.userSession || this.config.userSession.userType !== 'BIBLIOTECARIO') {
+            this.showAlert('Acceso denegado. Solo bibliotecarios pueden ver reportes.', 'danger');
+            this.navigateToPage('dashboard');
             return;
         }
         
@@ -2165,294 +1629,39 @@ const BibliotecaSPA = {
         $('#reportesContent').html(content);
     },
     
-    // ✨ NUEVO: Generar reporte de préstamos (Fase 2)
-    generarReportePrestamos: async function() {
-        try {
-            this.showAlert('Generando reporte de préstamos...', 'info');
-            
-            const data = await bibliotecaApi.prestamos.lista();
-            const prestamos = data.prestamos || [];
-            
-            if (prestamos.length === 0) {
-                this.showAlert('No hay préstamos para generar el reporte', 'warning');
-                return;
-            }
-            
-            // Crear CSV con información detallada
-            let csv = 'ID,Lector,Material,Fecha Solicitud,Fecha Devolución,Fecha Real Devolución,Estado,Días Transcurridos\n';
-            
-            prestamos.forEach(p => {
-                const fechaSol = p.fechaSolicitud || 'N/A';
-                const fechaDev = p.fechaDevolucion || 'N/A';
-                const fechaReal = p.fechaDevolucionReal || 'N/A';
-                const diasTranscurridos = this.calcularDiasTranscurridos(p.fechaSolicitud, p.fechaDevolucion);
-                
-                csv += `${p.id},"${p.lectorNombre || 'N/A'}","${p.materialTitulo || 'N/A'}",`;
-                csv += `"${fechaSol}","${fechaDev}","${fechaReal}","${p.estado || 'N/A'}",${diasTranscurridos}\n`;
-            });
-            
-            // Agregar estadísticas al final
-            csv += '\n\n--- ESTADÍSTICAS ---\n';
-            csv += `Total de Préstamos,${prestamos.length}\n`;
-            csv += `Préstamos Activos,${prestamos.filter(p => p.estado === 'ACTIVO').length}\n`;
-            csv += `Préstamos Vencidos,${prestamos.filter(p => p.estado === 'VENCIDO').length}\n`;
-            csv += `Préstamos Completados,${prestamos.filter(p => p.estado === 'COMPLETADO').length}\n`;
-            
-            // Descargar archivo
-            this.descargarCSV(csv, `reporte_prestamos_${new Date().toISOString().split('T')[0]}.csv`);
-            
-            this.showAlert('Reporte de préstamos generado exitosamente', 'success');
-        } catch (error) {
-            console.error('Error al generar reporte de préstamos:', error);
-            this.showAlert('Error al generar reporte: ' + error.message, 'danger');
-        }
-    },
-    
-    // ✨ NUEVO: Generar reporte de lectores (Fase 2)
-    generarReporteLectores: async function() {
-        try {
-            this.showAlert('Generando reporte de lectores...', 'info');
-            
-            const data = await bibliotecaApi.lectores.lista();
-            const lectores = data.lectores || [];
-            
-            if (lectores.length === 0) {
-                this.showAlert('No hay lectores para generar el reporte', 'warning');
-                return;
-            }
-            
-            // Crear CSV con información detallada
-            let csv = 'ID,Nombre,Email,Zona,Estado,Fecha Registro\n';
-            
-            lectores.forEach(l => {
-                csv += `${l.id},"${l.nombre || 'N/A'}",`;
-                csv += `"${l.email || 'N/A'}","${l.zona || 'N/A'}",`;
-                csv += `"${l.estado || 'N/A'}","${l.fechaRegistro || 'N/A'}"\n`;
-            });
-            
-            // Agregar estadísticas al final
-            csv += '\n\n--- ESTADÍSTICAS ---\n';
-            csv += `Total de Lectores,${lectores.length}\n`;
-            csv += `Lectores Activos,${lectores.filter(l => l.estado === 'ACTIVO').length}\n`;
-            csv += `Lectores Suspendidos,${lectores.filter(l => l.estado === 'SUSPENDIDO').length}\n`;
-            
-            // Estadísticas por zona
-            const zonas = {};
-            lectores.forEach(l => {
-                if (l.zona) {
-                    zonas[l.zona] = (zonas[l.zona] || 0) + 1;
-                }
-            });
-            csv += '\n--- DISTRIBUCIÓN POR ZONA ---\n';
-            Object.keys(zonas).sort().forEach(zona => {
-                csv += `${zona},${zonas[zona]}\n`;
-            });
-            
-            // Descargar archivo
-            this.descargarCSV(csv, `reporte_lectores_${new Date().toISOString().split('T')[0]}.csv`);
-            
-            this.showAlert('Reporte de lectores generado exitosamente', 'success');
-        } catch (error) {
-            console.error('Error al generar reporte de lectores:', error);
-            this.showAlert('Error al generar reporte: ' + error.message, 'danger');
-        }
-    },
-    
-    // ✨ NUEVO: Generar reporte de materiales (Fase 2)
-    generarReporteMateriales: async function() {
-        try {
-            this.showAlert('Generando reporte de materiales...', 'info');
-            
-            // Cargar libros donados y artículos donados
-            const [librosData, articulosData] = await Promise.all([
-                bibliotecaApi.donaciones.libros(),
-                bibliotecaApi.donaciones.articulos()
-            ]);
-            
-            const libros = librosData.libros || [];
-            const articulos = articulosData.articulos || [];
-            
-            if (libros.length === 0 && articulos.length === 0) {
-                this.showAlert('No hay materiales para generar el reporte', 'warning');
-                return;
-            }
-            
-            // Crear CSV con ambas secciones
-            let csv = '--- LIBROS DONADOS ---\n';
-            csv += 'ID,Título,Páginas,Estado\n';
-            
-            libros.forEach(l => {
-                csv += `${l.id},"${l.titulo || 'N/A'}",${l.paginas || 'N/A'},"DISPONIBLE"\n`;
-            });
-            
-            csv += '\n\n--- ARTÍCULOS DONADOS ---\n';
-            csv += 'ID,Descripción,Peso (kg),Dimensiones,Estado\n';
-            
-            articulos.forEach(a => {
-                csv += `${a.id},"${a.descripcion || 'N/A'}",${a.peso || 'N/A'},"${a.dimensiones || 'N/A'}","DISPONIBLE"\n`;
-            });
-            
-            // Agregar estadísticas
-            csv += '\n\n--- ESTADÍSTICAS ---\n';
-            csv += `Total de Libros Donados,${libros.length}\n`;
-            csv += `Total de Artículos Donados,${articulos.length}\n`;
-            csv += `Total de Materiales,${libros.length + articulos.length}\n`;
-            
-            // Descargar archivo
-            this.descargarCSV(csv, `reporte_materiales_${new Date().toISOString().split('T')[0]}.csv`);
-            
-            this.showAlert('Reporte de materiales generado exitosamente', 'success');
-        } catch (error) {
-            console.error('Error al generar reporte de materiales:', error);
-            this.showAlert('Error al generar reporte: ' + error.message, 'danger');
-        }
-    },
-    
-    // ✨ HELPER: Calcular días transcurridos (Fase 2)
-    calcularDiasTranscurridos: function(fechaInicio, fechaFin) {
-        if (!fechaInicio || !fechaFin) return 'N/A';
-        
-        try {
-            const inicio = new Date(fechaInicio);
-            const fin = new Date(fechaFin);
-            const diff = Math.abs(fin - inicio);
-            const dias = Math.ceil(diff / (1000 * 60 * 60 * 24));
-            return dias;
-        } catch (error) {
-            return 'N/A';
-        }
-    },
-    
-    // ✨ HELPER: Descargar CSV (Fase 2)
-    descargarCSV: function(contenidoCSV, nombreArchivo) {
-        const blob = new Blob([contenidoCSV], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', nombreArchivo);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    },
-    
-    // Aplicar filtros a la tabla de lectores
-    aplicarFiltrosLectores: function() {
-        console.log('🔍 Aplicando filtros a lectores...');
-        
-        // Obtener valores de los filtros
-        const searchText = $('#searchInput').val().toLowerCase().trim();
-        const estadoFiltro = $('#estadoFilter').val();
-        const zonaFiltro = $('#zonaFilter').val();
-        
-        console.log('📋 Filtros seleccionados:', { 
-            busqueda: searchText, 
-            estado: estadoFiltro, 
-            zona: zonaFiltro 
-        });
-        
-        // Obtener todos los lectores originales
-        const todosLosLectores = this.todosLosLectores || [];
-        
-        if (todosLosLectores.length === 0) {
-            console.warn('⚠️ No hay lectores para filtrar');
-            return;
-        }
-        
-        // Aplicar filtros
-        let lectoresFiltrados = todosLosLectores.filter(lector => {
-            // Filtro de búsqueda (nombre o email)
-            let coincideBusqueda = true;
-            if (searchText) {
-                const nombre = (lector.nombre || '').toLowerCase();
-                const email = (lector.email || '').toLowerCase();
-                coincideBusqueda = nombre.includes(searchText) || email.includes(searchText);
-            }
-            
-            // Filtro de estado
-            let coincideEstado = true;
-            if (estadoFiltro) {
-                coincideEstado = lector.estado === estadoFiltro;
-            }
-            
-            // Filtro de zona
-            let coincideZona = true;
-            if (zonaFiltro) {
-                coincideZona = lector.zona === zonaFiltro;
-            }
-            
-            return coincideBusqueda && coincideEstado && coincideZona;
-        });
-        
-        console.log(`✅ Lectores filtrados: ${lectoresFiltrados.length} de ${todosLosLectores.length}`);
-        
-        // Actualizar tabla con resultados filtrados
-        this.renderLectoresTable(lectoresFiltrados);
-        this.actualizarContadorLectores(lectoresFiltrados.length);
-        
-        // Mostrar mensaje si no hay resultados
-        if (lectoresFiltrados.length === 0) {
-            this.showAlert('No se encontraron lectores con los criterios seleccionados', 'info');
-        }
-    },
-    
-    // Limpiar filtros
-    limpiarFiltrosLectores: function() {
-        console.log('🔄 Limpiando filtros de lectores...');
-        
-        // Resetear los campos
-        $('#searchInput').val('');
-        $('#estadoFilter').val('');
-        $('#zonaFilter').val('');
-        
-        // Mostrar todos los lectores
-        const todosLosLectores = this.todosLosLectores || [];
-        this.renderLectoresTable(todosLosLectores);
-        this.actualizarContadorLectores(todosLosLectores.length);
-        
-        this.showAlert('Filtros limpiados', 'info');
-    },
-    
-    // Actualizar contador de lectores mostrados
-    actualizarContadorLectores: function(cantidad) {
-        const total = this.todosLosLectores?.length || 0;
-        const mensaje = cantidad === total 
-            ? `Mostrando ${cantidad} lectores` 
-            : `Mostrando ${cantidad} de ${total} lectores`;
-        $('#contadorLectores').text(mensaje);
-        console.log(`📊 ${mensaje}`);
-    },
-    
     // Renderizar tabla de lectores
-    // ✨ REFACTORIZADO: Usar TableRenderer (Fase 2)
     renderLectoresTable: function(lectores) {
-        const renderer = new TableRenderer('#lectoresTable', {
-            emptyMessage: 'No hay lectores registrados'
-        });
+        const tbody = $('#lectoresTable tbody');
+        tbody.empty();
         
-        renderer.render(lectores, [
-            { field: 'id', header: 'ID', width: '60px' },
-            { field: 'nombre', header: 'Nombre',
-              render: (l) => l.nombre || 'N/A' },
-            { field: 'email', header: 'Email',
-              render: (l) => l.email || 'N/A' },
-            { field: 'zona', header: 'Zona', width: '100px',
-              render: (l) => l.zona || 'N/A' },
-            { field: 'estado', header: 'Estado', width: '120px',
-              render: (l) => BibliotecaFormatter.getEstadoBadge(l.estado) },
-            { field: 'acciones', header: 'Acciones', width: '250px',
-              render: (l) => `
-                <button class="btn btn-secondary btn-sm btn-cambiar-estado" 
-                        data-lector-id="${l.id}" 
-                        data-lector-estado="${l.estado}">
-                    🔄 Cambiar Estado
-                </button>
-                <button class="btn btn-warning btn-sm btn-cambiar-zona" 
-                        data-lector-id="${l.id}">
-                    📍 Cambiar Zona
-                </button>
-              `}
-        ]);
+        lectores.forEach(lector => {
+            const estadoBadge = lector.estado === 'ACTIVO' ? 
+                '<span class="badge badge-success">Activo</span>' : 
+                '<span class="badge badge-warning">Suspendido</span>';
+            
+            const row = `
+                <tr>
+                    <td>${lector.id}</td>
+                    <td>${lector.nombre} ${lector.apellido}</td>
+                    <td>${lector.email}</td>
+                    <td>${lector.telefono}</td>
+                    <td>${lector.zona}</td>
+                    <td>${estadoBadge}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="BibliotecaSPA.verDetallesLector(${lector.id})">
+                            👁️ Ver
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="BibliotecaSPA.cambiarEstadoLector(${lector.id}, '${lector.estado}')">
+                            🔄 Cambiar Estado
+                        </button>
+                        <button class="btn btn-warning btn-sm" onclick="BibliotecaSPA.cambiarZonaLector(${lector.id})">
+                            📍 Cambiar Zona
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
     },
     
     // Mostrar loading
@@ -2559,12 +1768,7 @@ const BibliotecaSPA = {
                     
                     this.config.userSession = {
                         userType: userType,
-                        userId: userData.id,  // ✅ PermissionManager espera 'userId'
-                        userEmail: formData.email,  // ✅ PermissionManager espera 'userEmail'
-                        userName: userData.nombre,  // ✅ PermissionManager espera 'userName'
-                        userLastName: userData.apellido,  // ✅ PermissionManager espera 'userLastName'
-                        userZona: userData.zona || null,  // ✅ Incluir zona si existe
-                        email: formData.email,  // Mantener para retrocompatibilidad
+                        email: formData.email,
                         originalUserType: formData.userType,
                         nombre: userData.nombre,
                         apellido: userData.apellido,
@@ -2606,7 +1810,9 @@ const BibliotecaSPA = {
         const formData = {
             userType: $('#regUserType').val(),
             nombre: $('#regNombre').val(),
+            apellido: $('#regApellido').val(),
             email: $('#regEmail').val(),
+            telefono: $('#regTelefono').val(),
             password: $('#regPassword').val(),
             confirmPassword: $('#regConfirmPassword').val()
         };
@@ -2724,103 +1930,28 @@ const BibliotecaSPA = {
         this.showAlert('Modal de registro de lector en desarrollo', 'info');
     },
     
-    // ✨ IMPLEMENTADO: Exportar lectores a CSV (Fase 2)
-    exportarLectores: async function() {
-        try {
-            this.showAlert('Generando exportación...', 'info');
-            
-            const data = await bibliotecaApi.lectores.lista();
-            const lectores = data.lectores || [];
-            
-            // Crear CSV
-            let csv = 'ID,Nombre,Email,Zona,Estado\n';
-            
-            lectores.forEach(l => {
-                csv += `${l.id},"${l.nombre || 'N/A'}",`;
-                csv += `"${l.email || 'N/A'}","${l.zona || 'N/A'}","${l.estado || 'N/A'}"\n`;
-            });
-            
-            // Descargar archivo
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `lectores_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            this.showAlert('Exportación completada exitosamente', 'success');
-        } catch (error) {
-            console.error('Error al exportar lectores:', error);
-            this.showAlert('Error al exportar lectores: ' + error.message, 'danger');
-        }
+    exportarLectores: function() {
+        this.showAlert('Función de exportación en desarrollo', 'info');
     },
     
-    // ✨ MEJORADO: Agregar feedback visual (Fase 2)
     actualizarLista: function() {
-        this.showAlert('Actualizando listado...', 'info');
         this.loadLectoresData();
-        this.loadLectoresManagementStats();
+        this.showAlert('Lista actualizada', 'success');
     },
     
-    // ✨ REFACTORIZADO: Usar ApiService + ModalManager (Fase 2)
-    verDetallesLector: async function(id) {
-        try {
-            const data = await bibliotecaApi.lectores.info(id);
-            const lector = data.lector || data;
-            
-            const detalles = `
-                <div style="text-align: left;">
-                    <h5>👤 Información Personal</h5>
-                    <p><strong>ID:</strong> ${lector.id}</p>
-                    <p><strong>Nombre:</strong> ${lector.nombre}</p>
-                    <p><strong>Email:</strong> ${lector.email || 'N/A'}</p>
-                    
-                    <hr>
-                    <h5>📍 Ubicación y Estado</h5>
-                    <p><strong>Zona:</strong> ${lector.zona || 'N/A'}</p>
-                    <p><strong>Estado:</strong> ${BibliotecaFormatter.getEstadoBadge(lector.estado)}</p>
-                    
-                    ${lector.fechaRegistro ? `
-                    <hr>
-                    <h5>📅 Información Adicional</h5>
-                    <p><strong>Fecha de Registro:</strong> ${BibliotecaFormatter.formatDate(lector.fechaRegistro)}</p>
-                    ` : ''}
-                </div>
-            `;
-            
-            ModalManager.show({
-                title: '👤 Detalles del Lector',
-                body: detalles,
-                footer: `<button class="btn btn-secondary" onclick="ModalManager.close('modal-lector-${id}')">Cerrar</button>`,
-                id: 'modal-lector-' + id,
-                size: 'lg'
-            });
-        } catch (error) {
-            console.error('Error al cargar detalles del lector:', error);
-            this.showAlert('Error al cargar detalles del lector: ' + error.message, 'danger');
-        }
+    verDetallesLector: function(id) {
+        this.showAlert(`Ver detalles del lector ID: ${id}`, 'info');
     },
     
     cambiarEstadoLector: function(id, estado) {
-        console.log('✅ cambiarEstadoLector llamado - ID:', id, 'Estado:', estado);
-        console.log('   this:', this);
-        console.log('   showConfirmModal existe?', typeof this.showConfirmModal);
-        
         const nuevoEstado = estado === 'ACTIVO' ? 'SUSPENDIDO' : 'ACTIVO';
         const accion = nuevoEstado === 'SUSPENDIDO' ? 'suspender' : 'reactivar';
-        
-        console.log('   Nuevo estado:', nuevoEstado, 'Acción:', accion);
-        console.log('   Intentando mostrar modal...');
         
         // Mostrar modal de confirmación
         this.showConfirmModal(
             `¿Está seguro de que desea ${accion} este lector?`,
             `Esta acción cambiará el estado del lector a "${nuevoEstado}".`,
             () => {
-                console.log('   ✅ Usuario confirmó cambio de estado');
                 this.showLoading('Cambiando estado del lector...');
                 
                 // Llamar al API real
@@ -2839,29 +1970,18 @@ const BibliotecaSPA = {
                 });
             }
         );
-        
-        console.log('   Modal debería estar visible ahora');
     },
     
     cambiarZonaLector: function(id) {
-        console.log('✅ cambiarZonaLector llamado - ID:', id);
-        console.log('   this:', this);
-        console.log('   getLectoresData existe?', typeof this.getLectoresData);
-        
         // Obtener datos del lector actual
         const lectores = this.getLectoresData();
-        console.log('   Lectores obtenidos:', lectores.length);
-        
         const lector = lectores.find(l => l.id === id);
-        console.log('   Lector encontrado:', lector);
         
         if (!lector) {
-            console.error('   ❌ Lector no encontrado con ID:', id);
             this.showAlert('Lector no encontrado', 'danger');
             return;
         }
         
-        console.log('   Mostrando modal de cambio de zona...');
         // Mostrar modal para cambiar zona
         this.showZonaChangeModal(lector);
     },
@@ -2869,58 +1989,21 @@ const BibliotecaSPA = {
     // Mostrar modal de cambio de zona
     showZonaChangeModal: function(lector) {
         const modalHtml = `
-            <div id="zonaChangeModal" class="modal fade-in" style="
-                display: flex !important;
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-                background: rgba(0, 0, 0, 0.7) !important;
-                z-index: 99999 !important;
-                justify-content: center !important;
-                align-items: center !important;
-                opacity: 1 !important;
-                visibility: visible !important;
-            ">
-                <div class="modal-content" style="
-                    background: white !important;
-                    border-radius: 8px !important;
-                    padding: 20px !important;
-                    max-width: 500px !important;
-                    width: 90% !important;
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
-                    position: relative !important;
-                    z-index: 100000 !important;
-                ">
-                    <div class="modal-header" style="margin-bottom: 15px !important;">
-                        <h3 style="margin: 0 !important; color: #333 !important;">📍 Cambiar Zona del Lector</h3>
-                        <button class="modal-close" onclick="BibliotecaSPA.closeModal('zonaChangeModal')" style="
-                            position: absolute !important;
-                            top: 10px !important;
-                            right: 10px !important;
-                            background: none !important;
-                            border: none !important;
-                            font-size: 24px !important;
-                            cursor: pointer !important;
-                            color: #999 !important;
-                        ">&times;</button>
+            <div id="zonaChangeModal" class="modal fade-in">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>📍 Cambiar Zona del Lector</h3>
+                        <button class="modal-close" onclick="BibliotecaSPA.closeModal('zonaChangeModal')">&times;</button>
                     </div>
-                    <div class="modal-body" style="margin-bottom: 20px !important;">
-                        <div class="lector-info" style="margin-bottom: 15px !important; padding: 10px !important; background: #f8f9fa !important; border-radius: 4px !important;">
-                            <p style="margin: 5px 0 !important;"><strong>Lector:</strong> ${lector.nombre}</p>
-                            <p style="margin: 5px 0 !important;"><strong>Zona Actual:</strong> ${lector.zona}</p>
+                    <div class="modal-body">
+                        <div class="lector-info">
+                            <p><strong>Lector:</strong> ${lector.nombre} ${lector.apellido}</p>
+                            <p><strong>Zona Actual:</strong> ${lector.zona}</p>
                         </div>
                         
-                        <div class="form-group" style="margin-bottom: 15px !important;">
-                            <label for="nuevaZona" style="display: block !important; margin-bottom: 5px !important; font-weight: 500 !important;">Nueva Zona:</label>
-                            <select id="nuevaZona" class="form-control" required style="
-                                width: 100% !important;
-                                padding: 8px !important;
-                                border: 1px solid #ced4da !important;
-                                border-radius: 4px !important;
-                                font-size: 14px !important;
-                            ">
+                        <div class="form-group">
+                            <label for="nuevaZona">Nueva Zona:</label>
+                            <select id="nuevaZona" class="form-control" required>
                                 <option value="">Seleccione una zona...</option>
                                 <option value="CENTRO" ${lector.zona === 'CENTRO' ? 'selected' : ''}>Centro</option>
                                 <option value="NORTE" ${lector.zona === 'NORTE' ? 'selected' : ''}>Norte</option>
@@ -2930,46 +2013,17 @@ const BibliotecaSPA = {
                             </select>
                         </div>
                         
-                        <div class="form-group" style="margin-bottom: 15px !important;">
-                            <label for="motivoCambio" style="display: block !important; margin-bottom: 5px !important; font-weight: 500 !important;">Motivo del Cambio (opcional):</label>
+                        <div class="form-group">
+                            <label for="motivoCambio">Motivo del Cambio (opcional):</label>
                             <textarea id="motivoCambio" class="form-control" rows="3" 
-                                      placeholder="Explique el motivo del cambio de zona..." style="
-                                width: 100% !important;
-                                padding: 8px !important;
-                                border: 1px solid #ced4da !important;
-                                border-radius: 4px !important;
-                                font-size: 14px !important;
-                                resize: vertical !important;
-                            "></textarea>
+                                      placeholder="Explique el motivo del cambio de zona..."></textarea>
                         </div>
                     </div>
-                    <div class="modal-footer" style="
-                        display: flex !important;
-                        justify-content: flex-end !important;
-                        gap: 10px !important;
-                    ">
-                        <button class="btn btn-secondary" onclick="BibliotecaSPA.closeModal('zonaChangeModal')" style="
-                            padding: 10px 20px !important;
-                            border: 1px solid #6c757d !important;
-                            background: #6c757d !important;
-                            color: white !important;
-                            border-radius: 4px !important;
-                            cursor: pointer !important;
-                            font-size: 14px !important;
-                            font-weight: 500 !important;
-                        ">
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="BibliotecaSPA.closeModal('zonaChangeModal')">
                             Cancelar
                         </button>
-                        <button class="btn btn-primary" onclick="BibliotecaSPA.confirmarCambioZona(${lector.id})" style="
-                            padding: 10px 20px !important;
-                            border: 1px solid #007bff !important;
-                            background: #007bff !important;
-                            color: white !important;
-                            border-radius: 4px !important;
-                            cursor: pointer !important;
-                            font-size: 14px !important;
-                            font-weight: 500 !important;
-                        ">
+                        <button class="btn btn-primary" onclick="BibliotecaSPA.confirmarCambioZona(${lector.id})">
                             Cambiar Zona
                         </button>
                     </div>
@@ -3023,79 +2077,21 @@ const BibliotecaSPA = {
     
     // Mostrar modal de confirmación
     showConfirmModal: function(titulo, mensaje, onConfirm) {
-        console.log('📋 showConfirmModal ejecutándose...');
-        console.log('   Título:', titulo);
-        console.log('   Mensaje:', mensaje);
-        console.log('   Callback:', typeof onConfirm);
-        
         const modalHtml = `
-            <div id="confirmModal" class="modal fade-in" style="
-                display: flex !important;
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-                background: rgba(0, 0, 0, 0.7) !important;
-                z-index: 99999 !important;
-                justify-content: center !important;
-                align-items: center !important;
-                opacity: 1 !important;
-                visibility: visible !important;
-            ">
-                <div class="modal-content" style="
-                    background: white !important;
-                    border-radius: 8px !important;
-                    padding: 20px !important;
-                    max-width: 500px !important;
-                    width: 90% !important;
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
-                    position: relative !important;
-                    z-index: 100000 !important;
-                ">
-                    <div class="modal-header" style="margin-bottom: 15px !important;">
-                        <h3 style="margin: 0 !important; color: #333 !important;">⚠️ ${titulo}</h3>
-                        <button class="modal-close" onclick="BibliotecaSPA.closeModal('confirmModal')" style="
-                            position: absolute !important;
-                            top: 10px !important;
-                            right: 10px !important;
-                            background: none !important;
-                            border: none !important;
-                            font-size: 24px !important;
-                            cursor: pointer !important;
-                            color: #999 !important;
-                        ">&times;</button>
+            <div id="confirmModal" class="modal fade-in">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>⚠️ ${titulo}</h3>
+                        <button class="modal-close" onclick="BibliotecaSPA.closeModal('confirmModal')">&times;</button>
                     </div>
-                    <div class="modal-body" style="margin-bottom: 20px !important;">
-                        <p style="color: #666 !important; line-height: 1.5 !important;">${mensaje}</p>
+                    <div class="modal-body">
+                        <p>${mensaje}</p>
                     </div>
-                    <div class="modal-footer" style="
-                        display: flex !important;
-                        justify-content: flex-end !important;
-                        gap: 10px !important;
-                    ">
-                        <button class="btn btn-secondary" onclick="BibliotecaSPA.closeModal('confirmModal')" style="
-                            padding: 10px 20px !important;
-                            border: 1px solid #6c757d !important;
-                            background: #6c757d !important;
-                            color: white !important;
-                            border-radius: 4px !important;
-                            cursor: pointer !important;
-                            font-size: 14px !important;
-                            font-weight: 500 !important;
-                        ">
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="BibliotecaSPA.closeModal('confirmModal')">
                             Cancelar
                         </button>
-                        <button class="btn btn-danger" onclick="BibliotecaSPA.executeConfirmAction()" style="
-                            padding: 10px 20px !important;
-                            border: 1px solid #dc3545 !important;
-                            background: #dc3545 !important;
-                            color: white !important;
-                            border-radius: 4px !important;
-                            cursor: pointer !important;
-                            font-size: 14px !important;
-                            font-weight: 500 !important;
-                        ">
+                        <button class="btn btn-danger" onclick="BibliotecaSPA.executeConfirmAction()">
                             Confirmar
                         </button>
                     </div>
@@ -3103,21 +2099,12 @@ const BibliotecaSPA = {
             </div>
         `;
         
-        console.log('   Guardando callback...');
         // Guardar la función de confirmación
         this.pendingConfirmAction = onConfirm;
         
-        console.log('   Removiendo modal existente...');
         // Remover modal existente si existe
         $('#confirmModal').remove();
-        
-        console.log('   Agregando modal al body...');
         $('body').append(modalHtml);
-        
-        console.log('   ✅ Modal agregado al DOM');
-        console.log('   Modal existe en DOM?', $('#confirmModal').length > 0);
-        console.log('   Modal visible?', $('#confirmModal').is(':visible'));
-        console.log('   Display CSS:', $('#confirmModal').css('display'));
     },
     
     // Ejecutar acción de confirmación
@@ -3131,12 +2118,9 @@ const BibliotecaSPA = {
     
     // Cerrar modal
     closeModal: function(modalId) {
-        console.log('🔒 Cerrando modal:', modalId);
         $(`#${modalId}`).addClass('fade-out');
         setTimeout(() => {
             $(`#${modalId}`).remove();
-            // Restaurar el scroll del body
-            $('body').css('overflow', '');
         }, 300);
     },
     
@@ -3315,12 +2299,9 @@ const BibliotecaSPA = {
         }, 100);
     },
     
-    // ✨ REFACTORIZADO: Usar ApiService + TableRenderer (Fase 3)
+    // Cargar datos de mis préstamos desde el servidor
     loadMisPrestamosData: async function() {
         console.log('🔍 Loading mis prestamos data from server');
-        
-        const renderer = new TableRenderer('#misPrestamosTable');
-        renderer.showLoading(8, 'Cargando mis préstamos...');
         
         try {
             // Obtener ID del lector desde la sesión
@@ -3329,16 +2310,18 @@ const BibliotecaSPA = {
             
             if (!lectorId) {
                 console.warn('⚠️ No se pudo obtener el ID del lector de la sesión');
-                this.config.allPrestamos = [];
-                renderer.showError('No se pudo identificar al lector', 8);
+                this.config.allPrestamos = []; // Guardar copia vacía
+                this.renderMisPrestamosTable([]);
                 this.updateMisPrestamosStats([]);
                 return;
             }
             
             console.log('📚 Obteniendo préstamos del lector ID:', lectorId);
             
-            // Usar ApiService para obtener préstamos
-            const response = await bibliotecaApi.get(`/prestamo/por-lector?lectorId=${lectorId}`);
+            // Llamar al endpoint para obtener lista de préstamos del lector
+            const response = await BibliotecaAPI.prestamos.getListByLector(lectorId);
+            
+            console.log('📊 Respuesta de préstamos del lector:', response);
             
             if (response.success && response.prestamos) {
                 const prestamos = response.prestamos;
@@ -3351,45 +2334,55 @@ const BibliotecaSPA = {
                 this.updateMisPrestamosStats(prestamos);
             } else {
                 console.warn('⚠️ No se encontraron préstamos');
-                this.config.allPrestamos = [];
+                this.config.allPrestamos = []; // Guardar copia vacía
                 this.renderMisPrestamosTable([]);
                 this.updateMisPrestamosStats([]);
             }
         } catch (error) {
             console.error('❌ Error al cargar préstamos:', error);
-            this.config.allPrestamos = [];
-            renderer.showError('Error al cargar mis préstamos: ' + error.message, 8);
+            this.config.allPrestamos = []; // Guardar copia vacía
+            this.renderMisPrestamosTable([]);
             this.updateMisPrestamosStats([]);
         }
     },
     
-    // ✨ REFACTORIZADO: Usar TableRenderer + BibliotecaFormatter (Fase 3)
+    // Renderizar tabla de mis préstamos
     renderMisPrestamosTable: function(prestamos) {
-        const renderer = new TableRenderer('#misPrestamosTable', {
-            emptyMessage: 'No tienes préstamos registrados'
-        });
+        const tbody = $('#misPrestamosTable tbody');
+        tbody.empty();
         
-        renderer.render(prestamos, [
-            { field: 'id', header: 'ID', width: '60px' },
-            { field: 'material', header: 'Material',
-              render: (p) => p.material || 'N/A' },
-            { field: 'tipo', header: 'Tipo', width: '100px',
-              render: (p) => p.tipo === 'LIBRO' ? '📚 Libro' : '🎨 Artículo' },
-            { field: 'fechaSolicitud', header: 'Fecha Solicitud', width: '120px',
-              render: (p) => BibliotecaFormatter.formatDate(p.fechaSolicitud) },
-            { field: 'fechaDevolucion', header: 'Fecha Devolución', width: '120px',
-              render: (p) => BibliotecaFormatter.formatDate(p.fechaDevolucion) },
-            { field: 'estado', header: 'Estado', width: '120px',
-              render: (p) => BibliotecaFormatter.getEstadoBadge(p.estado) },
-            { field: 'bibliotecario', header: 'Bibliotecario', width: '150px',
-              render: (p) => `👨‍💼 ${p.bibliotecario || 'No asignado'}` },
-            { field: 'diasRestantes', header: 'Días Restantes', width: '120px',
-              render: (p) => {
-                const dias = p.diasRestantes > 0 ? p.diasRestantes : 'Vencido';
-                const cssClass = p.diasRestantes <= 0 ? 'text-danger' : p.diasRestantes <= 3 ? 'text-warning' : '';
-                return `<span class="${cssClass}">${dias}</span>`;
-              }}
-        ]);
+        prestamos.forEach(prestamo => {
+            const estadoBadge = this.getEstadoBadge(prestamo.estado);
+            const diasRestantes = prestamo.diasRestantes > 0 ? prestamo.diasRestantes : 'Vencido';
+            const diasClass = prestamo.diasRestantes <= 0 ? 'text-danger' : prestamo.diasRestantes <= 3 ? 'text-warning' : '';
+            
+            const bibliotecario = prestamo.bibliotecario || 'No asignado';
+            
+            const row = `
+                <tr>
+                    <td>${prestamo.id}</td>
+                    <td>${prestamo.material}</td>
+                    <td>${prestamo.tipo === 'LIBRO' ? '📚 Libro' : '🎨 Artículo'}</td>
+                    <td>${prestamo.fechaSolicitud}</td>
+                    <td>${prestamo.fechaDevolucion}</td>
+                    <td>${estadoBadge}</td>
+                    <td>👨‍💼 ${bibliotecario}</td>
+                    <td class="${diasClass}">${diasRestantes}</td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+    },
+    
+    // Obtener badge de estado
+    getEstadoBadge: function(estado) {
+        const badges = {
+            'EN_CURSO': '<span class="badge badge-success">En Curso</span>',
+            'DEVUELTO': '<span class="badge badge-info">Devuelto</span>',
+            'PENDIENTE': '<span class="badge badge-warning">Pendiente</span>',
+            'VENCIDO': '<span class="badge badge-danger">Vencido</span>'
+        };
+        return badges[estado] || '<span class="badge badge-secondary">Desconocido</span>';
     },
     
     // Convertir fecha de formato YYYY-MM-DD a DD/MM/YYYY para el servidor
@@ -3584,15 +2577,18 @@ const BibliotecaSPA = {
         });
     },
     
-    // ✨ REFACTORIZADO: Usar ApiService (Fase 3 - 100%)
-    cargarBibliotecarios: async function() {
+    // Cargar bibliotecarios disponibles
+    cargarBibliotecarios: function() {
         const select = $('#bibliotecarioSeleccionado');
         
         select.html('<option value="">Cargando bibliotecarios...</option>');
         
-        try {
-            // Usar ApiService para obtener bibliotecarios
-            const response = await bibliotecaApi.get('/bibliotecario/lista');
+        // Obtener bibliotecarios del backend
+        $.ajax({
+            url: this.config.apiBaseUrl + '/bibliotecario/lista',
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
                 console.log('📋 Bibliotecarios recibidos:', response);
                 
                 if (response.success && response.bibliotecarios && response.bibliotecarios.length > 0) {
@@ -3602,13 +2598,17 @@ const BibliotecaSPA = {
                     });
                     select.html(options);
                 } else {
+                    // Si no hay bibliotecarios disponibles, usar el primero como default
                     select.html('<option value="1">Bibliotecario Predeterminado</option>');
                     console.warn('⚠️ No hay bibliotecarios disponibles, usando default');
                 }
-        } catch (error) {
+            },
+            error: function(xhr, status, error) {
                 console.error('❌ Error al cargar bibliotecarios:', error);
+                // Usar bibliotecario por defecto si falla
                 select.html('<option value="1">Bibliotecario Predeterminado</option>');
             }
+        });
     },
     
     // Obtener libros disponibles (fallback cuando el backend no está disponible)
@@ -3618,18 +2618,25 @@ const BibliotecaSPA = {
         return [];
     },
     
-    // ✨ REFACTORIZADO: Usar ApiService (Fase 3 - 100%)
-    getLibrosDisponiblesFromBackend: async function() {
-        try {
-            const response = await bibliotecaApi.donaciones.libros();
+    // Obtener libros disponibles del backend
+    getLibrosDisponiblesFromBackend: function() {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: this.config.apiBaseUrl + '/donacion/libros',
+                method: 'GET',
+                dataType: 'json',
+                success: function(response) {
                     if (response.success && response.libros) {
-                return response.libros;
+                        resolve(response.libros);
                     } else {
-                throw new Error(response.message || 'Error al obtener libros');
+                        reject(new Error(response.message || 'Error al obtener libros'));
                     }
-        } catch (error) {
-            throw new Error('Error de conexión: ' + error.message);
+                },
+                error: function(xhr, status, error) {
+                    reject(new Error('Error de conexión: ' + error));
                 }
+            });
+        });
     },
     
     // Obtener artículos especiales disponibles (fallback cuando el backend no está disponible)
@@ -3639,38 +2646,50 @@ const BibliotecaSPA = {
         return [];
     },
     
-    // ✨ REFACTORIZADO: Usar ApiService (Fase 3 - 100%)
-    getArticulosDisponiblesFromBackend: async function() {
-        try {
-            const response = await bibliotecaApi.donaciones.articulos();
+    // Obtener artículos especiales disponibles del backend
+    getArticulosDisponiblesFromBackend: function() {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: this.config.apiBaseUrl + '/donacion/articulos',
+                method: 'GET',
+                dataType: 'json',
+                success: function(response) {
                     if (response.success && response.articulos) {
-                return response.articulos;
+                        resolve(response.articulos);
                     } else {
-                throw new Error(response.message || 'Error al obtener artículos especiales');
+                        reject(new Error(response.message || 'Error al obtener artículos especiales'));
                     }
-        } catch (error) {
-            throw new Error('Error de conexión: ' + error.message);
+                },
+                error: function(xhr, status, error) {
+                    reject(new Error('Error de conexión: ' + error));
                 }
+            });
+        });
     },
     
-    // ✨ REFACTORIZADO: Usar ApiService (Fase 3 - 100%)
+    // Cargar préstamos activos del usuario
     cargarPrestamosActivos: async function() {
         console.log('🔍 cargarPrestamosActivos called');
         
         try {
+            // Obtener ID del lector desde la sesión
             const userSession = this.config.userSession;
             const lectorId = userSession && userSession.userData ? userSession.userData.id : null;
             
             if (!lectorId) {
-                console.warn('⚠️ No se pudo obtener el ID del lector');
+                console.warn('⚠️ No se pudo obtener el ID del lector de la sesión');
                 $('#prestamosActivosCount').text('0');
                 return;
             }
             
             console.log('📚 Obteniendo préstamos activos para lector ID:', lectorId);
             
-            // Usar ApiService
-            const response = await bibliotecaApi.get(`/prestamo/cantidad-por-lector?lectorId=${lectorId}`);
+            // Llamar al endpoint para obtener cantidad de préstamos del lector
+            const response = await $.ajax({
+                url: `/prestamo/cantidad-por-lector?lectorId=${lectorId}`,
+                method: 'GET',
+                dataType: 'json'
+            });
             
             console.log('📊 Respuesta de préstamos activos:', response);
             
@@ -3681,6 +2700,7 @@ const BibliotecaSPA = {
             } else {
                 $('#prestamosActivosCount').text('0');
             }
+            
         } catch (error) {
             console.error('❌ Error al cargar préstamos activos:', error);
             $('#prestamosActivosCount').text('0');
@@ -3820,19 +2840,19 @@ const BibliotecaSPA = {
     renderCatalogo: function() {
         const content = `
             <div class="fade-in-up">
-                <h2 class="text-gradient mb-3">📚 Catálogo de Materiales</h2>
+                <h2 class="text-gradient mb-3">📚 Catálogo de Libros</h2>
                 
                 <!-- Filtros de búsqueda -->
                 <div class="card mb-3">
                     <div class="card-header">
-                        <h4 style="margin: 0;">🔍 Buscar Materiales</h4>
+                        <h4 style="margin: 0;">🔍 Buscar Libros</h4>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-8">
                                 <div class="form-group">
                                     <label for="buscarCatalogo">Buscar:</label>
-                                    <input type="text" id="buscarCatalogo" class="form-control" placeholder="Buscar por título, descripción o donante..." onkeyup="BibliotecaSPA.buscarCatalogoEnTiempoReal()">
+                                    <input type="text" id="buscarCatalogo" class="form-control" placeholder="Buscar por título o donante..." onkeyup="BibliotecaSPA.buscarCatalogoEnTiempoReal()">
                                 </div>
                             </div>
                             <div class="col-4">
@@ -3851,26 +2871,18 @@ const BibliotecaSPA = {
                 <div class="stats-grid mb-3">
                     <div class="stat-card">
                         <div class="stat-number" id="totalLibros">0</div>
-                        <div class="stat-label">Total Libros</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalArticulos">0</div>
-                        <div class="stat-label">Total Artículos</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalMateriales">0</div>
-                        <div class="stat-label">Total Materiales</div>
+                        <div class="stat-label">Total de Libros</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-number" id="librosMostrados">0</div>
-                        <div class="stat-label">Materiales Mostrados</div>
+                        <div class="stat-label">Libros Mostrados</div>
                     </div>
                 </div>
                 
-                <!-- Lista de materiales -->
+                <!-- Lista de libros -->
                 <div class="card">
                     <div class="card-header">
-                        <h4 style="margin: 0;">📖 Listado de Materiales Disponibles</h4>
+                        <h4 style="margin: 0;">📖 Listado de Libros</h4>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -3878,16 +2890,15 @@ const BibliotecaSPA = {
                                 <thead>
                                     <tr>
                                         <th>ID</th>
-                                        <th>Tipo</th>
-                                        <th>Título/Descripción</th>
-                                        <th>Detalles</th>
+                                        <th>Título</th>
+                                        <th>Páginas</th>
                                         <th>Donante</th>
                                         <th>Fecha de Ingreso</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td colspan="6" class="text-center">
+                                        <td colspan="5" class="text-center">
                                             <div class="spinner"></div>
                                             Cargando catálogo...
                                         </td>
@@ -3911,126 +2922,110 @@ const BibliotecaSPA = {
         this.loadCatalogoData();
     },
     
-    // ✨ REFACTORIZADO: Usar ApiService + TableRenderer (Fase 3) + Incluye Artículos
+    // Cargar datos del catálogo
     loadCatalogoData: async function() {
-        console.log('🔍 Cargando catálogo completo desde el backend...');
-        
-        const renderer = new TableRenderer('#catalogoTable');
-        renderer.showLoading(6, 'Cargando catálogo completo...');
+        console.log('🔍 Cargando catálogo de libros desde el backend...');
         
         try {
-            // Cargar libros y artículos en paralelo
-            const [librosResponse, articulosResponse] = await Promise.all([
-                bibliotecaApi.donaciones.libros(),
-                bibliotecaApi.donaciones.articulos()
-            ]);
+            // Obtener libros desde el API (sin contexto /biblioteca-pap para servidor integrado)
+            const response = await $.ajax({
+                url: '/donacion/libros',
+                method: 'GET',
+                dataType: 'json'
+            });
             
-            console.log('📚 Respuesta de libros:', librosResponse);
-            console.log('🎨 Respuesta de artículos:', articulosResponse);
+            console.log('📚 Respuesta del servidor:', response);
             
-            const libros = (librosResponse && librosResponse.success && librosResponse.libros) ? 
-                librosResponse.libros.map(l => ({...l, tipo: 'LIBRO'})) : [];
-            
-            const articulos = (articulosResponse && articulosResponse.success && articulosResponse.articulos) ? 
-                articulosResponse.articulos.map(a => ({...a, tipo: 'ARTICULO', titulo: a.descripcion})) : [];
-            
-            // Combinar ambos arrays
-            const todosMateriales = [...libros, ...articulos];
-            
-            console.log(`✅ Materiales cargados: ${libros.length} libros + ${articulos.length} artículos = ${todosMateriales.length} total`);
-            
-            this.todosLosLibros = todosMateriales;
-            this.librosFiltrados = todosMateriales;
-            this.todosLibrosCount = libros.length;
-            this.todosArticulosCount = articulos.length;
-            
-            this.renderCatalogoTable(todosMateriales);
-            this.updateCatalogoStats(todosMateriales);
+            if (response && response.success && response.libros) {
+                console.log('✅ Libros cargados:', response.libros.length);
+                this.todosLosLibros = response.libros;
+                this.librosFiltrados = response.libros;
+                this.renderCatalogoTable(response.libros);
+                this.updateCatalogoStats(response.libros);
+            } else {
+                console.warn('⚠️ Respuesta sin libros:', response);
+                this.todosLosLibros = [];
+                this.librosFiltrados = [];
+                this.renderCatalogoTable([]);
+                this.updateCatalogoStats([]);
+            }
         } catch (error) {
             console.error('❌ Error cargando datos del catálogo:', error);
-            renderer.showError('Error al cargar el catálogo: ' + error.message, 6);
-            $('#totalLibros, #totalArticulos, #totalMateriales, #librosMostrados').text('0');
+            $('#catalogoTable tbody').html('<tr><td colspan="5" class="text-center alert alert-danger">Error al cargar el catálogo. Por favor, intente nuevamente.<br>Error: ' + error.message + '</td></tr>');
+            $('#totalLibros').text('0');
+            $('#librosMostrados').text('0');
         }
     },
     
-    // ✨ REFACTORIZADO: Usar TableRenderer + BibliotecaFormatter (Fase 3) + Incluye Artículos
-    renderCatalogoTable: function(materiales) {
-        const renderer = new TableRenderer('#catalogoTable', {
-            emptyMessage: 'No se encontraron materiales en el catálogo'
-        });
+    // Renderizar tabla del catálogo
+    renderCatalogoTable: function(libros) {
+        const tbody = $('#catalogoTable tbody');
+        tbody.empty();
         
-        renderer.render(materiales, [
-            { field: 'id', header: 'ID', width: '60px' },
-            { field: 'tipo', header: 'Tipo', width: '100px',
-              render: (m) => m.tipo === 'LIBRO' ? '📚 Libro' : '🎨 Artículo' },
-            { field: 'titulo', header: 'Título/Descripción',
-              render: (m) => `<strong>${m.titulo || m.descripcion || 'N/A'}</strong>` },
-            { field: 'detalles', header: 'Detalles', width: '150px',
-              render: (m) => {
-                if (m.tipo === 'LIBRO') {
-                    return `${m.paginas || 'N/A'} páginas`;
-                } else {
-                    const peso = m.peso ? `${m.peso} kg` : '';
-                    const dim = m.dimensiones ? ` - ${m.dimensiones}` : '';
-                    return peso + dim || 'N/A';
-                }
-              }},
-            { field: 'donante', header: 'Donante', width: '130px',
-              render: (m) => m.donante || 'Anónimo' },
-            { field: 'fechaIngreso', header: 'Fecha de Ingreso', width: '120px',
-              render: (m) => BibliotecaFormatter.formatDate(m.fechaIngreso) }
-        ]);
+        if (!libros || libros.length === 0) {
+            tbody.html('<tr><td colspan="5" class="text-center">No se encontraron libros en el catálogo</td></tr>');
+            return;
+        }
+        
+        libros.forEach(libro => {
+            const fechaFormateada = this.formatDateSimple(libro.fechaIngreso);
+            const row = `
+                <tr>
+                    <td>${libro.id}</td>
+                    <td><strong>${libro.titulo}</strong></td>
+                    <td>${libro.paginas}</td>
+                    <td>${libro.donante || 'Anónimo'}</td>
+                    <td>${fechaFormateada}</td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
     },
     
-    // Actualizar estadísticas del catálogo (incluye artículos)
-    updateCatalogoStats: function(materiales) {
-        const totalMostrados = materiales ? materiales.length : 0;
-        const totalMateriales = this.todosLosLibros ? this.todosLosLibros.length : 0;
-        const totalLibros = this.todosLibrosCount || 0;
-        const totalArticulos = this.todosArticulosCount || 0;
+    // Actualizar estadísticas del catálogo
+    updateCatalogoStats: function(libros) {
+        const totalMostrados = libros ? libros.length : 0;
+        const totalLibros = this.todosLosLibros ? this.todosLosLibros.length : 0;
         
-        console.log('📊 Actualizando estadísticas - Mostrando', totalMostrados, 'de', totalMateriales, 'materiales');
+        console.log('📊 Actualizando estadísticas - Mostrando', totalMostrados, 'de', totalLibros, 'libros');
         $('#totalLibros').text(totalLibros);
-        $('#totalArticulos').text(totalArticulos);
-        $('#totalMateriales').text(totalMateriales);
         $('#librosMostrados').text(totalMostrados);
         
         // Cambiar color si hay filtro activo
         const searchTerm = $('#buscarCatalogo').val().trim();
-        if (searchTerm !== '' && totalMostrados < totalMateriales) {
+        if (searchTerm !== '' && totalMostrados < totalLibros) {
             $('#librosMostrados').css('color', '#007bff');
         } else {
             $('#librosMostrados').css('color', '');
         }
     },
     
-    // Funciones auxiliares para el catálogo (incluye artículos)
+    // Funciones auxiliares para el catálogo
     buscarCatalogo: function() {
         const searchTerm = $('#buscarCatalogo').val().toLowerCase().trim();
         console.log('🔍 Buscando:', searchTerm);
         
         if (!this.todosLosLibros || this.todosLosLibros.length === 0) {
-            console.warn('⚠️ No hay materiales cargados');
+            console.warn('⚠️ No hay libros cargados');
             return;
         }
         
         if (searchTerm === '') {
             this.librosFiltrados = this.todosLosLibros;
         } else {
-            this.librosFiltrados = this.todosLosLibros.filter(material => {
-                const titulo = (material.titulo || material.descripcion || '').toLowerCase();
-                const donante = (material.donante || '').toLowerCase();
-                return titulo.includes(searchTerm) || donante.includes(searchTerm);
-            });
+            this.librosFiltrados = this.todosLosLibros.filter(libro => 
+                libro.titulo.toLowerCase().includes(searchTerm) ||
+                (libro.donante && libro.donante.toLowerCase().includes(searchTerm))
+            );
         }
         
-        console.log('✅ Materiales filtrados:', this.librosFiltrados.length, 'de', this.todosLosLibros.length);
+        console.log('✅ Libros filtrados:', this.librosFiltrados.length, 'de', this.todosLosLibros.length);
         this.renderCatalogoTable(this.librosFiltrados);
         this.updateCatalogoStats(this.librosFiltrados);
         
         // Mostrar mensaje si no se encontraron resultados
         if (this.librosFiltrados.length === 0 && searchTerm !== '') {
-            $('#catalogoTable tbody').html('<tr><td colspan="6" class="text-center text-muted">No se encontraron materiales que coincidan con "' + searchTerm + '"</td></tr>');
+            $('#catalogoTable tbody').html('<tr><td colspan="5" class="text-center text-muted">No se encontraron libros que coincidan con "' + searchTerm + '"</td></tr>');
         }
     },
     
@@ -4291,95 +3286,75 @@ const BibliotecaSPA = {
         this.loadHistorialData();
     },
     
-    // ✨ REFACTORIZADO: Usar ApiService (Fase 3 - 100%)
-    loadHistorialData: async function() {
-        console.log('🔍 Loading historial data from server');
-        
-        const renderer = new TableRenderer('#historialTable');
-        renderer.showLoading(7, 'Cargando historial...');
-        
-        try {
-            const userSession = this.config.userSession;
-            const lectorId = userSession && userSession.userData ? userSession.userData.id : null;
-            
-            if (!lectorId) {
-                console.warn('⚠️ No se pudo obtener el ID del lector');
-                renderer.showError('No se pudo identificar al lector', 7);
-                this.updateHistorialStats([]);
-                return;
+    // Cargar datos del historial
+    loadHistorialData: function() {
+        // Simular datos del historial
+        const historialData = [
+            {
+                id: 1,
+                material: 'El Quijote de la Mancha',
+                fechaSolicitud: '2024-01-15',
+                fechaDevolucion: '2024-01-30',
+                duracion: '15 días',
+                estado: 'COMPLETADO',
+                bibliotecario: 'Ana García',
+                observaciones: 'Devolución a tiempo'
+            },
+            {
+                id: 2,
+                material: '1984 - George Orwell',
+                fechaSolicitud: '2024-02-01',
+                fechaDevolucion: '2024-02-15',
+                duracion: '14 días',
+                estado: 'COMPLETADO',
+                bibliotecario: 'Carlos López',
+                observaciones: 'Excelente estado'
+            },
+            {
+                id: 3,
+                material: 'Historia del Arte',
+                fechaSolicitud: '2024-02-20',
+                fechaDevolucion: null,
+                duracion: 'En curso',
+                estado: 'EN_CURSO',
+                bibliotecario: 'María Rodríguez',
+                observaciones: 'Préstamo activo'
+            },
+            {
+                id: 4,
+                material: 'Física Cuántica',
+                fechaSolicitud: '2024-01-10',
+                fechaDevolucion: '2024-01-25',
+                duracion: '15 días',
+                estado: 'COMPLETADO',
+                bibliotecario: 'Ana García',
+                observaciones: 'Devolución puntual'
             }
-            
-            console.log('📚 Obteniendo historial del lector ID:', lectorId);
-            
-            // Usar ApiService para obtener historial (préstamos del lector)
-            const response = await bibliotecaApi.get(`/prestamo/por-lector?lectorId=${lectorId}`);
-            
-            if (response.success && response.prestamos) {
-                const historialData = response.prestamos.map(p => ({
-                    ...p,
-                    duracion: this.calcularDuracion(p.fechaSolicitud, p.fechaDevolucion),
-                    observaciones: p.observaciones || (p.estado === 'COMPLETADO' ? 'Devolución completada' : 'Préstamo activo')
-                }));
-                
-                console.log(`✅ ${historialData.length} registros de historial cargados`);
-                
-                // Guardar para filtrado
-                this.config.allHistorial = historialData;
+        ];
         
         this.renderHistorialTable(historialData);
         this.updateHistorialStats(historialData);
-            } else {
-                console.warn('⚠️ No se encontró historial');
-                this.config.allHistorial = [];
-                this.renderHistorialTable([]);
-                this.updateHistorialStats([]);
-            }
-        } catch (error) {
-            console.error('❌ Error al cargar historial:', error);
-            renderer.showError('Error al cargar historial: ' + error.message, 7);
-            this.config.allHistorial = [];
-            this.updateHistorialStats([]);
-        }
     },
     
-    // ✨ HELPER: Calcular duración entre fechas (Fase 3 - 100%)
-    calcularDuracion: function(fechaInicio, fechaFin) {
-        if (!fechaInicio) return 'N/A';
-        if (!fechaFin) return 'En curso';
-        
-        try {
-            const inicio = new Date(fechaInicio);
-            const fin = new Date(fechaFin);
-            const diff = Math.abs(fin - inicio);
-            const dias = Math.ceil(diff / (1000 * 60 * 60 * 24));
-            return `${dias} días`;
-        } catch (error) {
-            return 'N/A';
-        }
-    },
-    
-    // ✨ REFACTORIZADO: Usar TableRenderer + BibliotecaFormatter (Fase 3 - 100%)
+    // Renderizar tabla del historial
     renderHistorialTable: function(data) {
-        const renderer = new TableRenderer('#historialTable', {
-            emptyMessage: 'No tienes historial de préstamos'
-        });
+        const tbody = $('#historialTable tbody');
+        tbody.empty();
         
-        renderer.render(data, [
-            { field: 'material', header: '📚 Material',
-              render: (p) => p.material || p.materialTitulo || 'N/A' },
-            { field: 'fechaSolicitud', header: '📅 Fecha Solicitud', width: '120px',
-              render: (p) => BibliotecaFormatter.formatDate(p.fechaSolicitud) },
-            { field: 'fechaDevolucion', header: '📅 Fecha Devolución', width: '130px',
-              render: (p) => p.fechaDevolucion ? BibliotecaFormatter.formatDate(p.fechaDevolucion) : 'En curso' },
-            { field: 'duracion', header: '⏱️ Duración', width: '100px',
-              render: (p) => p.duracion || 'N/A' },
-            { field: 'estado', header: '📊 Estado', width: '120px',
-              render: (p) => BibliotecaFormatter.getEstadoBadge(p.estado) },
-            { field: 'bibliotecario', header: '👤 Bibliotecario', width: '150px',
-              render: (p) => p.bibliotecario || p.bibliotecarioNombre || 'No asignado' },
-            { field: 'observaciones', header: '📝 Observaciones',
-              render: (p) => p.observaciones || '-' }
-        ]);
+        data.forEach(prestamo => {
+            const row = `
+                <tr>
+                    <td>${prestamo.material}</td>
+                    <td>${prestamo.fechaSolicitud}</td>
+                    <td>${prestamo.fechaDevolucion || 'En curso'}</td>
+                    <td>${prestamo.duracion}</td>
+                    <td>${this.getEstadoBadge(prestamo.estado)}</td>
+                    <td>${prestamo.bibliotecario}</td>
+                    <td>${prestamo.observaciones}</td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
     },
     
     // Actualizar estadísticas del historial

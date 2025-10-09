@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Módulos Refactorizados</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/spa.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <!-- Módulos de utilidades -->
+    <script src="js/utils/formatter.js"></script>
+    <script src="js/utils/validator.js"></script>
+    
+    <!-- Módulos core -->
+    <script src="js/core/api-service.js"></script>
+    <script src="js/core/permission-manager.js"></script>
+    
+    <!-- Módulos de UI -->
+    <script src="js/ui/modal-manager.js"></script>
+    <script src="js/ui/table-renderer.js"></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        .test-pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .test-fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        
+        th {
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test - Módulos Refactorizados (Fase 1)</h1>
+    <p>Esta página verifica que todos los módulos se hayan cargado correctamente.</p>
+    
+    <div class="test-section">
+        <h2>✅ 1. Verificación de Módulos Cargados</h2>
+        <div id="modulesCheck"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📊 2. Test BibliotecaFormatter</h2>
+        <button onclick="testFormatter()">Ejecutar Test</button>
+        <div id="formatterResults"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>✔️ 3. Test BibliotecaValidator</h2>
+        <button onclick="testValidator()">Ejecutar Test</button>
+        <div id="validatorResults"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🌐 4. Test ApiService</h2>
+        <button onclick="testApiService()">Ejecutar Test</button>
+        <div id="apiResults"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔒 5. Test PermissionManager</h2>
+        <button onclick="testPermissionManager()">Ejecutar Test</button>
+        <div id="permissionResults"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🪟 6. Test ModalManager</h2>
+        <button onclick="testModalManager()">Ejecutar Test</button>
+        <div id="modalResults"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📋 7. Test TableRenderer</h2>
+        <button onclick="testTableRenderer()">Ejecutar Test</button>
+        <div id="tableResults"></div>
+        <table id="testTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    
+    <script>
+        // Auto-verificar módulos al cargar
+        window.addEventListener('load', checkModules);
+        
+        function checkModules() {
+            const modules = [
+                { name: 'BibliotecaFormatter', obj: window.BibliotecaFormatter },
+                { name: 'BibliotecaValidator', obj: window.BibliotecaValidator },
+                { name: 'ApiService', obj: window.ApiService },
+                { name: 'bibliotecaApi', obj: window.bibliotecaApi },
+                { name: 'PermissionManager', obj: window.PermissionManager },
+                { name: 'ModalManager', obj: window.ModalManager },
+                { name: 'TableRenderer', obj: window.TableRenderer }
+            ];
+            
+            let html = '';
+            let allPassed = true;
+            
+            modules.forEach(module => {
+                const exists = typeof module.obj !== 'undefined';
+                allPassed = allPassed && exists;
+                
+                html += `<div class="test-result ${exists ? 'test-pass' : 'test-fail'}">
+                    ${exists ? '✅' : '❌'} ${module.name}: ${exists ? 'Cargado' : 'NO ENCONTRADO'}
+                </div>`;
+            });
+            
+            if (allPassed) {
+                html += '<div class="test-result test-pass"><strong>🎉 Todos los módulos cargados correctamente!</strong></div>';
+            } else {
+                html += '<div class="test-result test-fail"><strong>⚠️ Algunos módulos no se cargaron</strong></div>';
+            }
+            
+            document.getElementById('modulesCheck').innerHTML = html;
+        }
+        
+        function testFormatter() {
+            const tests = [
+                { 
+                    name: 'formatDate', 
+                    fn: () => BibliotecaFormatter.formatDate('2025-10-09'),
+                    expected: '09/10/2025'
+                },
+                { 
+                    name: 'formatFullName', 
+                    fn: () => BibliotecaFormatter.formatFullName('Juan', 'Pérez'),
+                    expected: 'Juan Pérez'
+                },
+                { 
+                    name: 'formatNumber', 
+                    fn: () => BibliotecaFormatter.formatNumber(1500),
+                    expected: '1.500'
+                },
+                { 
+                    name: 'getEstadoBadge', 
+                    fn: () => BibliotecaFormatter.getEstadoBadge('ACTIVO'),
+                    expected: (result) => result.includes('badge') && result.includes('ACTIVO')
+                }
+            ];
+            
+            runTests(tests, 'formatterResults');
+        }
+        
+        function testValidator() {
+            const tests = [
+                { 
+                    name: 'Validación email válido', 
+                    fn: () => {
+                        const validator = new BibliotecaValidator({
+                            email: [{ type: 'email' }]
+                        });
+                        return validator.validate({ email: 'test@example.com' });
+                    },
+                    expected: true
+                },
+                { 
+                    name: 'Validación email inválido', 
+                    fn: () => {
+                        const validator = new BibliotecaValidator({
+                            email: [{ type: 'email' }]
+                        });
+                        return !validator.validate({ email: 'invalid-email' });
+                    },
+                    expected: true
+                },
+                { 
+                    name: 'Campo requerido', 
+                    fn: () => {
+                        const validator = new BibliotecaValidator({
+                            nombre: [{ type: 'required' }]
+                        });
+                        return !validator.validate({ nombre: '' });
+                    },
+                    expected: true
+                }
+            ];
+            
+            runTests(tests, 'validatorResults');
+        }
+        
+        function testApiService() {
+            const tests = [
+                { 
+                    name: 'Instancia bibliotecaApi existe', 
+                    fn: () => typeof bibliotecaApi !== 'undefined',
+                    expected: true
+                },
+                { 
+                    name: 'API lectores disponible', 
+                    fn: () => typeof bibliotecaApi.lectores !== 'undefined',
+                    expected: true
+                },
+                { 
+                    name: 'API prestamos disponible', 
+                    fn: () => typeof bibliotecaApi.prestamos !== 'undefined',
+                    expected: true
+                },
+                { 
+                    name: 'API donaciones disponible', 
+                    fn: () => typeof bibliotecaApi.donaciones !== 'undefined',
+                    expected: true
+                }
+            ];
+            
+            runTests(tests, 'apiResults');
+        }
+        
+        function testPermissionManager() {
+            const tests = [
+                { 
+                    name: 'Verificar roles definidos', 
+                    fn: () => PermissionManager.ROLES.BIBLIOTECARIO === 'BIBLIOTECARIO',
+                    expected: true
+                },
+                { 
+                    name: 'Método isAuthenticated existe', 
+                    fn: () => typeof PermissionManager.isAuthenticated === 'function',
+                    expected: true
+                },
+                { 
+                    name: 'Método getUserRole existe', 
+                    fn: () => typeof PermissionManager.getUserRole === 'function',
+                    expected: true
+                }
+            ];
+            
+            runTests(tests, 'permissionResults');
+        }
+        
+        function testModalManager() {
+            const tests = [
+                { 
+                    name: 'Método show existe', 
+                    fn: () => typeof ModalManager.show === 'function',
+                    expected: true
+                },
+                { 
+                    name: 'Método showConfirm existe', 
+                    fn: () => typeof ModalManager.showConfirm === 'function',
+                    expected: true
+                },
+                { 
+                    name: 'Método showAlert existe', 
+                    fn: () => typeof ModalManager.showAlert === 'function',
+                    expected: true
+                }
+            ];
+            
+            runTests(tests, 'modalResults');
+            
+            // Test visual
+            setTimeout(() => {
+                ModalManager.showAlert('Test', 'Modal funcionando correctamente!', 'success');
+            }, 500);
+        }
+        
+        function testTableRenderer() {
+            const tests = [
+                { 
+                    name: 'TableRenderer clase existe', 
+                    fn: () => typeof TableRenderer === 'function',
+                    expected: true
+                },
+                { 
+                    name: 'Método getBadge existe', 
+                    fn: () => typeof TableRenderer.getBadge === 'function',
+                    expected: true
+                }
+            ];
+            
+            runTests(tests, 'tableResults');
+            
+            // Test visual de renderizado
+            const testData = [
+                { id: 1, nombre: 'Juan Pérez', email: 'juan@example.com', activo: true },
+                { id: 2, nombre: 'María García', email: 'maria@example.com', activo: true },
+                { id: 3, nombre: 'Pedro López', email: 'pedro@example.com', activo: false }
+            ];
+            
+            const renderer = new TableRenderer('#testTable');
+            renderer.render(testData, [
+                { field: 'id', header: 'ID' },
+                { field: 'nombre', header: 'Nombre' },
+                { field: 'email', header: 'Email' },
+                { 
+                    field: 'activo', 
+                    header: 'Estado',
+                    render: (item) => TableRenderer.getBadge(item.activo ? 'ACTIVO' : 'INACTIVO')
+                }
+            ]);
+        }
+        
+        function runTests(tests, resultContainerId) {
+            let html = '';
+            let passed = 0;
+            let failed = 0;
+            
+            tests.forEach(test => {
+                try {
+                    const result = test.fn();
+                    const expected = typeof test.expected === 'function' 
+                        ? test.expected(result) 
+                        : result === test.expected;
+                    
+                    if (expected) {
+                        passed++;
+                        html += `<div class="test-result test-pass">✅ ${test.name}: PASS</div>`;
+                    } else {
+                        failed++;
+                        html += `<div class="test-result test-fail">❌ ${test.name}: FAIL (resultado: ${result})</div>`;
+                    }
+                } catch (error) {
+                    failed++;
+                    html += `<div class="test-result test-fail">❌ ${test.name}: ERROR - ${error.message}</div>`;
+                }
+            });
+            
+            html += `<div class="test-result ${failed === 0 ? 'test-pass' : 'test-fail'}">
+                <strong>Total: ${passed} passed, ${failed} failed</strong>
+            </div>`;
+            
+            document.getElementById(resultContainerId).innerHTML = html;
+        }
+    </script>
+</body>
+</html>
+
+
+
