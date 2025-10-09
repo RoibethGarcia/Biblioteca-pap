@@ -504,9 +504,15 @@ const BibliotecaSPA = {
         // Ocultar todas las páginas
         $('.page').removeClass('active').hide();
         
+        // Normalizar nombre de página (remover 'management/' prefix para encontrar el contenedor)
+        let pageContainerId = pageName;
+        if (pageName.startsWith('management/')) {
+            pageContainerId = pageName.replace('management/', '');
+        }
+        
         // Mostrar página seleccionada
         setTimeout(() => {
-            $(`#${pageName}Page`).show().addClass('active');
+            $(`#${pageContainerId}Page`).show().addClass('active');
         }, 50);
     },
     
@@ -2869,6 +2875,233 @@ const BibliotecaSPA = {
     // Buscar Materiales - Redirigir a Ver Catálogo
     buscarMateriales: function() {
         this.verCatalogo();
+    },
+    
+    // Renderizar Gestión de Donaciones
+    renderDonacionesManagement: function() {
+        // Verificar que el usuario es bibliotecario
+        if (!this.config.userSession || this.config.userSession.userType !== 'BIBLIOTECARIO') {
+            this.showAlert('Acceso denegado. Solo bibliotecarios pueden gestionar donaciones.', 'danger');
+            this.navigateToPage('dashboard');
+            return;
+        }
+        
+        const content = `
+            <div class="fade-in-up">
+                <h2 class="text-gradient mb-3">📖 Gestión de Donaciones</h2>
+                
+                <!-- Estadísticas -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalLibros">-</div>
+                        <div class="stat-label">Total Libros</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalArticulos">-</div>
+                        <div class="stat-label">Artículos Especiales</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalDonaciones">-</div>
+                        <div class="stat-label">Total Donaciones</div>
+                    </div>
+                </div>
+
+                <!-- Formularios -->
+                <div class="row mt-4">
+                    <!-- Formulario para Libros -->
+                    <div class="col-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 style="margin: 0;">📚 Registrar Libro</h4>
+                            </div>
+                            <div class="card-body">
+                                <form id="registrarLibroForm">
+                                    <div class="form-group">
+                                        <label for="libroTitulo">Título: *</label>
+                                        <input type="text" id="libroTitulo" name="titulo" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="libroPaginas">Número de Páginas: *</label>
+                                        <input type="number" id="libroPaginas" name="paginas" class="form-control" min="1" max="10000" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="libroDonante">Donante:</label>
+                                        <input type="text" id="libroDonante" name="donante" class="form-control" placeholder="Anónimo">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="libroFechaIngreso">Fecha de Ingreso:</label>
+                                        <input type="date" id="libroFechaIngreso" name="fechaIngreso" class="form-control" value="${new Date().toISOString().split('T')[0]}">
+                                    </div>
+                                    <button type="submit" class="btn btn-success">📚 Registrar Libro</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Formulario para Artículos Especiales -->
+                    <div class="col-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 style="margin: 0;">🎨 Registrar Artículo Especial</h4>
+                            </div>
+                            <div class="card-body">
+                                <form id="registrarArticuloForm">
+                                    <div class="form-group">
+                                        <label for="articuloDescripcion">Descripción: *</label>
+                                        <input type="text" id="articuloDescripcion" name="descripcion" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="articuloPeso">Peso (kg): *</label>
+                                        <input type="number" id="articuloPeso" name="peso" class="form-control" min="0" step="0.01" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="articuloDimensiones">Dimensiones: *</label>
+                                        <input type="text" id="articuloDimensiones" name="dimensiones" class="form-control" placeholder="ej: 30x40x50 cm" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="articuloDonante">Donante:</label>
+                                        <input type="text" id="articuloDonante" name="donante" class="form-control" placeholder="Anónimo">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="articuloFechaIngreso">Fecha de Ingreso:</label>
+                                        <input type="date" id="articuloFechaIngreso" name="fechaIngreso" class="form-control" value="${new Date().toISOString().split('T')[0]}">
+                                    </div>
+                                    <button type="submit" class="btn btn-success">🎨 Registrar Artículo</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Lista de donaciones recientes -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h4 style="margin: 0;">📋 Donaciones Recientes</h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">La visualización del inventario completo estará disponible próximamente.</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        $('#donacionesContent').html(content);
+        
+        // Cargar estadísticas
+        this.loadDonacionesStats();
+        
+        // Configurar manejadores de formularios
+        this.setupDonacionesForms();
+    },
+    
+    // Cargar estadísticas de donaciones
+    loadDonacionesStats: function() {
+        BibliotecaAPI.getDonacionStats().then(stats => {
+            $('#totalLibros').text(stats.libros || 0);
+            $('#totalArticulos').text(stats.articulos || 0);
+            $('#totalDonaciones').text(stats.total || 0);
+        }).catch(error => {
+            console.error('Error cargando estadísticas de donaciones:', error);
+        });
+    },
+    
+    // Configurar formularios de donaciones
+    setupDonacionesForms: function() {
+        // Formulario de libros
+        $('#registrarLibroForm').off('submit').on('submit', (e) => {
+            e.preventDefault();
+            this.handleRegistrarLibro();
+        });
+        
+        // Formulario de artículos
+        $('#registrarArticuloForm').off('submit').on('submit', (e) => {
+            e.preventDefault();
+            this.handleRegistrarArticulo();
+        });
+    },
+    
+    // Manejar registro de libro
+    handleRegistrarLibro: function() {
+        const form = $('#registrarLibroForm');
+        const formData = {};
+        
+        form.find('input, select, textarea').each(function() {
+            const field = $(this);
+            const name = field.attr('name');
+            if (name) {
+                formData[name] = field.val();
+            }
+        });
+        
+        // Validación básica
+        if (!formData.titulo || !formData.paginas) {
+            this.showAlert('Por favor complete los campos requeridos', 'warning');
+            return;
+        }
+        
+        const submitBtn = form.find('button[type="submit"]');
+        const originalText = submitBtn.html();
+        submitBtn.prop('disabled', true).html('<span class="spinner"></span> Registrando...');
+        
+        BibliotecaAPI.donaciones.createLibro(formData)
+            .then(response => {
+                if (response.success) {
+                    this.showAlert('✅ Libro registrado exitosamente', 'success');
+                    form[0].reset();
+                    this.loadDonacionesStats();
+                } else {
+                    this.showAlert(response.message || 'Error al registrar libro', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error registrando libro:', error);
+                this.showAlert('Error al registrar libro', 'danger');
+            })
+            .finally(() => {
+                submitBtn.prop('disabled', false).html(originalText);
+            });
+    },
+    
+    // Manejar registro de artículo especial
+    handleRegistrarArticulo: function() {
+        const form = $('#registrarArticuloForm');
+        const formData = {};
+        
+        form.find('input, select, textarea').each(function() {
+            const field = $(this);
+            const name = field.attr('name');
+            if (name) {
+                formData[name] = field.val();
+            }
+        });
+        
+        // Validación básica
+        if (!formData.descripcion || !formData.peso || !formData.dimensiones) {
+            this.showAlert('Por favor complete los campos requeridos', 'warning');
+            return;
+        }
+        
+        const submitBtn = form.find('button[type="submit"]');
+        const originalText = submitBtn.html();
+        submitBtn.prop('disabled', true).html('<span class="spinner"></span> Registrando...');
+        
+        BibliotecaAPI.donaciones.createArticulo(formData)
+            .then(response => {
+                if (response.success) {
+                    this.showAlert('✅ Artículo especial registrado exitosamente', 'success');
+                    form[0].reset();
+                    this.loadDonacionesStats();
+                } else {
+                    this.showAlert(response.message || 'Error al registrar artículo', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error registrando artículo:', error);
+                this.showAlert('Error al registrar artículo', 'danger');
+            })
+            .finally(() => {
+                submitBtn.prop('disabled', false).html(originalText);
+            });
     }
 };
 

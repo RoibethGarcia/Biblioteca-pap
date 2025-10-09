@@ -79,20 +79,25 @@ const BibliotecaAPI = {
     lectores: {
         // Obtener estadísticas
         getStats: function() {
-            return $.ajax({
-                url: `${BibliotecaAPI.config.baseUrl}/lector/estadisticas`,
-                method: 'GET',
-                timeout: BibliotecaAPI.config.timeout
-            }).then(response => {
-                if (response.success) {
-                    return {
-                        total: response.total || 0,
-                        activos: response.activos || 0,
-                        suspendidos: response.suspendidos || 0
-                    };
-                } else {
-                    return { total: 0, activos: 0, suspendidos: 0 };
-                }
+            return Promise.all([
+                $.ajax({
+                    url: `${BibliotecaAPI.config.baseUrl}/lector/cantidad`,
+                    method: 'GET',
+                    timeout: BibliotecaAPI.config.timeout
+                }),
+                $.ajax({
+                    url: `${BibliotecaAPI.config.baseUrl}/lector/cantidad-activos`,
+                    method: 'GET',
+                    timeout: BibliotecaAPI.config.timeout
+                })
+            ]).then(([totalResponse, activosResponse]) => {
+                const total = totalResponse.cantidad || 0;
+                const activos = activosResponse.cantidad || 0;
+                return {
+                    total: total,
+                    activos: activos,
+                    suspendidos: total - activos
+                };
             }).catch(error => {
                 console.error('Error obteniendo estadísticas de lectores:', error);
                 return { total: 0, activos: 0, suspendidos: 0 };
