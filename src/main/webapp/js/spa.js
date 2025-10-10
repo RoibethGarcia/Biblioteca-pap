@@ -524,9 +524,18 @@ const BibliotecaSPA = {
     
     // Cargar contenido de página
     loadPageContent: function(pageName) {
-        const contentContainer = $(`#${pageName}Content`);
+        // Normalizar nombre de contenedor (remover 'management/' prefix)
+        let containerName = pageName;
+        if (pageName.startsWith('management/')) {
+            containerName = pageName.replace('management/', '');
+        }
         
-        if (contentContainer.length === 0) return;
+        const contentContainer = $(`#${containerName}Content`);
+        
+        if (contentContainer.length === 0) {
+            console.warn('⚠️ Content container not found:', `#${containerName}Content`);
+            return;
+        }
         
         this.showLoading();
         
@@ -539,7 +548,13 @@ const BibliotecaSPA = {
     
     // Renderizar contenido de página
     renderPageContent: function(pageName) {
-        const contentContainer = $(`#${pageName}Content`);
+        // Normalizar nombre de contenedor (remover 'management/' prefix)
+        let containerName = pageName;
+        if (pageName.startsWith('management/')) {
+            containerName = pageName.replace('management/', '');
+        }
+        
+        const contentContainer = $(`#${containerName}Content`);
         
         switch (pageName) {
             case 'dashboard':
@@ -565,6 +580,12 @@ const BibliotecaSPA = {
                 break;
             case 'management/donaciones':
                 this.renderDonacionesManagement();
+                break;
+            case 'libros':
+                this.renderLibrosManagement();
+                break;
+            case 'management/libros':
+                this.renderLibrosManagement();
                 break;
             // Nuevas páginas para botones de servicios
             case 'historial':
@@ -3102,6 +3123,317 @@ const BibliotecaSPA = {
             .finally(() => {
                 submitBtn.prop('disabled', false).html(originalText);
             });
+    },
+    
+    // Renderizar Gestión de Libros
+    renderLibrosManagement: function() {
+        console.log('🔍 renderLibrosManagement called');
+        
+        // Verificar que el usuario es bibliotecario
+        if (!this.config.userSession || this.config.userSession.userType !== 'BIBLIOTECARIO') {
+            this.showAlert('Acceso denegado. Solo bibliotecarios pueden gestionar libros.', 'danger');
+            this.navigateToPage('dashboard');
+            return;
+        }
+        
+        console.log('✅ User is bibliotecario, rendering libros page');
+        
+        const content = `
+            <div class="fade-in-up">
+                <h2 class="text-gradient mb-3">📚 Gestión de Libros</h2>
+                
+                <!-- Estadísticas -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalLibrosInventario">-</div>
+                        <div class="stat-label">Total Libros</div>
+                    </div>
+                </div>
+
+                <!-- Formulario para agregar libro -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h4 style="margin: 0;">➕ Registrar Nuevo Libro</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="nuevoLibroForm" class="row">
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label for="nuevoLibroTitulo">Título: *</label>
+                                    <input type="text" id="nuevoLibroTitulo" name="titulo" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="form-group">
+                                    <label for="nuevoLibroPaginas">Páginas: *</label>
+                                    <input type="number" id="nuevoLibroPaginas" name="paginas" class="form-control" min="1" max="10000" required>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="form-group">
+                                    <label for="nuevoLibroDonante">Donante:</label>
+                                    <input type="text" id="nuevoLibroDonante" name="donante" class="form-control" placeholder="Anónimo">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-success">📚 Registrar Libro</button>
+                                <button type="reset" class="btn btn-secondary">🔄 Limpiar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Filtros y búsqueda -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h4 style="margin: 0;">🔍 Buscar y Filtrar Libros</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-4">
+                                <div class="form-group">
+                                    <label for="searchLibroTitulo">Buscar por título:</label>
+                                    <input type="text" id="searchLibroTitulo" class="form-control" placeholder="Ingrese título...">
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="form-group">
+                                    <label for="searchLibroDonante">Filtrar por donante:</label>
+                                    <input type="text" id="searchLibroDonante" class="form-control" placeholder="Nombre del donante...">
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="form-group">
+                                    <label for="searchLibroFecha">Desde fecha:</label>
+                                    <input type="date" id="searchLibroFecha" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-2">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <button id="searchLibrosBtn" class="btn btn-primary" style="width: 100%;">Buscar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de libros -->
+                <div class="card mt-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 style="margin: 0;">📋 Inventario de Libros</h4>
+                        <button id="refreshLibrosBtn" class="btn btn-sm btn-secondary">🔄 Actualizar</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table" id="librosTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Título</th>
+                                        <th>Páginas</th>
+                                        <th>Donante</th>
+                                        <th>Fecha Ingreso</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="6" class="text-center">
+                                            <div class="spinner"></div>
+                                            Cargando libros...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        $('#librosContent').html(content);
+        
+        // Cargar estadísticas y libros
+        this.loadLibrosStats();
+        this.loadLibrosData();
+        
+        // Configurar formularios
+        this.setupLibrosForms();
+    },
+    
+    // Cargar estadísticas de libros
+    loadLibrosStats: function() {
+        BibliotecaAPI.getDonacionStats().then(stats => {
+            $('#totalLibrosInventario').text(stats.libros || 0);
+        }).catch(error => {
+            console.error('Error cargando estadísticas de libros:', error);
+        });
+    },
+    
+    // Cargar datos de libros
+    loadLibrosData: function(filters = {}) {
+        const tbody = $('#librosTable tbody');
+        tbody.html('<tr><td colspan="6" class="text-center"><div class="spinner"></div> Cargando libros...</td></tr>');
+        
+        fetch('/donacion/libros')
+            .then(response => response.json())
+            .then(data => {
+                console.log('📚 Libros response:', data);
+                
+                if (data.success && data.libros) {
+                    let libros = data.libros;
+                    
+                    // Aplicar filtros si existen
+                    if (filters.titulo) {
+                        libros = libros.filter(libro => 
+                            libro.titulo.toLowerCase().includes(filters.titulo.toLowerCase())
+                        );
+                    }
+                    if (filters.donante) {
+                        libros = libros.filter(libro => 
+                            (libro.donante || 'Anónimo').toLowerCase().includes(filters.donante.toLowerCase())
+                        );
+                    }
+                    if (filters.fechaDesde) {
+                        libros = libros.filter(libro => 
+                            !libro.fechaIngreso || libro.fechaIngreso >= filters.fechaDesde
+                        );
+                    }
+                    
+                    this.renderLibrosTable(libros);
+                } else {
+                    tbody.html('<tr><td colspan="6" class="text-center text-muted">No hay libros registrados</td></tr>');
+                }
+            })
+            .catch(error => {
+                console.error('Error cargando libros:', error);
+                tbody.html('<tr><td colspan="6" class="text-center text-danger">Error al cargar libros: ' + error.message + '</td></tr>');
+            });
+    },
+    
+    // Renderizar tabla de libros
+    renderLibrosTable: function(libros) {
+        const tbody = $('#librosTable tbody');
+        
+        if (!libros || libros.length === 0) {
+            tbody.html('<tr><td colspan="6" class="text-center text-muted">No hay libros registrados</td></tr>');
+            return;
+        }
+        
+        const rows = libros.map(libro => `
+            <tr data-libro-id="${libro.id}">
+                <td>${libro.id}</td>
+                <td>${libro.titulo}</td>
+                <td>${libro.paginas}</td>
+                <td>${libro.donante || 'Anónimo'}</td>
+                <td>${libro.fechaIngreso || '-'}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="BibliotecaSPA.editarLibro(${libro.id})">
+                        ✏️ Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="BibliotecaSPA.eliminarLibro(${libro.id})">
+                        🗑️ Eliminar
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+        
+        tbody.html(rows);
+    },
+    
+    // Configurar formularios de libros
+    setupLibrosForms: function() {
+        // Formulario de nuevo libro
+        $('#nuevoLibroForm').off('submit').on('submit', (e) => {
+            e.preventDefault();
+            this.handleRegistrarLibroInventario();
+        });
+        
+        // Botón de búsqueda
+        $('#searchLibrosBtn').off('click').on('click', () => {
+            this.searchLibros();
+        });
+        
+        // Botón de refresh
+        $('#refreshLibrosBtn').off('click').on('click', () => {
+            this.loadLibrosData();
+        });
+    },
+    
+    // Manejar registro de libro desde inventario
+    handleRegistrarLibroInventario: function() {
+        const form = $('#nuevoLibroForm');
+        const formData = {};
+        
+        form.find('input, select, textarea').each(function() {
+            const field = $(this);
+            const name = field.attr('name');
+            if (name) {
+                formData[name] = field.val();
+            }
+        });
+        
+        // Validación
+        if (!formData.titulo || !formData.paginas) {
+            this.showAlert('Por favor complete los campos requeridos', 'warning');
+            return;
+        }
+        
+        const submitBtn = form.find('button[type="submit"]');
+        const originalText = submitBtn.html();
+        submitBtn.prop('disabled', true).html('<span class="spinner"></span> Registrando...');
+        
+        BibliotecaAPI.donaciones.createLibro(formData)
+            .then(response => {
+                if (response.success) {
+                    this.showAlert('✅ Libro registrado exitosamente', 'success');
+                    form[0].reset();
+                    this.loadLibrosStats();
+                    this.loadLibrosData();
+                } else {
+                    this.showAlert(response.message || 'Error al registrar libro', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error registrando libro:', error);
+                this.showAlert('Error al registrar libro', 'danger');
+            })
+            .finally(() => {
+                submitBtn.prop('disabled', false).html(originalText);
+            });
+    },
+    
+    // Buscar libros con filtros
+    searchLibros: function() {
+        const filters = {
+            titulo: $('#searchLibroTitulo').val().trim(),
+            donante: $('#searchLibroDonante').val().trim(),
+            fechaDesde: $('#searchLibroFecha').val()
+        };
+        
+        console.log('🔍 Buscando libros con filtros:', filters);
+        this.loadLibrosData(filters);
+    },
+    
+    // Editar libro
+    editarLibro: function(libroId) {
+        this.showAlert('La edición de libros estará disponible próximamente', 'info');
+        console.log('Editar libro ID:', libroId);
+        
+        // TODO: Implementar modal de edición con formulario pre-cargado
+    },
+    
+    // Eliminar libro
+    eliminarLibro: function(libroId) {
+        if (!confirm('¿Está seguro de que desea eliminar este libro?')) {
+            return;
+        }
+        
+        this.showAlert('La eliminación de libros estará disponible próximamente', 'info');
+        console.log('Eliminar libro ID:', libroId);
+        
+        // TODO: Implementar cuando exista endpoint /donacion/eliminar-libro
     }
 };
 
