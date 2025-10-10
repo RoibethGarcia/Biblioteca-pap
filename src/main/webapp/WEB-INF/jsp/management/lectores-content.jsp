@@ -162,11 +162,11 @@
                             <label for="modalZona">Zona:</label>
                             <select id="modalZona" name="zona" class="form-control" required>
                                 <option value="">Seleccione...</option>
-                                <option value="CENTRO">Centro</option>
-                                <option value="NORTE">Norte</option>
-                                <option value="SUR">Sur</option>
-                                <option value="ESTE">Este</option>
-                                <option value="OESTE">Oeste</option>
+                                <option value="BIBLIOTECA_CENTRAL">Biblioteca Central</option>
+                                <option value="SUCURSAL_ESTE">Sucursal Este</option>
+                                <option value="SUCURSAL_OESTE">Sucursal Oeste</option>
+                                <option value="BIBLIOTECA_INFANTIL">Biblioteca Infantil</option>
+                                <option value="ARCHIVO_GENERAL">Archivo General</option>
                             </select>
                         </div>
                     </div>

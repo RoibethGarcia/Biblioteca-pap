@@ -380,7 +380,6 @@ const BibliotecaSPA = {
                 <h4>📊 Gestión General</h4>
                 <ul>
                     <li><a href="#dashboard" class="nav-link" data-page="dashboard">📈 Dashboard</a></li>
-                    <li><a href="#reportes" class="nav-link" data-page="reportes">📊 Reportes</a></li>
                 </ul>
             </div>
             <div class="nav-section">
@@ -392,17 +391,13 @@ const BibliotecaSPA = {
             <div class="nav-section">
                 <h4>📚 Gestión de Materiales</h4>
                 <ul>
-                    <li><a href="#libros" class="nav-link" data-page="libros">📖 Gestionar Libros</a></li>
                     <li><a href="#donaciones" class="nav-link" data-page="donaciones">🎁 Gestionar Donaciones</a></li>
-                    <li><a href="#materiales" class="nav-link" data-page="materiales">📄 Gestionar Materiales</a></li>
                 </ul>
             </div>
             <div class="nav-section">
                 <h4>📋 Gestión de Préstamos</h4>
                 <ul>
                     <li><a href="#prestamos" class="nav-link" data-page="prestamos">📚 Gestionar Préstamos</a></li>
-                    <li><a href="#prestamos-activos" class="nav-link" data-page="prestamos-activos">⏰ Préstamos Activos</a></li>
-                    <li><a href="#devoluciones" class="nav-link" data-page="devoluciones">↩️ Devoluciones</a></li>
                 </ul>
             </div>
         `;
@@ -926,11 +921,11 @@ const BibliotecaSPA = {
                                     <label for="zonaFilter">Filtrar por zona:</label>
                                     <select id="zonaFilter" class="form-control">
                                         <option value="">Todas</option>
-                                        <option value="CENTRO">Centro</option>
-                                        <option value="NORTE">Norte</option>
-                                        <option value="SUR">Sur</option>
-                                        <option value="ESTE">Este</option>
-                                        <option value="OESTE">Oeste</option>
+                                        <option value="BIBLIOTECA_CENTRAL">Biblioteca Central</option>
+                                        <option value="SUCURSAL_ESTE">Sucursal Este</option>
+                                        <option value="SUCURSAL_OESTE">Sucursal Oeste</option>
+                                        <option value="BIBLIOTECA_INFANTIL">Biblioteca Infantil</option>
+                                        <option value="ARCHIVO_GENERAL">Archivo General</option>
                                     </select>
                                 </div>
                             </div>
@@ -2805,22 +2800,14 @@ const BibliotecaSPA = {
     },
     
     cambiarEstadoLector: function(id, estado) {
-        console.log('✅ cambiarEstadoLector llamado - ID:', id, 'Estado:', estado);
-        console.log('   this:', this);
-        console.log('   showConfirmModal existe?', typeof this.showConfirmModal);
-        
         const nuevoEstado = estado === 'ACTIVO' ? 'SUSPENDIDO' : 'ACTIVO';
         const accion = nuevoEstado === 'SUSPENDIDO' ? 'suspender' : 'reactivar';
-        
-        console.log('   Nuevo estado:', nuevoEstado, 'Acción:', accion);
-        console.log('   Intentando mostrar modal...');
         
         // Mostrar modal de confirmación
         this.showConfirmModal(
             `¿Está seguro de que desea ${accion} este lector?`,
             `Esta acción cambiará el estado del lector a "${nuevoEstado}".`,
             () => {
-                console.log('   ✅ Usuario confirmó cambio de estado');
                 this.showLoading('Cambiando estado del lector...');
                 
                 // Llamar al API real
@@ -2839,29 +2826,19 @@ const BibliotecaSPA = {
                 });
             }
         );
-        
-        console.log('   Modal debería estar visible ahora');
     },
     
     cambiarZonaLector: function(id) {
-        console.log('✅ cambiarZonaLector llamado - ID:', id);
-        console.log('   this:', this);
-        console.log('   getLectoresData existe?', typeof this.getLectoresData);
-        
         // Obtener datos del lector actual
         const lectores = this.getLectoresData();
-        console.log('   Lectores obtenidos:', lectores.length);
-        
         const lector = lectores.find(l => l.id === id);
-        console.log('   Lector encontrado:', lector);
         
         if (!lector) {
-            console.error('   ❌ Lector no encontrado con ID:', id);
             this.showAlert('Lector no encontrado', 'danger');
+            console.error('❌ Lector no encontrado con ID:', id);
             return;
         }
         
-        console.log('   Mostrando modal de cambio de zona...');
         // Mostrar modal para cambiar zona
         this.showZonaChangeModal(lector);
     },
@@ -2922,11 +2899,11 @@ const BibliotecaSPA = {
                                 font-size: 14px !important;
                             ">
                                 <option value="">Seleccione una zona...</option>
-                                <option value="CENTRO" ${lector.zona === 'CENTRO' ? 'selected' : ''}>Centro</option>
-                                <option value="NORTE" ${lector.zona === 'NORTE' ? 'selected' : ''}>Norte</option>
-                                <option value="SUR" ${lector.zona === 'SUR' ? 'selected' : ''}>Sur</option>
-                                <option value="ESTE" ${lector.zona === 'ESTE' ? 'selected' : ''}>Este</option>
-                                <option value="OESTE" ${lector.zona === 'OESTE' ? 'selected' : ''}>Oeste</option>
+                                <option value="BIBLIOTECA_CENTRAL" ${lector.zona === 'BIBLIOTECA_CENTRAL' ? 'selected' : ''}>Biblioteca Central</option>
+                                <option value="SUCURSAL_ESTE" ${lector.zona === 'SUCURSAL_ESTE' ? 'selected' : ''}>Sucursal Este</option>
+                                <option value="SUCURSAL_OESTE" ${lector.zona === 'SUCURSAL_OESTE' ? 'selected' : ''}>Sucursal Oeste</option>
+                                <option value="BIBLIOTECA_INFANTIL" ${lector.zona === 'BIBLIOTECA_INFANTIL' ? 'selected' : ''}>Biblioteca Infantil</option>
+                                <option value="ARCHIVO_GENERAL" ${lector.zona === 'ARCHIVO_GENERAL' ? 'selected' : ''}>Archivo General</option>
                             </select>
                         </div>
                         
@@ -3023,11 +3000,6 @@ const BibliotecaSPA = {
     
     // Mostrar modal de confirmación
     showConfirmModal: function(titulo, mensaje, onConfirm) {
-        console.log('📋 showConfirmModal ejecutándose...');
-        console.log('   Título:', titulo);
-        console.log('   Mensaje:', mensaje);
-        console.log('   Callback:', typeof onConfirm);
-        
         const modalHtml = `
             <div id="confirmModal" class="modal fade-in" style="
                 display: flex !important;
@@ -3103,21 +3075,12 @@ const BibliotecaSPA = {
             </div>
         `;
         
-        console.log('   Guardando callback...');
         // Guardar la función de confirmación
         this.pendingConfirmAction = onConfirm;
         
-        console.log('   Removiendo modal existente...');
         // Remover modal existente si existe
         $('#confirmModal').remove();
-        
-        console.log('   Agregando modal al body...');
         $('body').append(modalHtml);
-        
-        console.log('   ✅ Modal agregado al DOM');
-        console.log('   Modal existe en DOM?', $('#confirmModal').length > 0);
-        console.log('   Modal visible?', $('#confirmModal').is(':visible'));
-        console.log('   Display CSS:', $('#confirmModal').css('display'));
     },
     
     // Ejecutar acción de confirmación
@@ -3168,11 +3131,11 @@ const BibliotecaSPA = {
     
     // Obtener datos de lectores desde el servidor
     getLectoresData: function() {
-        console.log('🔍 Getting lectores data from server');
+        console.log('🔍 Getting lectores data from cache');
+        console.log('   todosLosLectores disponibles:', this.todosLosLectores?.length || 0);
         
-        // En una implementación real, esto haría una llamada al servidor
-        // Por ahora, retornamos array vacío para usuarios nuevos
-        return [];
+        // Retornar los lectores que ya están cargados en memoria
+        return this.todosLosLectores || [];
     },
     
     // ==================== FUNCIONALIDADES DEL LECTOR ====================

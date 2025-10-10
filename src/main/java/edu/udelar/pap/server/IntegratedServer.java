@@ -115,6 +115,7 @@ public class IntegratedServer {
     
     /**
      * Handler para archivos estáticos
+     * Usa rutas multiplataforma compatibles con Windows, Mac y Linux
      */
     static class StaticFileHandler implements HttpHandler {
         @Override
@@ -123,23 +124,52 @@ public class IntegratedServer {
             if (path.equals("/")) path = "/index.html";
             
             try {
-                byte[] content = Files.readAllBytes(Paths.get("src/main/webapp" + path));
+                // ✅ SOLUCIÓN MULTIPLATAFORMA: Usar Paths.get() con componentes separados
+                // Construir ruta usando componentes individuales (no concatenación de strings)
+                java.nio.file.Path webappDir = Paths.get(System.getProperty("user.dir"), "src", "main", "webapp");
+                java.nio.file.Path filePath = webappDir.resolve(path.substring(1)); // Remover '/' inicial
                 
-                // Determinar content type
-                String contentType = "text/html";
-                if (path.endsWith(".css")) contentType = "text/css";
-                else if (path.endsWith(".js")) contentType = "application/javascript";
-                else if (path.endsWith(".json")) contentType = "application/json";
+                // Fallback: buscar en target/ si no existe en src/ (para ejecución como WAR)
+                if (!Files.exists(filePath)) {
+                    webappDir = Paths.get(System.getProperty("user.dir"), "target", "biblioteca-pap-0.1.0-SNAPSHOT");
+                    filePath = webappDir.resolve(path.substring(1));
+                }
+                
+                // Leer contenido del archivo
+                byte[] content = Files.readAllBytes(filePath);
+                
+                // Determinar content type basado en extensión
+                String contentType = determinarContentType(path);
                 
                 exchange.getResponseHeaders().set("Content-Type", contentType);
                 exchange.sendResponseHeaders(200, content.length);
                 exchange.getResponseBody().write(content);
             } catch (IOException e) {
-                String error = "404 - Archivo no encontrado";
+                String error = "404 - Archivo no encontrado: " + path;
                 exchange.sendResponseHeaders(404, error.length());
                 exchange.getResponseBody().write(error.getBytes());
             }
             exchange.close();
+        }
+        
+        /**
+         * Determina el Content-Type basado en la extensión del archivo
+         * @param path Ruta del archivo
+         * @return Content-Type apropiado
+         */
+        private String determinarContentType(String path) {
+            if (path.endsWith(".css")) return "text/css; charset=UTF-8";
+            else if (path.endsWith(".js")) return "application/javascript; charset=UTF-8";
+            else if (path.endsWith(".json")) return "application/json; charset=UTF-8";
+            else if (path.endsWith(".png")) return "image/png";
+            else if (path.endsWith(".jpg") || path.endsWith(".jpeg")) return "image/jpeg";
+            else if (path.endsWith(".gif")) return "image/gif";
+            else if (path.endsWith(".svg")) return "image/svg+xml";
+            else if (path.endsWith(".ico")) return "image/x-icon";
+            else if (path.endsWith(".woff")) return "font/woff";
+            else if (path.endsWith(".woff2")) return "font/woff2";
+            else if (path.endsWith(".ttf")) return "font/ttf";
+            return "text/html; charset=UTF-8";
         }
     }
     

@@ -1,5 +1,10 @@
 package edu.udelar.pap.ui;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
@@ -63,9 +68,27 @@ public class MainRefactored {
     }
     
     /**
+     * Crea el directorio de logs si no existe
+     * Método multiplataforma compatible con Windows, Mac y Linux
+     */
+    private static void crearDirectorioLogs() {
+        try {
+            Path logsDir = Paths.get("logs");
+            if (!Files.exists(logsDir)) {
+                Files.createDirectories(logsDir);
+                System.out.println("📁 Directorio de logs creado en: " + logsDir.toAbsolutePath());
+            }
+        } catch (IOException e) {
+            System.err.println("⚠️  No se pudo crear directorio de logs: " + e.getMessage());
+            System.err.println("   El logging puede no funcionar correctamente.");
+        }
+    }
+    
+    /**
      * Inicia la aplicación en modo SOAP (servicios web con WSDL)
      */
     private static void iniciarModoSOAP() {
+        crearDirectorioLogs();
         System.out.println("🌐 Iniciando en modo SOAP/WSDL...");
         System.out.println("   Los servicios se publicarán con WSDLs en puertos 9001-9004");
         System.out.println();
@@ -78,6 +101,7 @@ public class MainRefactored {
      * Inicia la aplicación en modo servidor web (HTTP/REST)
      */
     private static void iniciarModoServidor() {
+        crearDirectorioLogs();
         System.out.println("🌐 Iniciando en modo servidor integrado...");
         // Iniciar solo el servidor web (sin UI Swing)
         IntegratedServer.main(new String[]{});
@@ -87,6 +111,7 @@ public class MainRefactored {
      * Inicia la aplicación en modo escritorio (Swing)
      */
     private static void iniciarModoEscritorio() {
+        crearDirectorioLogs();
         System.out.println("🖥️  Iniciando en modo aplicación de escritorio...");
         
         // Crear el controlador principal
