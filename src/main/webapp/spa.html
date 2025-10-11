@@ -116,6 +116,11 @@
                                            placeholder="Ingrese su nombre">
                                 </div>
                                 
+                                <div class="form-group">
+                                    <label for="regApellido">Apellido:</label>
+                                    <input type="text" id="regApellido" name="apellido" class="form-control" required 
+                                           placeholder="Ingrese su apellido">
+                                </div>
                                 
                                 <div class="form-group">
                                     <label for="regEmail">Email:</label>
@@ -126,8 +131,8 @@
                                 <!-- Campos específicos para Bibliotecario -->
                                 <div id="bibliotecarioFields" style="display: none;">
                                     <div class="form-group">
-                                        <label for="regNumeroEmpleado">Número de Empleado:</label>
-                                        <input type="text" id="regNumeroEmpleado" name="numeroEmpleado" class="form-control" 
+                                        <label for="regNumeroEmpleado">Número de Empleado: <span style="color: red;">*</span></label>
+                                        <input type="text" id="regNumeroEmpleado" name="numeroEmpleado" class="form-control" required
                                                placeholder="Ingrese su número de empleado">
                                     </div>
                                 </div>
@@ -135,14 +140,14 @@
                                 <!-- Campos específicos para Lector -->
                                 <div id="lectorFields" style="display: none;">
                                     <div class="form-group">
-                                        <label for="regDireccion">Dirección:</label>
-                                        <input type="text" id="regDireccion" name="direccion" class="form-control" 
+                                        <label for="regDireccion">Dirección: <span style="color: red;">*</span></label>
+                                        <input type="text" id="regDireccion" name="direccion" class="form-control" required
                                                placeholder="Ingrese su dirección">
                                     </div>
                                     
                                     <div class="form-group">
-                                        <label for="regZona">Zona:</label>
-                                        <select id="regZona" name="zona" class="form-control">
+                                        <label for="regZona">Zona: <span style="color: red;">*</span></label>
+                                        <select id="regZona" name="zona" class="form-control" required>
                                             <option value="">Seleccione una zona...</option>
                                             <option value="BIBLIOTECA_CENTRAL">📚 Biblioteca Central</option>
                                             <option value="SUCURSAL_ESTE">🏢 Sucursal Este</option>

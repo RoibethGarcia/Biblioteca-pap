@@ -161,7 +161,10 @@ public class AuthServlet extends HttpServlet {
         // Verificar si es una petición AJAX
         boolean isAjax = "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
         
+        System.out.println("🔍 AuthServlet.handleRegister - userType: " + userType);
+        
         if (userType == null || userType.trim().isEmpty()) {
+            System.out.println("❌ userType está vacío");
             if (isAjax) {
                 sendJsonResponse(response, false, "Por favor seleccione un tipo de usuario");
             } else {
@@ -176,6 +179,12 @@ public class AuthServlet extends HttpServlet {
             String result;
             
             if ("BIBLIOTECARIO".equals(userType)) {
+                System.out.println("📚 Creando bibliotecario...");
+                System.out.println("  - nombre: " + request.getParameter("nombre"));
+                System.out.println("  - apellido: " + request.getParameter("apellido"));
+                System.out.println("  - email: " + request.getParameter("email"));
+                System.out.println("  - numeroEmpleado: " + request.getParameter("numeroEmpleado"));
+                
                 result = factory.getBibliotecarioPublisher().crearBibliotecario(
                     request.getParameter("nombre"),
                     request.getParameter("apellido"),
@@ -184,6 +193,14 @@ public class AuthServlet extends HttpServlet {
                     request.getParameter("password")
                 );
             } else if ("LECTOR".equals(userType)) {
+                System.out.println("👤 Creando lector...");
+                System.out.println("  - nombre: " + request.getParameter("nombre"));
+                System.out.println("  - apellido: " + request.getParameter("apellido"));
+                System.out.println("  - email: " + request.getParameter("email"));
+                System.out.println("  - telefono: " + request.getParameter("telefono"));
+                System.out.println("  - direccion: " + request.getParameter("direccion"));
+                System.out.println("  - zona: " + request.getParameter("zona"));
+                
                 result = factory.getLectorPublisher().crearLector(
                     request.getParameter("nombre"),
                     request.getParameter("apellido"),
@@ -205,7 +222,10 @@ public class AuthServlet extends HttpServlet {
             }
             
             // Parsear resultado JSON (simplificado)
+            System.out.println("📊 Resultado del publisher: " + result);
+            
             if (result.contains("\"success\": true")) {
+                System.out.println("✅ Registro exitoso");
                 if (isAjax) {
                     sendJsonResponse(response, true, "Usuario registrado exitosamente. Por favor inicie sesión.");
                 } else {
@@ -223,6 +243,8 @@ public class AuthServlet extends HttpServlet {
                         errorMessage = result.substring(start, end);
                     }
                 }
+                
+                System.out.println("❌ Error en registro: " + errorMessage);
                 
                 if (isAjax) {
                     sendJsonResponse(response, false, errorMessage);

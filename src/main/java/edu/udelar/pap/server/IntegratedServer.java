@@ -290,24 +290,26 @@ public class IntegratedServer {
                     
                     if ("LECTOR".equalsIgnoreCase(userType)) {
                         String nombre = params.get("nombre");
+                        String apellido = params.get("apellido");
                         String email = params.get("email");
                         String direccion = params.get("direccion");
                         String zona = params.get("zona");
                         String password = params.get("password");
                         
-                        System.out.println("📝 Creando lector: " + nombre + ", email: " + email);
+                        System.out.println("📝 Creando lector: " + nombre + " " + apellido + ", email: " + email);
                         
                         // Parámetro fechaNacimiento no utilizado, se pasa vacío
-                        return factory.getLectorPublisher().crearLector(nombre, "", email, "", direccion, zona, password);
+                        return factory.getLectorPublisher().crearLector(nombre, apellido != null ? apellido : "", email, "", direccion, zona, password);
                     } else if ("BIBLIOTECARIO".equalsIgnoreCase(userType)) {
                         String nombre = params.get("nombre");
+                        String apellido = params.get("apellido");
                         String email = params.get("email");
                         String numeroEmpleado = params.get("numeroEmpleado");
                         String password = params.get("password");
                         
-                        System.out.println("📝 Creando bibliotecario: " + nombre + ", email: " + email);
+                        System.out.println("📝 Creando bibliotecario: " + nombre + " " + apellido + ", email: " + email);
                         
-                        return factory.getBibliotecarioPublisher().crearBibliotecario(nombre, "", email, numeroEmpleado, password);
+                        return factory.getBibliotecarioPublisher().crearBibliotecario(nombre, apellido != null ? apellido : "", email, numeroEmpleado, password);
                     } else {
                         return "{\"success\": false, \"message\": \"Tipo de usuario no válido\"}";
                     }
@@ -481,6 +483,16 @@ public class IntegratedServer {
                     return "{\"success\": true, \"lectores\": [{\"id\": 1, \"nombre\": \"Test\", \"email\": \"test@test.com\"}]}";
                 } else if (path.equals("/lector/estado")) {
                     return factory.getLectorPublisher().obtenerEstado();
+                } else if (path.startsWith("/lector/")) {
+                    // ✨ NUEVO: Obtener lector por ID (GET /lector/{id})
+                    try {
+                        String idStr = path.substring("/lector/".length());
+                        Long lectorId = Long.parseLong(idStr);
+                        System.out.println("👤 Obteniendo lector por ID: " + lectorId);
+                        return factory.getLectorPublisher().obtenerLectorPorId(lectorId);
+                    } catch (NumberFormatException e) {
+                        return "{\"error\":\"ID de lector inválido\"}";
+                    }
                 } else {
                     return "{\"error\":\"Endpoint no encontrado: " + path + "\"}";
                 }
@@ -569,6 +581,20 @@ public class IntegratedServer {
                     } else {
                         return "{\"error\":\"lectorId es requerido\"}";
                     }
+                } else if (path.equals("/prestamo/por-bibliotecario")) {
+                    // Obtener lista de préstamos de un bibliotecario
+                    if (query != null && query.contains("bibliotecarioId=")) {
+                        String bibliotecarioIdStr = query.split("bibliotecarioId=")[1].split("&")[0];
+                        Long bibliotecarioId = Long.parseLong(bibliotecarioIdStr);
+                        System.out.println("👨‍💼 Obteniendo lista de préstamos para bibliotecario ID: " + bibliotecarioId);
+                        return factory.getPrestamoPublisher().obtenerPrestamosPorBibliotecario(bibliotecarioId);
+                    } else {
+                        return "{\"error\":\"bibliotecarioId es requerido\"}";
+                    }
+                } else if (path.equals("/prestamo/reporte-por-zona")) {
+                    // Obtener reporte de préstamos agrupados por zona
+                    System.out.println("📊 Obteniendo reporte de préstamos por zona");
+                    return factory.getPrestamoPublisher().obtenerReportePorZona();
                 } else if (path.equals("/prestamo/cambiar-estado") && method.equals("POST")) {
                     // Cambiar estado de préstamo
                     String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
@@ -600,6 +626,39 @@ public class IntegratedServer {
                     
                     Long prestamoId = Long.parseLong(prestamoIdStr);
                     return factory.getPrestamoPublisher().cambiarEstadoPrestamo(prestamoId, nuevoEstado);
+                } else if (path.equals("/prestamo/actualizar") && method.equals("POST")) {
+                    // ✨ NUEVO: Actualizar préstamo completo
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body recibido para actualizar préstamo: " + body);
+                    
+                    java.util.Map<String, String> params = new java.util.HashMap<>();
+                    if (body != null && !body.isEmpty()) {
+                        for (String param : body.split("&")) {
+                            String[] keyValue = param.split("=");
+                            if (keyValue.length == 2) {
+                                String key = java.net.URLDecoder.decode(keyValue[0], "UTF-8");
+                                String value = java.net.URLDecoder.decode(keyValue[1], "UTF-8");
+                                params.put(key, value);
+                            }
+                        }
+                    }
+                    
+                    String prestamoIdStr = params.get("prestamoId");
+                    String lectorIdStr = params.get("lectorId");
+                    String bibliotecarioIdStr = params.get("bibliotecarioId");
+                    String materialIdStr = params.get("materialId");
+                    String fechaDevolucion = params.get("fechaDevolucion");
+                    String estado = params.get("estado");
+                    
+                    System.out.println("🔄 Actualizando préstamo: prestamoId=" + prestamoIdStr);
+                    
+                    if (prestamoIdStr == null || prestamoIdStr.trim().isEmpty()) {
+                        return "{\"success\": false, \"message\": \"El ID del préstamo es requerido\"}";
+                    }
+                    
+                    return factory.getPrestamoPublisher().actualizarPrestamo(
+                        prestamoIdStr, lectorIdStr, bibliotecarioIdStr, materialIdStr, fechaDevolucion, estado
+                    );
                 } else if (path.equals("/prestamo/crear") && method.equals("POST")) {
                     // Crear préstamo - obtener parámetros del body
                     String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
@@ -665,6 +724,16 @@ public class IntegratedServer {
                     
                     System.out.println("📚 IntegratedServer - Resultado de crearPrestamo: " + resultado);
                     return resultado;
+                } else if (path.equals("/prestamo/info")) {
+                    // ✨ NUEVO: Obtener información detallada de un préstamo
+                    if (query != null && query.contains("id=")) {
+                        String idStr = query.split("id=")[1].split("&")[0];
+                        Long prestamoId = Long.parseLong(idStr);
+                        System.out.println("📚 Obteniendo información del préstamo ID: " + prestamoId);
+                        return factory.getPrestamoPublisher().obtenerPrestamoDetallado(prestamoId);
+                    } else {
+                        return "{\"error\":\"id es requerido\"}";
+                    }
                 } else if (path.equals("/prestamo/estado")) {
                     return factory.getPrestamoPublisher().obtenerEstado();
                 } else {
@@ -968,6 +1037,34 @@ public class IntegratedServer {
                     result = combinarDonaciones(librosJson, articulosJson);
                 } else if (path.equals("/donacion/estado")) {
                     result = factory.getDonacionPublisher().obtenerEstado();
+                } else if (path.equals("/donacion/por-fechas")) {
+                    // ✨ NUEVO: Obtener donaciones por rango de fechas
+                    String query = exchange.getRequestURI().getQuery();
+                    if (query != null && query.contains("desde=") && query.contains("hasta=")) {
+                        String fechaDesde = null;
+                        String fechaHasta = null;
+                        
+                        for (String param : query.split("&")) {
+                            String[] keyValue = param.split("=");
+                            if (keyValue.length == 2) {
+                                if (keyValue[0].equals("desde")) {
+                                    fechaDesde = java.net.URLDecoder.decode(keyValue[1], "UTF-8");
+                                } else if (keyValue[0].equals("hasta")) {
+                                    fechaHasta = java.net.URLDecoder.decode(keyValue[1], "UTF-8");
+                                }
+                            }
+                        }
+                        
+                        System.out.println("📅 Consultando donaciones por fechas: desde=" + fechaDesde + ", hasta=" + fechaHasta);
+                        
+                        if (fechaDesde == null || fechaHasta == null) {
+                            result = "{\"success\": false, \"message\": \"Ambas fechas son requeridas (desde y hasta)\"}";
+                        } else {
+                            result = factory.getDonacionPublisher().obtenerDonacionesPorFechas(fechaDesde, fechaHasta);
+                        }
+                    } else {
+                        result = "{\"success\": false, \"message\": \"Parámetros requeridos: desde y hasta en formato DD/MM/YYYY\"}";
+                    }
                 } else {
                     result = "{\"error\":\"Endpoint no encontrado: " + path + "\"}";
                 }

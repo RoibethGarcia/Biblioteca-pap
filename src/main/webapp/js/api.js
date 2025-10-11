@@ -54,6 +54,21 @@ const BibliotecaAPI = {
                 data.numeroEmpleado = userData.numeroEmpleado || '';
             }
             
+            console.log('🚀 Enviando datos de registro al servidor:');
+            console.log('  📦 Objeto completo:', data);
+            console.log('  🔑 Campos clave:');
+            console.log('    - userType:', data.userType);
+            console.log('    - nombre:', data.nombre);
+            console.log('    - apellido:', data.apellido);
+            console.log('    - email:', data.email);
+            if (userData.userType === 'LECTOR') {
+                console.log('    - telefono:', data.telefono);
+                console.log('    - direccion:', data.direccion);
+                console.log('    - zona:', data.zona);
+            } else if (userData.userType === 'BIBLIOTECARIO') {
+                console.log('    - numeroEmpleado:', data.numeroEmpleado);
+            }
+            
             return $.ajax({
                 url: `${BibliotecaAPI.config.baseUrl}/auth/register`,
                 method: 'POST',
@@ -64,9 +79,11 @@ const BibliotecaAPI = {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             }).then(response => {
+                console.log('✅ Respuesta del servidor:', response);
                 return response;
             }).catch(error => {
-                console.error('Error en registro:', error);
+                console.error('❌ Error en registro:', error);
+                console.error('❌ Error completo:', error.responseJSON);
                 return {
                     success: false,
                     message: error.responseJSON?.message || 'Error al registrar usuario. Intente nuevamente.'

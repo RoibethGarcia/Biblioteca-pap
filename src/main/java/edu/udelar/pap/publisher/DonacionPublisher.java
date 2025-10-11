@@ -164,6 +164,89 @@ public class DonacionPublisher {
         }
     }
     
+    /**
+     * Obtiene donaciones (libros y artículos) por rango de fechas
+     * @param fechaDesde Fecha de inicio en formato DD/MM/YYYY
+     * @param fechaHasta Fecha de fin en formato DD/MM/YYYY
+     * @return JSON con la lista de donaciones en el rango
+     */
+    public String obtenerDonacionesPorFechas(String fechaDesde, String fechaHasta) {
+        try {
+            // Validar parámetros
+            if (fechaDesde == null || fechaDesde.trim().isEmpty()) {
+                return "{\"success\": false, \"message\": \"La fecha de inicio es requerida\"}";
+            }
+            if (fechaHasta == null || fechaHasta.trim().isEmpty()) {
+                return "{\"success\": false, \"message\": \"La fecha de fin es requerida\"}";
+            }
+            
+            // Parsear fechas (formato DD/MM/YYYY)
+            java.time.LocalDate fechaInicio;
+            java.time.LocalDate fechaFin;
+            
+            try {
+                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                fechaInicio = java.time.LocalDate.parse(fechaDesde, formatter);
+                fechaFin = java.time.LocalDate.parse(fechaHasta, formatter);
+            } catch (Exception e) {
+                return "{\"success\": false, \"message\": \"Formato de fecha inválido. Use DD/MM/YYYY\"}";
+            }
+            
+            // Validar que la fecha de inicio sea anterior o igual a la fecha de fin
+            if (fechaInicio.isAfter(fechaFin)) {
+                return "{\"success\": false, \"message\": \"La fecha de inicio debe ser anterior o igual a la fecha de fin\"}";
+            }
+            
+            // Obtener donaciones del servicio
+            java.util.List<Object> donaciones = donacionController.obtenerDonacionesPorRangoFechas(fechaInicio, fechaFin);
+            
+            if (donaciones == null || donaciones.isEmpty()) {
+                return "{\"success\": true, \"donaciones\": [], \"cantidad\": 0}";
+            }
+            
+            // Construir JSON con las donaciones
+            StringBuilder json = new StringBuilder();
+            json.append("{\"success\": true, \"donaciones\": [");
+            
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            
+            for (int i = 0; i < donaciones.size(); i++) {
+                Object donacion = donaciones.get(i);
+                if (i > 0) json.append(",");
+                
+                if (donacion instanceof edu.udelar.pap.domain.Libro) {
+                    edu.udelar.pap.domain.Libro libro = (edu.udelar.pap.domain.Libro) donacion;
+                    json.append(String.format(
+                        "{\"id\": %d, \"tipo\": \"LIBRO\", \"titulo\": \"%s\", \"paginas\": %d, " +
+                        "\"donante\": \"%s\", \"fechaIngreso\": \"%s\"}", 
+                        libro.getId(),
+                        libro.getTitulo().replace("\"", "\\\""),
+                        libro.getPaginas(),
+                        libro.getDonante().replace("\"", "\\\""),
+                        libro.getFechaIngreso() != null ? libro.getFechaIngreso().format(formatter) : ""));
+                } else if (donacion instanceof edu.udelar.pap.domain.ArticuloEspecial) {
+                    edu.udelar.pap.domain.ArticuloEspecial articulo = (edu.udelar.pap.domain.ArticuloEspecial) donacion;
+                    json.append(String.format(
+                        "{\"id\": %d, \"tipo\": \"ARTICULO\", \"descripcion\": \"%s\", \"peso\": %.2f, " +
+                        "\"dimensiones\": \"%s\", \"donante\": \"%s\", \"fechaIngreso\": \"%s\"}", 
+                        articulo.getId(),
+                        articulo.getDescripcion().replace("\"", "\\\""),
+                        articulo.getPeso(),
+                        articulo.getDimensiones().replace("\"", "\\\""),
+                        articulo.getDonante().replace("\"", "\\\""),
+                        articulo.getFechaIngreso() != null ? articulo.getFechaIngreso().format(formatter) : ""));
+                }
+            }
+            
+            json.append("], \"cantidad\": ").append(donaciones.size()).append("}");
+            return json.toString();
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            return String.format("{\"success\": false, \"message\": \"Error al obtener donaciones: %s\"}", e.getMessage());
+        }
+    }
+    
     // ==================== MÉTODOS DE VALIDACIÓN ====================
     
     /**

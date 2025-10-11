@@ -115,6 +115,16 @@ const BibliotecaSPA = {
             console.log('📍 Click en cambiar zona - ID:', id);
             BibliotecaSPA.cambiarZonaLector(id);
         });
+        
+        // Botón ver préstamos de lector (en tabla de gestión)
+        $(document).on('click', '.btn-ver-prestamos', function(e) {
+            e.preventDefault();
+            const $btn = $(this);
+            const id = parseInt($btn.data('lector-id'));
+            const nombre = $btn.data('lector-nombre');
+            console.log('👁️ Click en ver préstamos - ID:', id, 'Nombre:', nombre);
+            BibliotecaSPA.verPrestamosLector(id, nombre);
+        });
     },
     
     // Configurar History API para navegación SPA
@@ -400,6 +410,12 @@ const BibliotecaSPA = {
                     <li><a href="#prestamos" class="nav-link" data-page="prestamos">📚 Gestionar Préstamos</a></li>
                 </ul>
             </div>
+            <div class="nav-section">
+                <h4>📊 Reportes y Análisis</h4>
+                <ul>
+                    <li><a href="#reportes" class="nav-link" data-page="reportes">📊 Reportes</a></li>
+                </ul>
+            </div>
         `;
         $('#mainNavigation .nav-content').html(navHtml);
     },
@@ -563,7 +579,14 @@ const BibliotecaSPA = {
                 this.renderLectoresManagement();
                 break;
             case 'prestamos':
-                this.renderPrestamosManagement();
+                // ✨ FIX: Diferenciar entre lector y bibliotecario
+                const isBibliotecario = this.config.userSession?.userType === 'BIBLIOTECARIO';
+                if (isBibliotecario) {
+                    this.renderPrestamosManagement();
+                } else {
+                    // Para lectores, mostrar "Mis Préstamos"
+                    this.renderMisPrestamos();
+                }
                 break;
             case 'donaciones':
                 this.renderDonacionesManagement();
@@ -678,6 +701,23 @@ const BibliotecaSPA = {
                         </div>
                     </div>
                 </div>
+                
+                <!-- Mi Historial -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 style="margin: 0;">📋 Mi Historial de Préstamos</h4>
+                            </div>
+                            <div class="card-body">
+                                <p>Ver todos los préstamos que he gestionado en el sistema</p>
+                                <button class="btn btn-info" onclick="BibliotecaSPA.verMisPrestamosGestionados()">
+                                    👁️ Ver Mis Préstamos Gestionados
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
         
@@ -726,6 +766,13 @@ const BibliotecaSPA = {
             <div class="fade-in-up">
                 <h2 class="text-gradient mb-3">👤 Mi Dashboard</h2>
                 
+                <!-- Alerta de cuenta suspendida -->
+                <div id="alertaSuspension" class="alert alert-danger" style="display: none;">
+                    <strong>⛔ Cuenta Suspendida</strong>
+                    <p>Su cuenta está suspendida. No puede solicitar préstamos hasta que un bibliotecario reactive su cuenta.</p>
+                    <p>Por favor, contacte con la biblioteca para más información.</p>
+                </div>
+                
                 <!-- Información personal -->
                 <div class="row">
                     <div class="col-8">
@@ -740,7 +787,7 @@ const BibliotecaSPA = {
                                         <p><strong>Tipo:</strong> ${this.config.userSession?.userType || '-'}</p>
                                     </div>
                                     <div class="col-6">
-                                        <p><strong>Estado:</strong> <span class="badge badge-success">Activo</span></p>
+                                        <p><strong>Estado:</strong> <span id="estadoLectorBadge" class="badge badge-secondary">Cargando...</span></p>
                                     </div>
                                 </div>
                             </div>
@@ -834,7 +881,33 @@ const BibliotecaSPA = {
                 return;
             }
             
-            console.log('📚 Obteniendo préstamos para lector ID:', lectorId);
+            console.log('📚 Obteniendo información del lector ID:', lectorId);
+            
+            // Obtener información completa del lector incluyendo su estado
+            const lectorResponse = await bibliotecaApi.get(`/lector/${lectorId}`);
+            
+            if (lectorResponse && lectorResponse.lector) {
+                const lector = lectorResponse.lector;
+                
+                // Actualizar el badge de estado
+                if (lector.estado === 'SUSPENDIDO') {
+                    $('#estadoLectorBadge')
+                        .removeClass('badge-success')
+                        .addClass('badge-danger')
+                        .text('⛔ Suspendido');
+                    
+                    // Mostrar alerta de suspensión
+                    $('#alertaSuspension').show();
+                } else {
+                    $('#estadoLectorBadge')
+                        .removeClass('badge-danger')
+                        .addClass('badge-success')
+                        .text('✅ Activo');
+                    
+                    // Ocultar alerta de suspensión
+                    $('#alertaSuspension').hide();
+                }
+            }
             
             // Llamar al endpoint para obtener cantidad de préstamos del lector
             const response = await $.ajax({
@@ -1101,16 +1174,16 @@ const BibliotecaSPA = {
                         <div class="stat-label">Total Préstamos</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number" id="prestamosActivosGestion">-</div>
-                        <div class="stat-label">Préstamos Activos</div>
+                        <div class="stat-number" id="prestamosPendientesGestion">-</div>
+                        <div class="stat-label">Préstamos Pendientes</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number" id="prestamosVencidosGestion">-</div>
-                        <div class="stat-label">Préstamos Vencidos</div>
+                        <div class="stat-number" id="prestamosEnCursoGestion">-</div>
+                        <div class="stat-label">Préstamos En Curso</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number" id="prestamosCompletadosGestion">-</div>
-                        <div class="stat-label">Préstamos Completados</div>
+                        <div class="stat-number" id="prestamosDevueltosGestion">-</div>
+                        <div class="stat-label">Préstamos Devueltos</div>
                     </div>
                 </div>
 
@@ -1132,9 +1205,9 @@ const BibliotecaSPA = {
                                     <label for="estadoPrestamoFilter">Filtrar por estado:</label>
                                     <select id="estadoPrestamoFilter" class="form-control">
                                         <option value="">Todos</option>
-                                        <option value="ACTIVO">Activos</option>
-                                        <option value="VENCIDO">Vencidos</option>
-                                        <option value="COMPLETADO">Completados</option>
+                                        <option value="PENDIENTE">Pendientes</option>
+                                        <option value="EN_CURSO">En Curso</option>
+                                        <option value="DEVUELTO">Devueltos</option>
                                     </select>
                                 </div>
                             </div>
@@ -1144,8 +1217,7 @@ const BibliotecaSPA = {
                                     <select id="tipoMaterialPrestamoFilter" class="form-control">
                                         <option value="">Todos</option>
                                         <option value="LIBRO">Libros</option>
-                                        <option value="REVISTA">Revistas</option>
-                                        <option value="MULTIMEDIA">Multimedia</option>
+                                        <option value="ARTICULO">Artículos Especiales</option>
                                     </select>
                                 </div>
                             </div>
@@ -1245,23 +1317,23 @@ const BibliotecaSPA = {
         try {
             await bibliotecaApi.loadAndUpdateStats({
                 '#totalPrestamosGestion': '/prestamo/cantidad',
-                '#prestamosActivosGestion': '/prestamo/cantidad-activos',
-                '#prestamosVencidosGestion': '/prestamo/cantidad-vencidos',
-                '#prestamosCompletadosGestion': '/prestamo/cantidad-completados'
+                '#prestamosPendientesGestion': '/prestamo/cantidad-por-estado?estado=PENDIENTE',
+                '#prestamosEnCursoGestion': '/prestamo/cantidad-por-estado?estado=EN_CURSO',
+                '#prestamosDevueltosGestion': '/prestamo/cantidad-por-estado?estado=DEVUELTO'
             });
             
             const total = parseInt($('#totalPrestamosGestion').text()) || 0;
-            const activos = parseInt($('#prestamosActivosGestion').text()) || 0;
-            const vencidos = parseInt($('#prestamosVencidosGestion').text()) || 0;
-            const completados = parseInt($('#prestamosCompletadosGestion').text()) || 0;
+            const pendientes = parseInt($('#prestamosPendientesGestion').text()) || 0;
+            const enCurso = parseInt($('#prestamosEnCursoGestion').text()) || 0;
+            const devueltos = parseInt($('#prestamosDevueltosGestion').text()) || 0;
             
-            console.log('✅ Préstamos stats loaded:', { total, activos, vencidos, completados });
+            console.log('✅ Préstamos stats loaded:', { total, pendientes, enCurso, devueltos });
         } catch (error) {
             console.error('❌ Error loading préstamos stats:', error);
             $('#totalPrestamosGestion').text('0');
-            $('#prestamosActivosGestion').text('0');
-            $('#prestamosVencidosGestion').text('0');
-            $('#prestamosCompletadosGestion').text('0');
+            $('#prestamosPendientesGestion').text('0');
+            $('#prestamosEnCursoGestion').text('0');
+            $('#prestamosDevueltosGestion').text('0');
         }
     },
     
@@ -1283,17 +1355,11 @@ const BibliotecaSPA = {
               render: (p) => BibliotecaFormatter.formatDate(p.fechaDevolucion) },
             { field: 'estado', header: 'Estado', width: '120px',
               render: (p) => BibliotecaFormatter.getEstadoBadge(p.estado) },
-            { field: 'acciones', header: 'Acciones', width: '280px',
+            { field: 'acciones', header: 'Acciones', width: '120px',
               render: (p) => `
-                <button class="btn btn-primary btn-sm" onclick="BibliotecaSPA.verDetallesPrestamo(${p.id})">
-                            👁️ Ver
-                        </button>
-                <button class="btn btn-success btn-sm" onclick="BibliotecaSPA.procesarDevolucion(${p.id})">
-                    ↩️ Devolver
-                        </button>
-                <button class="btn btn-warning btn-sm" onclick="BibliotecaSPA.renovarPrestamo(${p.id})">
-                    🔄 Renovar
-                        </button>
+                <button class="btn btn-info btn-sm" onclick="BibliotecaSPA.editarPrestamo(${p.id})">
+                    ✏️ Editar
+                </button>
               `}
         ]);
     },
@@ -1313,13 +1379,26 @@ const BibliotecaSPA = {
             ],
             async (formData) => {
                 try {
+                    // Primero verificar el estado del lector
+                    const lectorResponse = await bibliotecaApi.get(`/lector/${formData.idLector}`);
+                    
+                    if (lectorResponse && lectorResponse.lector) {
+                        if (lectorResponse.lector.estado === 'SUSPENDIDO') {
+                            this.showAlert('⛔ No se puede crear el préstamo. El lector está suspendido.', 'danger');
+                            return false; // No cerrar modal para que vean el mensaje
+                        }
+                    }
+                    
+                    // Si el lector está activo, proceder a crear el préstamo
                     const response = await bibliotecaApi.prestamos.crear(formData);
                     this.showAlert('Préstamo registrado exitosamente', 'success');
                     this.loadPrestamosGestionData();
                     this.loadPrestamosGestionStats();
                     return true; // Cerrar modal
                 } catch (error) {
-                    this.showAlert('Error al registrar préstamo: ' + error.message, 'danger');
+                    // Mostrar el mensaje de error del backend (que incluye la validación de lector suspendido)
+                    const errorMessage = error.message || 'Error desconocido';
+                    this.showAlert('Error al registrar préstamo: ' + errorMessage, 'danger');
                     return false; // No cerrar modal
                 }
             },
@@ -1397,6 +1476,212 @@ const BibliotecaSPA = {
                 icon: '↩️'
             }
         );
+    },
+    
+    // ✨ NUEVO: Editar préstamo completo
+    editarPrestamo: async function(idPrestamo) {
+        try {
+            console.log('🔍 Iniciando edición de préstamo:', idPrestamo);
+            
+            // Primero obtener los datos actuales del préstamo
+            this.showLoading('Cargando datos del préstamo...');
+            const data = await bibliotecaApi.prestamos.info(idPrestamo);
+            const prestamo = data.prestamo || data;
+            this.hideLoading();
+            
+            console.log('📋 Datos del préstamo:', prestamo);
+            
+            // Obtener listas de lectores, bibliotecarios y materiales
+            const lectoresData = await bibliotecaApi.lectores.lista();
+            const bibliotecarioData = await bibliotecaApi.bibliotecarios.lista();
+            const librosData = await bibliotecaApi.donaciones.libros();
+            const articulosData = await bibliotecaApi.donaciones.articulos();
+            
+            const lectores = lectoresData.lectores || [];
+            const bibliotecarios = bibliotecarioData.bibliotecarios || [];
+            const libros = librosData.libros || [];
+            const articulos = articulosData.articulos || [];
+            
+            console.log('📊 Datos cargados:', {
+                lectores: lectores.length,
+                bibliotecarios: bibliotecarios.length,
+                libros: libros.length,
+                articulos: articulos.length
+            });
+            
+            // Combinar materiales
+            const materiales = [
+                ...libros.map(l => ({ id: l.id, nombre: l.titulo, tipo: 'LIBRO' })),
+                ...articulos.map(a => ({ id: a.id, nombre: a.descripcion, tipo: 'ARTICULO' }))
+            ];
+            
+            // Crear opciones para los selects
+            const lectoresOptions = lectores.map(l => 
+                `<option value="${l.id}" ${l.id == prestamo.lectorId ? 'selected' : ''}>${l.nombre} (ID: ${l.id})</option>`
+            ).join('');
+            
+            const bibliotecarioOptions = bibliotecarios.map(b => 
+                `<option value="${b.id}" ${b.id == prestamo.bibliotecarioId ? 'selected' : ''}>${b.nombre} (ID: ${b.id})</option>`
+            ).join('');
+            
+            const materialesOptions = materiales.map(m => 
+                `<option value="${m.id}" ${m.id == prestamo.materialId ? 'selected' : ''}}>[${m.tipo}] ${m.nombre} (ID: ${m.id})</option>`
+            ).join('');
+            
+            // Convertir fecha de DD/MM/YYYY a YYYY-MM-DD para el input date
+            let fechaDevolucionInput = '';
+            if (prestamo.fechaDevolucion) {
+                const partes = prestamo.fechaDevolucion.split('/');
+                if (partes.length === 3) {
+                    fechaDevolucionInput = `${partes[2]}-${partes[1]}-${partes[0]}`;
+                }
+            }
+            
+            console.log('📅 Fecha convertida:', fechaDevolucionInput);
+            console.log('🎨 Mostrando modal de edición...');
+            
+            ModalManager.show({
+                title: '✏️ Editar Préstamo #' + idPrestamo,
+                body: `
+                    <form id="editarPrestamoForm">
+                        <input type="hidden" id="editPrestamoId" value="${idPrestamo}">
+                        
+                        <div class="form-group">
+                            <label for="editLectorId">Lector: *</label>
+                            <select id="editLectorId" class="form-control" required>
+                                <option value="">Seleccione un lector...</option>
+                                ${lectoresOptions}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editBibliotecarioId">Bibliotecario: *</label>
+                            <select id="editBibliotecarioId" class="form-control" required>
+                                <option value="">Seleccione un bibliotecario...</option>
+                                ${bibliotecarioOptions}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editMaterialId">Material: *</label>
+                            <select id="editMaterialId" class="form-control" required>
+                                <option value="">Seleccione un material...</option>
+                                ${materialesOptions}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editFechaDevolucion">Fecha de Devolución: *</label>
+                            <input type="date" id="editFechaDevolucion" class="form-control" 
+                                   value="${fechaDevolucionInput}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editEstado">Estado: *</label>
+                            <select id="editEstado" class="form-control" required>
+                                <option value="PENDIENTE" ${prestamo.estado === 'PENDIENTE' ? 'selected' : ''}>Pendiente</option>
+                                <option value="EN_CURSO" ${prestamo.estado === 'EN_CURSO' ? 'selected' : ''}>En Curso</option>
+                                <option value="DEVUELTO" ${prestamo.estado === 'DEVUELTO' ? 'selected' : ''}>Devuelto</option>
+                            </select>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <strong>ℹ️ Información:</strong>
+                            <p>Puede modificar cualquier campo del préstamo. Los cambios se aplicarán inmediatamente.</p>
+                        </div>
+                    </form>
+                `,
+                footer: `
+                    <button class="btn btn-secondary" onclick="ModalManager.close('modal-edit-prestamo-${idPrestamo}')">
+                        Cancelar
+                    </button>
+                    <button class="btn btn-success" onclick="BibliotecaSPA.guardarEdicionPrestamo(${idPrestamo})">
+                        💾 Guardar Cambios
+                    </button>
+                `,
+                id: 'modal-edit-prestamo-' + idPrestamo,
+                size: 'lg'
+            });
+            
+            console.log('✅ Modal mostrado exitosamente');
+            
+        } catch (error) {
+            this.hideLoading();
+            console.error('❌ Error al cargar datos para editar préstamo:', error);
+            console.error('❌ Stack trace:', error.stack);
+            this.showAlert('Error al cargar datos del préstamo: ' + error.message, 'danger');
+        }
+    },
+    
+    // ✨ NUEVO: Guardar edición de préstamo
+    guardarEdicionPrestamo: async function(idPrestamo) {
+        try {
+            // Obtener valores del formulario
+            const lectorId = $('#editLectorId').val();
+            const bibliotecarioId = $('#editBibliotecarioId').val();
+            const materialId = $('#editMaterialId').val();
+            const fechaDevolucion = $('#editFechaDevolucion').val();
+            const estado = $('#editEstado').val();
+            
+            // Validar campos requeridos
+            if (!lectorId || !bibliotecarioId || !materialId || !fechaDevolucion || !estado) {
+                this.showAlert('⚠️ Todos los campos son obligatorios', 'warning');
+                return;
+            }
+            
+            this.showLoading('Guardando cambios...');
+            
+            // Convertir fecha de YYYY-MM-DD a DD/MM/YYYY
+            const fechaFormatted = this.convertDateToServerFormat(fechaDevolucion);
+            
+            // Preparar datos para el endpoint
+            const formData = {
+                prestamoId: idPrestamo.toString(),
+                lectorId: lectorId.toString(),
+                bibliotecarioId: bibliotecarioId.toString(),
+                materialId: materialId.toString(),
+                fechaDevolucion: fechaFormatted,
+                estado: estado
+            };
+            
+            console.log('📝 Actualizando préstamo:', formData);
+            
+            // Convertir a formato URL-encoded
+            const params = new URLSearchParams();
+            params.append('prestamoId', formData.prestamoId);
+            params.append('lectorId', formData.lectorId);
+            params.append('bibliotecarioId', formData.bibliotecarioId);
+            params.append('materialId', formData.materialId);
+            params.append('fechaDevolucion', formData.fechaDevolucion);
+            params.append('estado', formData.estado);
+            
+            // Enviar petición con formato correcto
+            const response = await fetch('/prestamo/actualizar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params.toString()
+            }).then(res => res.json());
+            
+            this.hideLoading();
+            
+            if (response && response.success) {
+                this.showAlert('✅ Préstamo actualizado exitosamente', 'success');
+                ModalManager.close('modal-edit-prestamo-' + idPrestamo);
+                
+                // Recargar la tabla de préstamos
+                this.loadPrestamosGestionData();
+            } else {
+                const mensaje = response.message || 'Error desconocido al actualizar préstamo';
+                this.showAlert('Error al actualizar préstamo: ' + mensaje, 'danger');
+            }
+            
+        } catch (error) {
+            this.hideLoading();
+            console.error('❌ Error al guardar edición:', error);
+            this.showAlert('Error al guardar cambios: ' + error.message, 'danger');
+        }
     },
     
     // ✨ NUEVO: Renovar préstamo (Fase 2)
@@ -1508,6 +1793,45 @@ const BibliotecaSPA = {
                     </div>
                 </div>
 
+                <!-- ✨ NUEVO: Filtro por fechas -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h4 style="margin: 0;">📅 Filtrar por Rango de Fechas</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-4">
+                                <div class="form-group">
+                                    <label for="fechaDonacionDesde">Fecha Desde:</label>
+                                    <input type="date" id="fechaDonacionDesde" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="form-group">
+                                    <label for="fechaDonacionHasta">Fecha Hasta:</label>
+                                    <input type="date" id="fechaDonacionHasta" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <div>
+                                        <button class="btn btn-primary" onclick="BibliotecaSPA.filtrarDonacionesPorFecha()" style="margin-right: 10px;">
+                                            🔍 Filtrar
+                                        </button>
+                                        <button class="btn btn-secondary" onclick="BibliotecaSPA.limpiarFiltroDonaciones()">
+                                            🔄 Limpiar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="resultadoFiltroDonaciones" class="alert alert-info" style="display: none; margin-top: 10px;">
+                            <span id="mensajeFiltroDonaciones"></span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Tabs para Libros y Artículos -->
                 <div class="card">
                     <div class="card-header">
@@ -1535,13 +1859,15 @@ const BibliotecaSPA = {
                                                 <th>ID</th>
                                                 <th>Título</th>
                                                 <th>Páginas</th>
+                                                <th>Donante</th>
+                                                <th>Fecha de Ingreso</th>
                                                 <th>Estado</th>
                                                 <th>Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td colspan="5" class="text-center">
+                                                <td colspan="7" class="text-center">
                                                     <div class="spinner"></div>
                                                     Cargando libros donados...
                     </td>
@@ -1561,13 +1887,15 @@ const BibliotecaSPA = {
                                                 <th>Descripción</th>
                                                 <th>Peso</th>
                                                 <th>Dimensiones</th>
+                                                <th>Donante</th>
+                                                <th>Fecha de Ingreso</th>
                                                 <th>Estado</th>
                                                 <th>Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td colspan="6" class="text-center">
+                                                <td colspan="8" class="text-center">
                                                     <div class="spinner"></div>
                                                     Cargando artículos donados...
                                                 </td>
@@ -1677,6 +2005,10 @@ const BibliotecaSPA = {
               render: (libro) => libro.titulo || 'N/A' },
             { field: 'paginas', header: 'Páginas', width: '100px',
               render: (libro) => libro.paginas || 'N/A' },
+            { field: 'donante', header: 'Donante', width: '150px',
+              render: (libro) => libro.donante || 'Anónimo' },
+            { field: 'fechaIngreso', header: 'Fecha de Ingreso', width: '130px',
+              render: (libro) => BibliotecaFormatter.formatDate(libro.fechaIngreso) },
             { field: 'estado', header: 'Estado', width: '120px',
               render: () => BibliotecaFormatter.getEstadoBadge('DISPONIBLE') },
             { field: 'acciones', header: 'Acciones', width: '100px',
@@ -1702,6 +2034,10 @@ const BibliotecaSPA = {
               render: (art) => art.peso ? `${art.peso} kg` : 'N/A' },
             { field: 'dimensiones', header: 'Dimensiones', width: '150px',
               render: (art) => art.dimensiones || 'N/A' },
+            { field: 'donante', header: 'Donante', width: '150px',
+              render: (art) => art.donante || 'Anónimo' },
+            { field: 'fechaIngreso', header: 'Fecha de Ingreso', width: '130px',
+              render: (art) => BibliotecaFormatter.formatDate(art.fechaIngreso) },
             { field: 'estado', header: 'Estado', width: '120px',
               render: () => BibliotecaFormatter.getEstadoBadge('DISPONIBLE') },
             { field: 'acciones', header: 'Acciones', width: '100px',
@@ -1856,6 +2192,79 @@ const BibliotecaSPA = {
         this.showAlert('Actualizando listado...', 'info');
         this.loadDonacionesData();
         this.loadDonacionesStats();
+    },
+    
+    // ✨ NUEVO: Filtrar donaciones por rango de fechas
+    filtrarDonacionesPorFecha: async function() {
+        const fechaDesde = $('#fechaDonacionDesde').val();
+        const fechaHasta = $('#fechaDonacionHasta').val();
+        
+        // Validar que ambas fechas estén seleccionadas
+        if (!fechaDesde || !fechaHasta) {
+            this.showAlert('⚠️ Por favor seleccione ambas fechas (desde y hasta)', 'warning');
+            return;
+        }
+        
+        // Validar que la fecha de inicio sea anterior o igual a la fecha de fin
+        if (new Date(fechaDesde) > new Date(fechaHasta)) {
+            this.showAlert('⚠️ La fecha de inicio debe ser anterior o igual a la fecha de fin', 'warning');
+            return;
+        }
+        
+        try {
+            this.showLoading('Filtrando donaciones por fechas...');
+            
+            // Convertir fechas de formato YYYY-MM-DD a DD/MM/YYYY para el backend
+            const fechaDesdeFormatted = this.convertDateToServerFormat(fechaDesde);
+            const fechaHastaFormatted = this.convertDateToServerFormat(fechaHasta);
+            
+            console.log('📅 Filtrando donaciones: desde=' + fechaDesdeFormatted + ', hasta=' + fechaHastaFormatted);
+            
+            // Llamar al endpoint
+            const response = await bibliotecaApi.get(`/donacion/por-fechas?desde=${encodeURIComponent(fechaDesdeFormatted)}&hasta=${encodeURIComponent(fechaHastaFormatted)}`);
+            
+            this.hideLoading();
+            
+            if (response && response.success) {
+                const donaciones = response.donaciones || [];
+                console.log('✅ Donaciones filtradas:', donaciones.length);
+                
+                // Separar libros y artículos
+                const libros = donaciones.filter(d => d.tipo === 'LIBRO');
+                const articulos = donaciones.filter(d => d.tipo === 'ARTICULO');
+                
+                // Renderizar las tablas con los datos filtrados
+                this.renderLibrosDonadosTable(libros);
+                this.renderArticulosDonadosTable(articulos);
+                
+                // Mostrar mensaje con resultados
+                const mensaje = `📊 Se encontraron ${donaciones.length} donaciones en el rango seleccionado (${libros.length} libros, ${articulos.length} artículos)`;
+                $('#mensajeFiltroDonaciones').text(mensaje);
+                $('#resultadoFiltroDonaciones').show();
+                
+                this.showAlert(`Filtro aplicado: ${donaciones.length} donaciones encontradas`, 'success');
+            } else {
+                this.showAlert('Error al filtrar donaciones: ' + (response.message || 'Error desconocido'), 'danger');
+            }
+        } catch (error) {
+            this.hideLoading();
+            console.error('❌ Error al filtrar donaciones:', error);
+            this.showAlert('Error al filtrar donaciones: ' + error.message, 'danger');
+        }
+    },
+    
+    // ✨ NUEVO: Limpiar filtro de donaciones
+    limpiarFiltroDonaciones: function() {
+        // Limpiar campos de fecha
+        $('#fechaDonacionDesde').val('');
+        $('#fechaDonacionHasta').val('');
+        
+        // Ocultar mensaje de resultados
+        $('#resultadoFiltroDonaciones').hide();
+        
+        // Recargar todas las donaciones
+        this.showAlert('Limpiando filtro...', 'info');
+        this.loadDonacionesData();
     },
     
     // ✨ NUEVO: Generar reporte de donaciones (Fase 2)
@@ -2129,6 +2538,20 @@ const BibliotecaSPA = {
                     <div class="col-6">
                         <div class="card">
                             <div class="card-header">
+                                <h4 style="margin: 0;">🗺️ Reporte de Préstamos por Zona</h4>
+                            </div>
+                            <div class="card-body">
+                                <p>Analizar el uso del servicio en diferentes zonas/barrios</p>
+                                <button class="btn btn-success" onclick="BibliotecaSPA.mostrarReportePorZona()">
+                                    📊 Ver Reporte por Zona
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-6">
+                        <div class="card">
+                            <div class="card-header">
                                 <h4 style="margin: 0;">🎁 Reporte de Donaciones</h4>
                             </div>
                             <div class="card-body">
@@ -2139,7 +2562,9 @@ const BibliotecaSPA = {
                             </div>
                         </div>
                     </div>
-                    
+                </div>
+                
+                <div class="row mt-3">
                     <div class="col-6">
                         <div class="card">
                             <div class="card-header">
@@ -2331,6 +2756,206 @@ const BibliotecaSPA = {
         document.body.removeChild(link);
     },
     
+    // ==================== REPORTE POR ZONA ====================
+    
+    // Mostrar reporte de préstamos por zona
+    mostrarReportePorZona: async function() {
+        console.log('📊 Mostrando reporte de préstamos por zona...');
+        
+        try {
+            // Mostrar loading
+            this.showLoading('Cargando reporte por zona...');
+            
+            // Obtener reporte del backend
+            const data = await bibliotecaApi.get('/prestamo/reporte-por-zona');
+            
+            this.hideLoading();
+            
+            if (!data.success) {
+                this.showAlert('Error al cargar reporte: ' + (data.message || 'Error desconocido'), 'danger');
+                return;
+            }
+            
+            const zonas = data.zonas || [];
+            console.log('✅ Reporte por zona cargado:', zonas.length, 'zonas');
+            
+            // Mostrar modal con el reporte
+            this.mostrarModalReportePorZona(zonas);
+            
+        } catch (error) {
+            this.hideLoading();
+            console.error('❌ Error al cargar reporte por zona:', error);
+            this.showAlert('Error al cargar reporte: ' + error.message, 'danger');
+        }
+    },
+    
+    // Mostrar modal con el reporte por zona
+    mostrarModalReportePorZona: function(zonas) {
+        // Calcular totales
+        let totalPrestamos = 0;
+        let totalPendientes = 0;
+        let totalEnCurso = 0;
+        let totalDevueltos = 0;
+        
+        zonas.forEach(z => {
+            totalPrestamos += z.total;
+            totalPendientes += z.pendientes;
+            totalEnCurso += z.enCurso;
+            totalDevueltos += z.devueltos;
+        });
+        
+        const modalBody = `
+            <div class="reporte-zona-header" style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white;">
+                <h5 style="margin: 0 0 10px 0;">📊 Reporte de Préstamos por Zona</h5>
+                <p style="margin: 0; font-size: 14px; opacity: 0.9;">Análisis del uso del servicio en diferentes zonas/barrios</p>
+                <div class="stats-row" style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
+                    <div style="flex: 1; min-width: 100px; text-align: center;">
+                        <div style="font-size: 32px; font-weight: bold;">${totalPrestamos}</div>
+                        <div style="font-size: 12px; opacity: 0.9;">Total Préstamos</div>
+                    </div>
+                    <div style="flex: 1; min-width: 100px; text-align: center;">
+                        <div style="font-size: 32px; font-weight: bold;">${totalPendientes}</div>
+                        <div style="font-size: 12px; opacity: 0.9;">Pendientes</div>
+                    </div>
+                    <div style="flex: 1; min-width: 100px; text-align: center;">
+                        <div style="font-size: 32px; font-weight: bold;">${totalEnCurso}</div>
+                        <div style="font-size: 12px; opacity: 0.9;">En Curso</div>
+                    </div>
+                    <div style="flex: 1; min-width: 100px; text-align: center;">
+                        <div style="font-size: 32px; font-weight: bold;">${totalDevueltos}</div>
+                        <div style="font-size: 12px; opacity: 0.9;">Devueltos</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tabla de reporte por zona -->
+            <div class="table-responsive">
+                <table class="table table-hover" style="margin-bottom: 0;">
+                    <thead style="background: #f8f9fa;">
+                        <tr>
+                            <th>Zona</th>
+                            <th class="text-center">Total</th>
+                            <th class="text-center">Pendientes</th>
+                            <th class="text-center">En Curso</th>
+                            <th class="text-center">Devueltos</th>
+                            <th class="text-center">% del Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyReportePorZona">
+                        <!-- Se llenará con JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Botón de exportación -->
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                <button class="btn btn-success" onclick="BibliotecaSPA.exportarReportePorZona()">
+                    📥 Exportar a CSV
+                </button>
+            </div>
+        `;
+        
+        ModalManager.show({
+            title: `📊 Reporte de Préstamos por Zona`,
+            body: modalBody,
+            footer: `<button class="btn btn-secondary" onclick="ModalManager.close('modal-reporte-zona')">Cerrar</button>`,
+            id: 'modal-reporte-zona',
+            size: 'xl'
+        });
+        
+        // Guardar datos para exportación
+        this.reporteZonaActual = { zonas, totalPrestamos };
+        
+        // Renderizar tabla
+        this.renderTablaReportePorZona(zonas, totalPrestamos);
+    },
+    
+    // Renderizar tabla de reporte por zona
+    renderTablaReportePorZona: function(zonas, totalPrestamos) {
+        const tbody = $('#bodyReportePorZona');
+        
+        if (!zonas || zonas.length === 0) {
+            tbody.html(`
+                <tr>
+                    <td colspan="6" class="text-center" style="padding: 20px; color: #999;">
+                        No hay datos disponibles para el reporte
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+        
+        // Ordenar por total descendente
+        zonas.sort((a, b) => b.total - a.total);
+        
+        let html = '';
+        zonas.forEach((zona, index) => {
+            const porcentaje = totalPrestamos > 0 ? ((zona.total / totalPrestamos) * 100).toFixed(1) : 0;
+            
+            // Determinar color de la barra de progreso según el porcentaje
+            let colorBarra = '#28a745'; // Verde
+            if (porcentaje < 15) colorBarra = '#dc3545'; // Rojo
+            else if (porcentaje < 25) colorBarra = '#ffc107'; // Amarillo
+            
+            // Badge de posición
+            let badgePosicion = '';
+            if (index === 0) badgePosicion = '<span style="background: gold; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 5px;">🥇 #1</span>';
+            else if (index === 1) badgePosicion = '<span style="background: silver; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 5px;">🥈 #2</span>';
+            else if (index === 2) badgePosicion = '<span style="background: #cd7f32; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 5px;">🥉 #3</span>';
+            
+            html += `
+                <tr>
+                    <td><strong>${zona.nombreZona}</strong>${badgePosicion}</td>
+                    <td class="text-center"><span class="badge badge-primary" style="font-size: 14px;">${zona.total}</span></td>
+                    <td class="text-center"><span class="badge badge-warning">${zona.pendientes}</span></td>
+                    <td class="text-center"><span class="badge badge-success">${zona.enCurso}</span></td>
+                    <td class="text-center"><span class="badge badge-info">${zona.devueltos}</span></td>
+                    <td class="text-center">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="flex: 1; background: #e9ecef; border-radius: 10px; height: 20px; overflow: hidden;">
+                                <div style="width: ${porcentaje}%; background: ${colorBarra}; height: 100%; transition: width 0.5s;"></div>
+                            </div>
+                            <strong>${porcentaje}%</strong>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.html(html);
+    },
+    
+    // Exportar reporte por zona a CSV
+    exportarReportePorZona: function() {
+        if (!this.reporteZonaActual) {
+            this.showAlert('No hay datos para exportar', 'warning');
+            return;
+        }
+        
+        const { zonas, totalPrestamos } = this.reporteZonaActual;
+        
+        // Crear CSV
+        let csv = 'Zona,Total Préstamos,Pendientes,En Curso,Devueltos,Porcentaje\n';
+        
+        zonas.sort((a, b) => b.total - a.total);
+        
+        zonas.forEach(zona => {
+            const porcentaje = totalPrestamos > 0 ? ((zona.total / totalPrestamos) * 100).toFixed(1) : 0;
+            csv += `"${zona.nombreZona}",${zona.total},${zona.pendientes},${zona.enCurso},${zona.devueltos},${porcentaje}%\n`;
+        });
+        
+        // Agregar totales
+        csv += '\nTOTALES,' + totalPrestamos + ',' + 
+               zonas.reduce((sum, z) => sum + z.pendientes, 0) + ',' +
+               zonas.reduce((sum, z) => sum + z.enCurso, 0) + ',' +
+               zonas.reduce((sum, z) => sum + z.devueltos, 0) + ',100%\n';
+        
+        // Descargar archivo
+        this.descargarCSV(csv, `reporte_prestamos_por_zona_${new Date().toISOString().split('T')[0]}.csv`);
+        
+        this.showAlert('Reporte exportado exitosamente', 'success');
+    },
+    
     // Aplicar filtros a la tabla de lectores
     aplicarFiltrosLectores: function() {
         console.log('🔍 Aplicando filtros a lectores...');
@@ -2435,8 +3060,13 @@ const BibliotecaSPA = {
               render: (l) => l.zona || 'N/A' },
             { field: 'estado', header: 'Estado', width: '120px',
               render: (l) => BibliotecaFormatter.getEstadoBadge(l.estado) },
-            { field: 'acciones', header: 'Acciones', width: '250px',
+            { field: 'acciones', header: 'Acciones', width: '350px',
               render: (l) => `
+                <button class="btn btn-info btn-sm btn-ver-prestamos" 
+                        data-lector-id="${l.id}"
+                        data-lector-nombre="${l.nombre || 'N/A'}">
+                    👁️ Ver Préstamos
+                </button>
                 <button class="btn btn-secondary btn-sm btn-cambiar-estado" 
                         data-lector-id="${l.id}" 
                         data-lector-estado="${l.estado}">
@@ -2601,6 +3231,7 @@ const BibliotecaSPA = {
         const formData = {
             userType: $('#regUserType').val(),
             nombre: $('#regNombre').val(),
+            apellido: $('#regApellido').val(),
             email: $('#regEmail').val(),
             password: $('#regPassword').val(),
             confirmPassword: $('#regConfirmPassword').val()
@@ -2612,6 +3243,21 @@ const BibliotecaSPA = {
         } else if (formData.userType === 'LECTOR') {
             formData.direccion = $('#regDireccion').val();
             formData.zona = $('#regZona').val();
+        }
+        
+        // DEBUG: Ver qué datos se están enviando
+        console.log('📋 Datos del formulario de registro:');
+        console.log('  - userType:', formData.userType);
+        console.log('  - nombre:', formData.nombre);
+        console.log('  - apellido:', formData.apellido);
+        console.log('  - email:', formData.email);
+        console.log('  - password:', formData.password ? '[PRESENTE]' : '[VACÍO]');
+        console.log('  - confirmPassword:', formData.confirmPassword ? '[PRESENTE]' : '[VACÍO]');
+        if (formData.userType === 'LECTOR') {
+            console.log('  - direccion:', formData.direccion);
+            console.log('  - zona:', formData.zona);
+        } else if (formData.userType === 'BIBLIOTECARIO') {
+            console.log('  - numeroEmpleado:', formData.numeroEmpleado);
         }
         
         if (!this.validateRegisterForm(formData)) {
@@ -2662,14 +3308,37 @@ const BibliotecaSPA = {
             return false;
         }
         
-        if (!data.nombre || !data.apellido) {
-            this.showAlert('Por favor complete nombre y apellido', 'danger');
+        if (!data.nombre || !data.nombre.trim()) {
+            this.showAlert('Por favor ingrese un nombre', 'danger');
+            return false;
+        }
+        
+        if (!data.apellido || !data.apellido.trim()) {
+            this.showAlert('Por favor ingrese un apellido', 'danger');
             return false;
         }
         
         if (!this.isValidEmail(data.email)) {
             this.showAlert('Por favor ingrese un email válido', 'danger');
             return false;
+        }
+        
+        // Validaciones específicas por tipo de usuario
+        if (data.userType === 'LECTOR') {
+            if (!data.direccion || !data.direccion.trim()) {
+                this.showAlert('Por favor ingrese una dirección', 'danger');
+                return false;
+            }
+            
+            if (!data.zona || data.zona === '') {
+                this.showAlert('Por favor seleccione una zona', 'danger');
+                return false;
+            }
+        } else if (data.userType === 'BIBLIOTECARIO') {
+            if (!data.numeroEmpleado || !data.numeroEmpleado.trim()) {
+                this.showAlert('Por favor ingrese un número de empleado', 'danger');
+                return false;
+            }
         }
         
         if (data.password !== data.confirmPassword) {
@@ -3129,6 +3798,418 @@ const BibliotecaSPA = {
         $('body').append(modalHtml);
     },
     
+    // Ver préstamos de un lector
+    verPrestamosLector: async function(lectorId, lectorNombre) {
+        console.log('👁️ Ver préstamos del lector:', lectorId, lectorNombre);
+        
+        try {
+            // Mostrar loading
+            this.showLoading(`Cargando préstamos de ${lectorNombre}...`);
+            
+            // Obtener préstamos del lector desde el backend
+            const data = await bibliotecaApi.get(`/prestamo/por-lector?lectorId=${lectorId}`);
+            
+            this.hideLoading();
+            
+            if (!data.success) {
+                this.showAlert('Error al cargar préstamos: ' + (data.message || 'Error desconocido'), 'danger');
+                return;
+            }
+            
+            const prestamos = data.prestamos || [];
+            console.log('✅ Préstamos del lector cargados:', prestamos.length);
+            
+            // Guardar préstamos para filtrado
+            this.prestamosLectorActual = prestamos;
+            
+            // Mostrar modal con los préstamos
+            this.mostrarModalPrestamosLector(lectorId, lectorNombre, prestamos);
+            
+        } catch (error) {
+            this.hideLoading();
+            console.error('❌ Error al cargar préstamos del lector:', error);
+            this.showAlert('Error al cargar préstamos: ' + error.message, 'danger');
+        }
+    },
+    
+    // Mostrar modal con préstamos del lector
+    mostrarModalPrestamosLector: function(lectorId, lectorNombre, prestamos) {
+        // Calcular estadísticas
+        const total = prestamos.length;
+        const pendientes = prestamos.filter(p => p.estado === 'PENDIENTE').length;
+        const enCurso = prestamos.filter(p => p.estado === 'EN_CURSO').length;
+        const devueltos = prestamos.filter(p => p.estado === 'DEVUELTO').length;
+        
+        const modalBody = `
+            <div class="lector-info" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <h5 style="margin: 0 0 10px 0; color: #333;">👤 ${lectorNombre}</h5>
+                <div class="stats-row" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 100px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #007bff;">${total}</div>
+                        <div style="font-size: 12px; color: #666;">Total</div>
+                    </div>
+                    <div style="flex: 1; min-width: 100px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #ffc107;">${pendientes}</div>
+                        <div style="font-size: 12px; color: #666;">Pendientes</div>
+                    </div>
+                    <div style="flex: 1; min-width: 100px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #28a745;">${enCurso}</div>
+                        <div style="font-size: 12px; color: #666;">En Curso</div>
+                    </div>
+                    <div style="flex: 1; min-width: 100px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #6c757d;">${devueltos}</div>
+                        <div style="font-size: 12px; color: #666;">Devueltos</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filtros -->
+            <div class="filtros-prestamos" style="margin-bottom: 15px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="filtroEstadoPrestamo" style="display: inline-block; margin-right: 10px; font-weight: 500;">Filtrar por estado:</label>
+                    <select id="filtroEstadoPrestamo" class="form-control" style="display: inline-block; width: auto; padding: 5px 10px;">
+                        <option value="">Todos</option>
+                        <option value="PENDIENTE">Pendientes</option>
+                        <option value="EN_CURSO">En Curso</option>
+                        <option value="DEVUELTO">Devueltos</option>
+                    </select>
+                    <button class="btn btn-secondary btn-sm" onclick="BibliotecaSPA.limpiarFiltroPrestamosLector()" style="margin-left: 10px;">
+                        🔄 Limpiar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Tabla de préstamos -->
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table" id="tablaPrestamosLector" style="margin-bottom: 0;">
+                    <thead style="position: sticky; top: 0; background: white; z-index: 10;">
+                        <tr>
+                            <th>ID</th>
+                            <th>Material</th>
+                            <th>Tipo</th>
+                            <th>Fecha Solicitud</th>
+                            <th>Fecha Devolución</th>
+                            <th>Estado</th>
+                            <th>Días Restantes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyPrestamosLector">
+                        <!-- Se llenará con JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        ModalManager.show({
+            title: `📚 Préstamos del Lector`,
+            body: modalBody,
+            footer: `<button class="btn btn-secondary" onclick="ModalManager.close('modal-prestamos-lector-${lectorId}')">Cerrar</button>`,
+            id: `modal-prestamos-lector-${lectorId}`,
+            size: 'xl'
+        });
+        
+        // Renderizar tabla de préstamos
+        this.renderTablaPrestamosLector(prestamos);
+        
+        // Agregar listener para filtro
+        setTimeout(() => {
+            $('#filtroEstadoPrestamo').on('change', () => {
+                this.aplicarFiltroPrestamosLector();
+            });
+        }, 100);
+    },
+    
+    // Renderizar tabla de préstamos del lector
+    renderTablaPrestamosLector: function(prestamos) {
+        const tbody = $('#bodyPrestamosLector');
+        
+        if (!prestamos || prestamos.length === 0) {
+            tbody.html(`
+                <tr>
+                    <td colspan="7" class="text-center" style="padding: 20px; color: #999;">
+                        No hay préstamos registrados para este lector
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+        
+        let html = '';
+        prestamos.forEach(prestamo => {
+            const estadoBadge = BibliotecaFormatter.getEstadoBadge(prestamo.estado);
+            const diasRestantes = prestamo.diasRestantes;
+            let diasHtml = '';
+            
+            if (prestamo.estado === 'EN_CURSO') {
+                if (diasRestantes > 0) {
+                    diasHtml = `<span style="color: #28a745; font-weight: bold;">${diasRestantes} días</span>`;
+                } else if (diasRestantes === 0) {
+                    diasHtml = `<span style="color: #ffc107; font-weight: bold;">Hoy</span>`;
+                } else {
+                    diasHtml = `<span style="color: #dc3545; font-weight: bold;">${Math.abs(diasRestantes)} días atrasado</span>`;
+                }
+            } else if (prestamo.estado === 'PENDIENTE') {
+                diasHtml = `<span style="color: #ffc107; font-weight: bold;">Pendiente</span>`;
+            } else if (prestamo.estado === 'DEVUELTO') {
+                diasHtml = `<span style="color: #6c757d;">-</span>`;
+            } else {
+                diasHtml = `<span style="color: #6c757d;">-</span>`;
+            }
+            
+            html += `
+                <tr>
+                    <td>${prestamo.id}</td>
+                    <td>${prestamo.material || 'N/A'}</td>
+                    <td><span class="badge badge-info">${prestamo.tipo}</span></td>
+                    <td>${prestamo.fechaSolicitud || 'N/A'}</td>
+                    <td>${prestamo.fechaDevolucion || 'N/A'}</td>
+                    <td>${estadoBadge}</td>
+                    <td>${diasHtml}</td>
+                </tr>
+            `;
+        });
+        
+        tbody.html(html);
+    },
+    
+    // Aplicar filtro de estado en préstamos del lector
+    aplicarFiltroPrestamosLector: function() {
+        const estadoFiltro = $('#filtroEstadoPrestamo').val();
+        console.log('🔍 Filtrando préstamos por estado:', estadoFiltro);
+        
+        const todosLosPrestamos = this.prestamosLectorActual || [];
+        
+        let prestamosFiltrados = todosLosPrestamos;
+        if (estadoFiltro) {
+            prestamosFiltrados = todosLosPrestamos.filter(p => p.estado === estadoFiltro);
+        }
+        
+        console.log(`✅ Préstamos filtrados: ${prestamosFiltrados.length} de ${todosLosPrestamos.length}`);
+        this.renderTablaPrestamosLector(prestamosFiltrados);
+    },
+    
+    // Limpiar filtro de préstamos del lector
+    limpiarFiltroPrestamosLector: function() {
+        $('#filtroEstadoPrestamo').val('');
+        const todosLosPrestamos = this.prestamosLectorActual || [];
+        this.renderTablaPrestamosLector(todosLosPrestamos);
+        console.log('🔄 Filtro de préstamos limpiado');
+    },
+    
+    // ==================== HISTORIAL DE BIBLIOTECARIO ====================
+    
+    // Ver préstamos gestionados por el bibliotecario actual
+    verMisPrestamosGestionados: async function() {
+        console.log('👨‍💼 Cargando historial de préstamos gestionados...');
+        
+        try {
+            // Obtener ID del bibliotecario de la sesión
+            const bibliotecarioId = this.config.userSession?.userId;
+            const bibliotecarioNombre = this.config.userSession?.userName || 'Bibliotecario';
+            
+            if (!bibliotecarioId) {
+                this.showAlert('No se pudo obtener información del bibliotecario', 'danger');
+                return;
+            }
+            
+            console.log('📋 Bibliotecario ID:', bibliotecarioId);
+            
+            // Mostrar loading
+            this.showLoading('Cargando historial de préstamos...');
+            
+            // Obtener préstamos del bibliotecario desde el backend
+            const data = await bibliotecaApi.get(`/prestamo/por-bibliotecario?bibliotecarioId=${bibliotecarioId}`);
+            
+            this.hideLoading();
+            
+            if (!data.success) {
+                this.showAlert('Error al cargar historial: ' + (data.message || 'Error desconocido'), 'danger');
+                return;
+            }
+            
+            const prestamos = data.prestamos || [];
+            console.log('✅ Préstamos del bibliotecario cargados:', prestamos.length);
+            
+            // Guardar préstamos para filtrado
+            this.prestamosBibliotecarioActual = prestamos;
+            
+            // Mostrar modal con los préstamos
+            this.mostrarModalPrestamosBibliotecario(bibliotecarioId, bibliotecarioNombre, prestamos);
+            
+        } catch (error) {
+            this.hideLoading();
+            console.error('❌ Error al cargar historial de préstamos:', error);
+            this.showAlert('Error al cargar historial: ' + error.message, 'danger');
+        }
+    },
+    
+    // Mostrar modal con préstamos del bibliotecario
+    mostrarModalPrestamosBibliotecario: function(bibliotecarioId, bibliotecarioNombre, prestamos) {
+        // Calcular estadísticas
+        const total = prestamos.length;
+        const pendientes = prestamos.filter(p => p.estado === 'PENDIENTE').length;
+        const enCurso = prestamos.filter(p => p.estado === 'EN_CURSO').length;
+        const devueltos = prestamos.filter(p => p.estado === 'DEVUELTO').length;
+        
+        const modalBody = `
+            <div class="bibliotecario-info" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <h5 style="margin: 0 0 10px 0; color: #333;">👨‍💼 ${bibliotecarioNombre}</h5>
+                <p style="margin: 0; color: #666; font-size: 14px;">Historial completo de préstamos gestionados</p>
+                <div class="stats-row" style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
+                    <div style="flex: 1; min-width: 100px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #007bff;">${total}</div>
+                        <div style="font-size: 12px; color: #666;">Total</div>
+                    </div>
+                    <div style="flex: 1; min-width: 100px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #ffc107;">${pendientes}</div>
+                        <div style="font-size: 12px; color: #666;">Pendientes</div>
+                    </div>
+                    <div style="flex: 1; min-width: 100px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #28a745;">${enCurso}</div>
+                        <div style="font-size: 12px; color: #666;">En Curso</div>
+                    </div>
+                    <div style="flex: 1; min-width: 100px;">
+                        <div style="font-size: 24px; font-weight: bold; color: #6c757d;">${devueltos}</div>
+                        <div style="font-size: 12px; color: #666;">Devueltos</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filtros -->
+            <div class="filtros-prestamos" style="margin-bottom: 15px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="filtroEstadoPrestamoBibliotecario" style="display: inline-block; margin-right: 10px; font-weight: 500;">Filtrar por estado:</label>
+                    <select id="filtroEstadoPrestamoBibliotecario" class="form-control" style="display: inline-block; width: auto; padding: 5px 10px;">
+                        <option value="">Todos</option>
+                        <option value="PENDIENTE">Pendientes</option>
+                        <option value="EN_CURSO">En Curso</option>
+                        <option value="DEVUELTO">Devueltos</option>
+                    </select>
+                    <button class="btn btn-secondary btn-sm" onclick="BibliotecaSPA.limpiarFiltroPrestamosBibliotecario()" style="margin-left: 10px;">
+                        🔄 Limpiar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Tabla de préstamos -->
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table" id="tablaPrestamosBibliotecario" style="margin-bottom: 0;">
+                    <thead style="position: sticky; top: 0; background: white; z-index: 10;">
+                        <tr>
+                            <th>ID</th>
+                            <th>Lector</th>
+                            <th>Material</th>
+                            <th>Tipo</th>
+                            <th>Fecha Solicitud</th>
+                            <th>Fecha Devolución</th>
+                            <th>Estado</th>
+                            <th>Días Restantes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyPrestamosBibliotecario">
+                        <!-- Se llenará con JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        ModalManager.show({
+            title: `📋 Mi Historial de Préstamos`,
+            body: modalBody,
+            footer: `<button class="btn btn-secondary" onclick="ModalManager.close('modal-prestamos-bibliotecario-${bibliotecarioId}')">Cerrar</button>`,
+            id: `modal-prestamos-bibliotecario-${bibliotecarioId}`,
+            size: 'xl'
+        });
+        
+        // Renderizar tabla de préstamos
+        this.renderTablaPrestamosBibliotecario(prestamos);
+        
+        // Agregar listener para filtro
+        setTimeout(() => {
+            $('#filtroEstadoPrestamoBibliotecario').on('change', () => {
+                this.aplicarFiltroPrestamosBibliotecario();
+            });
+        }, 100);
+    },
+    
+    // Renderizar tabla de préstamos del bibliotecario
+    renderTablaPrestamosBibliotecario: function(prestamos) {
+        const tbody = $('#bodyPrestamosBibliotecario');
+        
+        if (!prestamos || prestamos.length === 0) {
+            tbody.html(`
+                <tr>
+                    <td colspan="8" class="text-center" style="padding: 20px; color: #999;">
+                        No hay préstamos gestionados por este bibliotecario
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+        
+        let html = '';
+        prestamos.forEach(prestamo => {
+            const estadoBadge = BibliotecaFormatter.getEstadoBadge(prestamo.estado);
+            const diasRestantes = prestamo.diasRestantes;
+            let diasHtml = '';
+            
+            if (prestamo.estado === 'EN_CURSO') {
+                if (diasRestantes > 0) {
+                    diasHtml = `<span style="color: #28a745; font-weight: bold;">${diasRestantes} días</span>`;
+                } else if (diasRestantes === 0) {
+                    diasHtml = `<span style="color: #ffc107; font-weight: bold;">Hoy</span>`;
+                } else {
+                    diasHtml = `<span style="color: #dc3545; font-weight: bold;">${Math.abs(diasRestantes)} días atrasado</span>`;
+                }
+            } else if (prestamo.estado === 'PENDIENTE') {
+                diasHtml = `<span style="color: #ffc107; font-weight: bold;">Pendiente</span>`;
+            } else if (prestamo.estado === 'DEVUELTO') {
+                diasHtml = `<span style="color: #6c757d;">-</span>`;
+            } else {
+                diasHtml = `<span style="color: #6c757d;">-</span>`;
+            }
+            
+            html += `
+                <tr>
+                    <td>${prestamo.id}</td>
+                    <td>${prestamo.lector || 'N/A'}</td>
+                    <td>${prestamo.material || 'N/A'}</td>
+                    <td><span class="badge badge-info">${prestamo.tipo}</span></td>
+                    <td>${prestamo.fechaSolicitud || 'N/A'}</td>
+                    <td>${prestamo.fechaDevolucion || 'N/A'}</td>
+                    <td>${estadoBadge}</td>
+                    <td>${diasHtml}</td>
+                </tr>
+            `;
+        });
+        
+        tbody.html(html);
+    },
+    
+    // Aplicar filtro de estado en préstamos del bibliotecario
+    aplicarFiltroPrestamosBibliotecario: function() {
+        const estadoFiltro = $('#filtroEstadoPrestamoBibliotecario').val();
+        console.log('🔍 Filtrando préstamos del bibliotecario por estado:', estadoFiltro);
+        
+        const todosLosPrestamos = this.prestamosBibliotecarioActual || [];
+        
+        let prestamosFiltrados = todosLosPrestamos;
+        if (estadoFiltro) {
+            prestamosFiltrados = todosLosPrestamos.filter(p => p.estado === estadoFiltro);
+        }
+        
+        console.log(`✅ Préstamos filtrados: ${prestamosFiltrados.length} de ${todosLosPrestamos.length}`);
+        this.renderTablaPrestamosBibliotecario(prestamosFiltrados);
+    },
+    
+    // Limpiar filtro de préstamos del bibliotecario
+    limpiarFiltroPrestamosBibliotecario: function() {
+        $('#filtroEstadoPrestamoBibliotecario').val('');
+        const todosLosPrestamos = this.prestamosBibliotecarioActual || [];
+        this.renderTablaPrestamosBibliotecario(todosLosPrestamos);
+        console.log('🔄 Filtro de préstamos del bibliotecario limpiado');
+    },
+    
     // Obtener datos de lectores desde el servidor
     getLectoresData: function() {
         console.log('🔍 Getting lectores data from cache');
@@ -3382,13 +4463,44 @@ const BibliotecaSPA = {
     },
     
     // Solicitar préstamo
-    solicitarPrestamo: function() {
-        this.showLoading('Cargando formulario de préstamo...');
+    solicitarPrestamo: async function() {
+        this.showLoading('Verificando estado del lector...');
         
-        setTimeout(() => {
+        try {
+            // Verificar el estado del lector antes de mostrar el formulario
+            const userSession = this.config.userSession;
+            if (!userSession || !userSession.userData || !userSession.userData.id) {
+                this.hideLoading();
+                this.showAlert('Error: No se pudo identificar al usuario. Por favor, vuelva a iniciar sesión.', 'danger');
+                return;
+            }
+            
+            // Obtener información del lector desde el backend
+            const response = await bibliotecaApi.get(`/lector/${userSession.userData.id}`);
+            
+            if (response && response.lector) {
+                const lector = response.lector;
+                
+                // Verificar si el lector está suspendido
+                if (lector.estado === 'SUSPENDIDO') {
+                    this.hideLoading();
+                    this.showAlert('⛔ No puede solicitar préstamos porque su cuenta está suspendida. Por favor, contacte con un bibliotecario.', 'danger');
+                    return;
+                }
+                
+                // Si está activo, mostrar el formulario
+                this.hideLoading();
+                this.renderSolicitarPrestamo();
+            } else {
+                this.hideLoading();
+                this.showAlert('Error al verificar el estado del lector.', 'danger');
+            }
+        } catch (error) {
+            console.error('Error al verificar estado del lector:', error);
             this.hideLoading();
+            // Mostrar formulario de todos modos, el backend hará la validación
             this.renderSolicitarPrestamo();
-        }, 1000);
+        }
     },
     
     // Renderizar formulario de solicitar préstamo

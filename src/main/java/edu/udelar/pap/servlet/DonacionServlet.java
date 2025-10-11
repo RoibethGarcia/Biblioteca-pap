@@ -45,6 +45,7 @@ public class DonacionServlet extends HttpServlet {
                 out.println("    \"GET /donacion/cantidad-articulos - Obtener cantidad de artículos especiales\",");
                 out.println("    \"GET /donacion/libros - Obtener lista de libros disponibles\",");
                 out.println("    \"GET /donacion/articulos - Obtener lista de artículos especiales disponibles\",");
+                out.println("    \"GET /donacion/por-fechas?desde=DD/MM/YYYY&hasta=DD/MM/YYYY - Obtener donaciones por rango de fechas\",");
                 out.println("    \"GET /donacion/estado - Estado del servicio\",");
                 out.println("    \"POST /donacion/crear-libro - Crear donación de libro\",");
                 out.println("    \"POST /donacion/crear-articulo - Crear donación de artículo especial\",");
@@ -76,6 +77,20 @@ public class DonacionServlet extends HttpServlet {
             } else if (pathInfo.equals("/estado")) {
                 // Estado del servicio
                 String result = factory.getDonacionPublisher().obtenerEstado();
+                out.println(result);
+                
+            } else if (pathInfo.equals("/por-fechas")) {
+                // ✨ NUEVO: Obtener donaciones por rango de fechas
+                String fechaDesde = request.getParameter("desde");
+                String fechaHasta = request.getParameter("hasta");
+                
+                if (fechaDesde == null || fechaHasta == null) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.println("{\"error\": \"Parámetros 'desde' y 'hasta' son requeridos (formato DD/MM/YYYY)\"}");
+                    return;
+                }
+                
+                String result = factory.getDonacionPublisher().obtenerDonacionesPorFechas(fechaDesde, fechaHasta);
                 out.println(result);
                 
             } else {

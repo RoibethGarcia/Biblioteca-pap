@@ -140,9 +140,11 @@ const BibliotecaFormatter = {
             'DISPONIBLE': 'badge-success',
             'PRESTADO': 'badge-warning',
             'PENDIENTE': 'badge-warning',
+            'EN_CURSO': 'badge-success',
             'VENCIDO': 'badge-danger',
             'DEVUELTO': 'badge-info',
             'INACTIVO': 'badge-secondary',
+            'SUSPENDIDO': 'badge-danger',
             'CANCELADO': 'badge-danger'
         };
         

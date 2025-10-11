@@ -45,9 +45,11 @@ public class PrestamoServlet extends HttpServlet {
                 out.println("    \"GET /prestamo/cantidad-por-estado - Obtener cantidad por estado\",");
                 out.println("    \"GET /prestamo/cantidad-por-lector - Obtener cantidad por lector\",");
                 out.println("    \"GET /prestamo/cantidad-vencidos - Obtener cantidad de préstamos vencidos\",");
+                out.println("    \"GET /prestamo/info?id=X - Obtener información detallada de un préstamo\",");
                 out.println("    \"GET /prestamo/estado - Estado del servicio\",");
                 out.println("    \"POST /prestamo/crear - Crear préstamo (lectorId, bibliotecarioId, materialId, fechaDevolucion, estado)\",");
                 out.println("    \"POST /prestamo/cambiar-estado - Cambiar estado del préstamo\",");
+                out.println("    \"POST /prestamo/actualizar - Actualizar cualquier información del préstamo (prestamoId, lectorId, bibliotecarioId, materialId, fechaDevolucion, estado)\",");
                 out.println("    \"POST /prestamo/aprobar - Aprobar préstamo\",");
                 out.println("    \"POST /prestamo/cancelar - Cancelar préstamo\",");
                 out.println("    \"POST /prestamo/verificar-vencido - Verificar si préstamo está vencido\"");
@@ -89,6 +91,34 @@ public class PrestamoServlet extends HttpServlet {
             } else if (pathInfo.equals("/estadisticas")) {
                 // Obtener estadísticas completas de préstamos
                 String result = factory.getPrestamoPublisher().obtenerEstadisticasPrestamos();
+                out.println(result);
+                
+            } else if (pathInfo.equals("/info")) {
+                // ✨ NUEVO: Obtener información detallada de un préstamo
+                String id = request.getParameter("id");
+                if (id == null) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.println("{\"error\": \"Parámetro 'id' es requerido\"}");
+                    return;
+                }
+                
+                String result = factory.getPrestamoPublisher().obtenerPrestamoDetallado(Long.parseLong(id));
+                out.println(result);
+                
+            } else if (pathInfo.equals("/por-bibliotecario")) {
+                // Obtener lista de préstamos de un bibliotecario
+                String bibliotecarioId = request.getParameter("bibliotecarioId");
+                if (bibliotecarioId == null) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.println("{\"error\": \"Parámetro 'bibliotecarioId' es requerido\"}");
+                    return;
+                }
+                String result = factory.getPrestamoPublisher().obtenerPrestamosPorBibliotecario(Long.parseLong(bibliotecarioId));
+                out.println(result);
+                
+            } else if (pathInfo.equals("/reporte-por-zona")) {
+                // Obtener reporte de préstamos agrupados por zona
+                String result = factory.getPrestamoPublisher().obtenerReportePorZona();
                 out.println(result);
                 
             } else if (pathInfo.equals("/estado")) {
@@ -150,6 +180,26 @@ public class PrestamoServlet extends HttpServlet {
                 }
                 
                 String result = factory.getPrestamoPublisher().cambiarEstadoPrestamo(Long.parseLong(idPrestamo), nuevoEstado);
+                out.println(result);
+                
+            } else if (pathInfo.equals("/actualizar")) {
+                // ✨ NUEVO: Actualizar préstamo completo
+                String prestamoId = request.getParameter("prestamoId");
+                String lectorId = request.getParameter("lectorId");
+                String bibliotecarioId = request.getParameter("bibliotecarioId");
+                String materialId = request.getParameter("materialId");
+                String fechaDevolucion = request.getParameter("fechaDevolucion");
+                String estado = request.getParameter("estado");
+                
+                if (prestamoId == null) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.println("{\"error\": \"prestamoId es requerido\"}");
+                    return;
+                }
+                
+                String result = factory.getPrestamoPublisher().actualizarPrestamo(
+                    prestamoId, lectorId, bibliotecarioId, materialId, fechaDevolucion, estado
+                );
                 out.println(result);
                 
             } else if (pathInfo.equals("/aprobar")) {

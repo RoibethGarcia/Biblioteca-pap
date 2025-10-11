@@ -107,6 +107,32 @@ public class LectorPublisher {
     }
     
     /**
+     * Obtiene un lector por su ID
+     * @param id ID del lector
+     * @return JSON con la información del lector
+     */
+    public String obtenerLectorPorId(Long id) {
+        try {
+            edu.udelar.pap.domain.Lector lector = lectorController.obtenerLectorPorId(id);
+            
+            if (lector != null) {
+                return String.format("{\"success\": true, \"lector\": {\"id\": %d, \"nombre\": \"%s\", \"email\": \"%s\", \"direccion\": \"%s\", \"zona\": \"%s\", \"estado\": \"%s\", \"fechaRegistro\": \"%s\"}}", 
+                    lector.getId(),
+                    lector.getNombre(),
+                    lector.getEmail(),
+                    lector.getDireccion(),
+                    lector.getZona(),
+                    lector.getEstado(),
+                    lector.getFechaRegistro());
+            } else {
+                return "{\"success\": false, \"message\": \"Lector no encontrado con ese ID\"}";
+            }
+        } catch (Exception e) {
+            return String.format("{\"success\": false, \"message\": \"Error al obtener lector: %s\"}", e.getMessage());
+        }
+    }
+    
+    /**
      * Obtiene un lector por su email
      * @param email Email del lector
      * @return JSON con la información del lector

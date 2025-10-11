@@ -60,7 +60,7 @@ class ModalManager {
             : '';
 
         const modalHtml = `
-            <div id="${id}" class="modal fade-in" role="dialog" aria-labelledby="${id}-title" aria-modal="true">
+            <div id="${id}" class="modal fade-in show" role="dialog" aria-labelledby="${id}-title" aria-modal="true">
                 <div class="modal-backdrop" ${closeOnBackdrop ? `onclick="ModalManager.close('${id}')"` : ''}></div>
                 <div class="modal-dialog ${sizeClass}" role="document">
                     <div class="modal-content">
@@ -88,8 +88,10 @@ class ModalManager {
         // Agregar event listeners para teclado
         this.setupKeyboardEvents(id);
 
-        // Hacer focus en el modal para accesibilidad
-        setTimeout(() => $(`#${id}`).focus(), 100);
+        // Hacer focus en el modal para accesibilidad y forzar visibilidad
+        setTimeout(() => {
+            $(`#${id}`).addClass('show').focus();
+        }, 100);
 
         return id;
     }

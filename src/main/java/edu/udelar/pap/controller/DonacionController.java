@@ -1044,4 +1044,16 @@ public class DonacionController {
             return null;
         }
     }
+    
+    // ==================== MÉTODOS PÚBLICOS PARA WEB ====================
+    
+    /**
+     * Obtiene donaciones por rango de fechas (para la aplicación web)
+     * @param fechaInicio Fecha de inicio del rango
+     * @param fechaFin Fecha de fin del rango
+     * @return Lista de donaciones en el rango
+     */
+    public List<Object> obtenerDonacionesPorRangoFechas(LocalDate fechaInicio, LocalDate fechaFin) {
+        return donacionService.obtenerDonacionesPorRangoFechas(fechaInicio, fechaFin);
+    }
 }

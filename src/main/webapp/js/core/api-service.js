@@ -310,6 +310,16 @@ class ApiService {
     };
 
     /**
+     * API de Bibliotecarios
+     */
+    bibliotecarios = {
+        lista: () => this.get('/bibliotecario/lista'),
+        info: (id) => this.get('/bibliotecario/info', { id }),
+        porEmail: (email) => this.get('/bibliotecario/por-email', { email }),
+        cantidad: () => this.get('/bibliotecario/cantidad')
+    };
+
+    /**
      * API de Libros
      */
     libros = {

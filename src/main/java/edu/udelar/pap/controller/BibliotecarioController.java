@@ -327,12 +327,36 @@ public class BibliotecarioController {
      */
     public Long crearBibliotecarioWeb(String nombre, String apellido, String email, String numeroEmpleado, String password) {
         try {
+            System.out.println("🔍 BibliotecarioController.crearBibliotecarioWeb - Parámetros recibidos:");
+            System.out.println("  - nombre: '" + nombre + "'");
+            System.out.println("  - apellido: '" + apellido + "'");
+            System.out.println("  - email: '" + email + "'");
+            System.out.println("  - numeroEmpleado: '" + numeroEmpleado + "'");
+            System.out.println("  - password: " + (password != null ? "[PRESENTE]" : "[NULL]"));
+            
             // Validaciones básicas
-            if (nombre == null || nombre.trim().isEmpty() ||
-                apellido == null || apellido.trim().isEmpty() ||
-                email == null || email.trim().isEmpty() ||
-                numeroEmpleado == null || numeroEmpleado.trim().isEmpty() ||
-                password == null || password.trim().isEmpty()) {
+            if (nombre == null || nombre.trim().isEmpty()) {
+                System.out.println("❌ Validación fallida: nombre vacío");
+                return -1L;
+            }
+            
+            if (apellido == null || apellido.trim().isEmpty()) {
+                System.out.println("❌ Validación fallida: apellido vacío");
+                return -1L;
+            }
+            
+            if (email == null || email.trim().isEmpty()) {
+                System.out.println("❌ Validación fallida: email vacío");
+                return -1L;
+            }
+            
+            if (numeroEmpleado == null || numeroEmpleado.trim().isEmpty()) {
+                System.out.println("❌ Validación fallida: numeroEmpleado vacío");
+                return -1L;
+            }
+            
+            if (password == null || password.trim().isEmpty()) {
+                System.out.println("❌ Validación fallida: password vacío");
                 return -1L;
             }
             
@@ -343,12 +367,18 @@ public class BibliotecarioController {
             bibliotecario.setNumeroEmpleado(numeroEmpleado.trim());
             bibliotecario.setPlainPassword(password); // Esto hashea automáticamente
             
+            System.out.println("💾 Guardando bibliotecario en la base de datos...");
+            
             // Guardar usando el servicio
             bibliotecarioService.guardarBibliotecario(bibliotecario);
+            
+            System.out.println("✅ Bibliotecario creado con ID: " + bibliotecario.getId());
             
             return bibliotecario.getId();
             
         } catch (Exception ex) {
+            System.err.println("❌ Excepción en crearBibliotecarioWeb: " + ex.getMessage());
+            ex.printStackTrace();
             return -1L;
         }
     }

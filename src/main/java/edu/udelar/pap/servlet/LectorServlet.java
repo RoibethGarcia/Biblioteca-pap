@@ -72,6 +72,18 @@ public class LectorServlet extends HttpServlet {
                 String result = factory.getLectorPublisher().obtenerEstado();
                 out.println(result);
                 
+            } else if (pathInfo.startsWith("/") && pathInfo.length() > 1) {
+                // ✨ NUEVO: Obtener lector por ID (GET /lector/{id})
+                try {
+                    String idStr = pathInfo.substring(1); // Remove leading "/"
+                    Long lectorId = Long.parseLong(idStr);
+                    String result = factory.getLectorPublisher().obtenerLectorPorId(lectorId);
+                    out.println(result);
+                } catch (NumberFormatException e) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.println("{\"error\": \"ID de lector inválido\"}");
+                }
+                
             } else {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                 out.println("{\"error\": \"Endpoint no encontrado\"}");

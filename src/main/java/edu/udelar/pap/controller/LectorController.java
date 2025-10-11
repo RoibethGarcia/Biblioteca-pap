@@ -590,13 +590,43 @@ public class LectorController {
     public Long crearLectorWeb(String nombre, String apellido, String email, String fechaNacimiento, 
                               String direccion, String zona, String password) {
         try {
+            System.out.println("🔍 LectorController.crearLectorWeb - Parámetros recibidos:");
+            System.out.println("  - nombre: '" + nombre + "'");
+            System.out.println("  - apellido: '" + apellido + "'");
+            System.out.println("  - email: '" + email + "'");
+            System.out.println("  - fechaNacimiento: '" + fechaNacimiento + "'");
+            System.out.println("  - direccion: '" + direccion + "'");
+            System.out.println("  - zona: '" + zona + "'");
+            System.out.println("  - password: " + (password != null ? "[PRESENTE]" : "[NULL]"));
+            
             // Validaciones básicas
-            if (nombre == null || nombre.trim().isEmpty() ||
-                apellido == null || apellido.trim().isEmpty() ||
-                email == null || email.trim().isEmpty() ||
-                direccion == null || direccion.trim().isEmpty() ||
-                zona == null || zona.trim().isEmpty() ||
-                password == null || password.trim().isEmpty()) {
+            if (nombre == null || nombre.trim().isEmpty()) {
+                System.out.println("❌ Validación fallida: nombre vacío");
+                return -1L;
+            }
+            
+            if (apellido == null || apellido.trim().isEmpty()) {
+                System.out.println("❌ Validación fallida: apellido vacío");
+                return -1L;
+            }
+            
+            if (email == null || email.trim().isEmpty()) {
+                System.out.println("❌ Validación fallida: email vacío");
+                return -1L;
+            }
+            
+            if (direccion == null || direccion.trim().isEmpty()) {
+                System.out.println("❌ Validación fallida: direccion vacía");
+                return -1L;
+            }
+            
+            if (zona == null || zona.trim().isEmpty()) {
+                System.out.println("❌ Validación fallida: zona vacía");
+                return -1L;
+            }
+            
+            if (password == null || password.trim().isEmpty()) {
+                System.out.println("❌ Validación fallida: password vacío");
                 return -1L;
             }
             
@@ -604,7 +634,9 @@ public class LectorController {
             Zona zonaEnum;
             try {
                 zonaEnum = Zona.valueOf(zona.toUpperCase());
+                System.out.println("✅ Zona válida: " + zonaEnum);
             } catch (IllegalArgumentException e) {
+                System.out.println("❌ Zona inválida: " + zona);
                 return -1L;
             }
             
@@ -618,12 +650,18 @@ public class LectorController {
             lector.setEstado(EstadoLector.ACTIVO);
             lector.setPlainPassword(password); // Esto hashea automáticamente
             
+            System.out.println("💾 Guardando lector en la base de datos...");
+            
             // Guardar usando el servicio
             lectorService.guardarLector(lector);
+            
+            System.out.println("✅ Lector creado con ID: " + lector.getId());
             
             return lector.getId();
             
         } catch (Exception ex) {
+            System.err.println("❌ Excepción en crearLectorWeb: " + ex.getMessage());
+            ex.printStackTrace();
             return -1L;
         }
     }

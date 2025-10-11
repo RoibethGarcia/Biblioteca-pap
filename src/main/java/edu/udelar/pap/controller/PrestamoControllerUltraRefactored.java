@@ -1796,7 +1796,7 @@ public class PrestamoControllerUltraRefactored {
      * @return ID del préstamo creado, o -1 si hay error
      */
     public Long crearPrestamoWeb(Long lectorId, Long bibliotecarioId, Long materialId, 
-                                String fechaDevolucion, String estado) {
+                                String fechaDevolucion, String estado) throws IllegalStateException {
         try {
             System.out.println("🔍 crearPrestamoWeb llamado con: lectorId=" + lectorId + ", materialId=" + materialId);
             
@@ -1805,12 +1805,17 @@ public class PrestamoControllerUltraRefactored {
                 fechaDevolucion == null || fechaDevolucion.trim().isEmpty() ||
                 estado == null || estado.trim().isEmpty()) {
                 System.out.println("❌ Parámetros inválidos");
-                return -1L;
+                throw new IllegalStateException("Todos los parámetros son obligatorios");
             }
             
             // Validar fecha
-            LocalDate fechaDev = ValidacionesUtil.validarFechaFutura(fechaDevolucion);
-            System.out.println("✅ Fecha validada: " + fechaDev);
+            LocalDate fechaDev;
+            try {
+                fechaDev = ValidacionesUtil.validarFechaFutura(fechaDevolucion);
+                System.out.println("✅ Fecha validada: " + fechaDev);
+            } catch (Exception e) {
+                throw new IllegalStateException("Fecha inválida. Use el formato DD/MM/AAAA");
+            }
             
             // Validar estado
             EstadoPrestamo estadoEnum;
@@ -1818,21 +1823,21 @@ public class PrestamoControllerUltraRefactored {
                 estadoEnum = EstadoPrestamo.valueOf(estado.toUpperCase());
             } catch (IllegalArgumentException e) {
                 System.out.println("❌ Estado inválido: " + estado);
-                return -1L;
+                throw new IllegalStateException("Estado de préstamo inválido: " + estado);
             }
             
             // Obtener entidades desde la base de datos
             Lector lector = lectorService.obtenerLectorPorId(lectorId);
             if (lector == null) {
                 System.out.println("❌ Lector no encontrado con ID: " + lectorId);
-                return -1L;
+                throw new IllegalStateException("Lector no encontrado con ID: " + lectorId);
             }
             System.out.println("✅ Lector encontrado: " + lector.getNombre());
             
             Bibliotecario bibliotecario = bibliotecarioService.obtenerBibliotecarioPorId(bibliotecarioId);
             if (bibliotecario == null) {
                 System.out.println("❌ Bibliotecario no encontrado con ID: " + bibliotecarioId);
-                return -1L;
+                throw new IllegalStateException("Bibliotecario no encontrado con ID: " + bibliotecarioId);
             }
             System.out.println("✅ Bibliotecario encontrado: " + bibliotecario.getNombre());
             
@@ -1845,7 +1850,7 @@ public class PrestamoControllerUltraRefactored {
             
             if (material == null) {
                 System.out.println("❌ Material no encontrado con ID: " + materialId);
-                return -1L;
+                throw new IllegalStateException("Material no encontrado con ID: " + materialId);
             }
             System.out.println("✅ Material encontrado: " + material.toString());
             
@@ -1859,16 +1864,109 @@ public class PrestamoControllerUltraRefactored {
             prestamo.setEstado(estadoEnum);
             
             System.out.println("💾 Guardando préstamo...");
-            // Guardar usando el servicio
+            // Guardar usando el servicio (aquí se valida el estado del lector)
             prestamoService.guardarPrestamo(prestamo);
             
             System.out.println("✅ Préstamo creado con ID: " + prestamo.getId());
             return prestamo.getId();
             
+        } catch (IllegalStateException ex) {
+            // Propagar excepciones de validación de negocio
+            System.err.println("❌ Error de validación al crear préstamo: " + ex.getMessage());
+            throw ex;
         } catch (Exception ex) {
-            System.err.println("❌ Error al crear préstamo: " + ex.getMessage());
+            System.err.println("❌ Error inesperado al crear préstamo: " + ex.getMessage());
             ex.printStackTrace();
-            return -1L;
+            throw new IllegalStateException("Error al crear el préstamo: " + ex.getMessage());
+        }
+    }
+    
+    /**
+     * Actualiza un préstamo existente con nuevos datos
+     * @param prestamoId ID del préstamo a actualizar
+     * @param lectorId ID del nuevo lector (null para no cambiar)
+     * @param bibliotecarioId ID del nuevo bibliotecario (null para no cambiar)
+     * @param materialId ID del nuevo material (null para no cambiar)
+     * @param fechaDevolucion Nueva fecha de devolución en formato DD/MM/YYYY (null para no cambiar)
+     * @param estado Nuevo estado (null para no cambiar)
+     * @return true si se actualizó exitosamente, false en caso contrario
+     */
+    public boolean actualizarPrestamoWeb(Long prestamoId, Long lectorId, Long bibliotecarioId, 
+                                        Long materialId, String fechaDevolucion, String estado) throws IllegalStateException {
+        try {
+            System.out.println("🔍 actualizarPrestamoWeb llamado - prestamoId: " + prestamoId);
+            
+            // Obtener entidades si se proporcionaron IDs
+            Lector nuevoLector = null;
+            if (lectorId != null) {
+                nuevoLector = lectorService.obtenerLectorPorId(lectorId);
+                if (nuevoLector == null) {
+                    throw new IllegalStateException("Lector no encontrado con ID: " + lectorId);
+                }
+                System.out.println("✅ Nuevo lector: " + nuevoLector.getNombre());
+            }
+            
+            Bibliotecario nuevoBibliotecario = null;
+            if (bibliotecarioId != null) {
+                nuevoBibliotecario = bibliotecarioService.obtenerBibliotecarioPorId(bibliotecarioId);
+                if (nuevoBibliotecario == null) {
+                    throw new IllegalStateException("Bibliotecario no encontrado con ID: " + bibliotecarioId);
+                }
+                System.out.println("✅ Nuevo bibliotecario: " + nuevoBibliotecario.getNombre());
+            }
+            
+            DonacionMaterial nuevoMaterial = null;
+            if (materialId != null) {
+                nuevoMaterial = donacionService.obtenerLibroPorId(materialId);
+                if (nuevoMaterial == null) {
+                    nuevoMaterial = donacionService.obtenerArticuloEspecialPorId(materialId);
+                }
+                if (nuevoMaterial == null) {
+                    throw new IllegalStateException("Material no encontrado con ID: " + materialId);
+                }
+                System.out.println("✅ Nuevo material encontrado");
+            }
+            
+            LocalDate nuevaFecha = null;
+            if (fechaDevolucion != null && !fechaDevolucion.trim().isEmpty()) {
+                try {
+                    nuevaFecha = ValidacionesUtil.validarFechaFutura(fechaDevolucion);
+                    System.out.println("✅ Nueva fecha validada: " + nuevaFecha);
+                } catch (Exception e) {
+                    throw new IllegalStateException("Fecha inválida. Use el formato DD/MM/YYYY");
+                }
+            }
+            
+            EstadoPrestamo nuevoEstado = null;
+            if (estado != null && !estado.trim().isEmpty()) {
+                try {
+                    nuevoEstado = EstadoPrestamo.valueOf(estado.toUpperCase());
+                    System.out.println("✅ Nuevo estado: " + nuevoEstado);
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalStateException("Estado de préstamo inválido: " + estado);
+                }
+            }
+            
+            // Actualizar el préstamo
+            boolean resultado = prestamoService.actualizarPrestamoCompleto(
+                prestamoId, nuevoLector, nuevoBibliotecario, nuevoMaterial, nuevaFecha, nuevoEstado
+            );
+            
+            if (resultado) {
+                System.out.println("✅ Préstamo actualizado exitosamente - ID: " + prestamoId);
+            } else {
+                System.out.println("❌ No se pudo actualizar el préstamo - ID: " + prestamoId);
+            }
+            
+            return resultado;
+            
+        } catch (IllegalStateException ex) {
+            System.err.println("❌ Error de validación al actualizar préstamo: " + ex.getMessage());
+            throw ex;
+        } catch (Exception ex) {
+            System.err.println("❌ Error inesperado al actualizar préstamo: " + ex.getMessage());
+            ex.printStackTrace();
+            throw new IllegalStateException("Error al actualizar el préstamo: " + ex.getMessage());
         }
     }
     
@@ -1955,6 +2053,42 @@ public class PrestamoControllerUltraRefactored {
     }
     
     /**
+     * Obtiene TODOS los préstamos gestionados por un bibliotecario
+     * @param bibliotecarioId ID del bibliotecario
+     * @return Lista de préstamos gestionados por el bibliotecario
+     */
+    public List<Prestamo> obtenerPrestamosPorBibliotecario(Long bibliotecarioId) {
+        try {
+            List<Prestamo> prestamos = prestamoService.obtenerTodosLosPrestamos();
+            List<Prestamo> prestamosPorBibliotecario = new java.util.ArrayList<>();
+            for (Prestamo prestamo : prestamos) {
+                if (prestamo.getBibliotecario() != null && 
+                    prestamo.getBibliotecario().getId().equals(bibliotecarioId)) {
+                    prestamosPorBibliotecario.add(prestamo);
+                }
+            }
+            return prestamosPorBibliotecario;
+        } catch (Exception ex) {
+            System.err.println("Error al obtener préstamos por bibliotecario: " + ex.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
+    
+    /**
+     * Obtiene TODOS los préstamos de lectores de una zona específica
+     * @param zona Zona del lector
+     * @return Lista de préstamos de la zona
+     */
+    public List<Prestamo> obtenerPrestamosPorZona(Zona zona) {
+        try {
+            return prestamoService.obtenerPrestamosPorZona(zona);
+        } catch (Exception ex) {
+            System.err.println("Error al obtener préstamos por zona: " + ex.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
+    
+    /**
      * Obtiene TODOS los préstamos del sistema (activos, pendientes y devueltos)
      * @return Lista de todos los préstamos
      */
@@ -2019,6 +2153,15 @@ public class PrestamoControllerUltraRefactored {
         } catch (Exception ex) {
             return false;
         }
+    }
+    
+    /**
+     * Obtiene un préstamo por ID
+     * @param id ID del préstamo
+     * @return Préstamo encontrado o null si no existe
+     */
+    public Prestamo obtenerPrestamoPorId(Long id) {
+        return prestamoService.obtenerPrestamoPorId(id);
     }
     
     /**
