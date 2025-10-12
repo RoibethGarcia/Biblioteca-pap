@@ -2089,6 +2089,19 @@ public class PrestamoControllerUltraRefactored {
     }
     
     /**
+     * Obtiene materiales con préstamos pendientes
+     * @return Lista de arrays con material, cantidad, etc
+     */
+    public List<Object[]> obtenerMaterialesConPrestamosPendientes() {
+        try {
+            return prestamoService.obtenerMaterialesConPrestamosPendientes();
+        } catch (Exception ex) {
+            System.err.println("Error al obtener materiales pendientes: " + ex.getMessage());
+            return new java.util.ArrayList<>();
+        }
+    }
+    
+    /**
      * Obtiene TODOS los préstamos del sistema (activos, pendientes y devueltos)
      * @return Lista de todos los préstamos
      */

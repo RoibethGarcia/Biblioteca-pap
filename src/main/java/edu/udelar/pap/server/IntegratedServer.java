@@ -34,7 +34,8 @@ public class IntegratedServer {
             
             // 2. Configurar servidor HTTP integrado de Java
             System.out.println("🌐 Configurando servidor web...");
-            server = HttpServer.create(new InetSocketAddress(WEB_PORT), 0);
+            // Escuchar en todas las interfaces de red (0.0.0.0) para permitir conexiones desde otras máquinas
+            server = HttpServer.create(new InetSocketAddress("0.0.0.0", WEB_PORT), 0);
             
             // 3. Registrar rutas
             registerRoutes();
@@ -595,6 +596,10 @@ public class IntegratedServer {
                     // Obtener reporte de préstamos agrupados por zona
                     System.out.println("📊 Obteniendo reporte de préstamos por zona");
                     return factory.getPrestamoPublisher().obtenerReportePorZona();
+                } else if (path.equals("/prestamo/materiales-pendientes")) {
+                    // Obtener materiales con muchos préstamos pendientes
+                    System.out.println("📦 Obteniendo materiales con préstamos pendientes");
+                    return factory.getPrestamoPublisher().obtenerMaterialesPendientes();
                 } else if (path.equals("/prestamo/cambiar-estado") && method.equals("POST")) {
                     // Cambiar estado de préstamo
                     String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");

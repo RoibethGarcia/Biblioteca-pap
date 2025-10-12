@@ -121,6 +121,11 @@ public class PrestamoServlet extends HttpServlet {
                 String result = factory.getPrestamoPublisher().obtenerReportePorZona();
                 out.println(result);
                 
+            } else if (pathInfo.equals("/materiales-pendientes")) {
+                // Obtener materiales con muchos préstamos pendientes
+                String result = factory.getPrestamoPublisher().obtenerMaterialesPendientes();
+                out.println(result);
+                
             } else if (pathInfo.equals("/estado")) {
                 // Estado del servicio
                 String result = factory.getPrestamoPublisher().obtenerEstado();

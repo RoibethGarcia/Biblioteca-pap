@@ -346,6 +346,120 @@ public class PrestamoPublisher {
      * @return JSON con la lista de préstamos
      */
     /**
+     * Obtiene un reporte de materiales con muchos préstamos pendientes/en curso
+     * @return JSON con materiales ordenados por cantidad de préstamos activos
+     */
+    public String obtenerMaterialesPendientes() {
+        try {
+            // Obtener materiales con préstamos pendientes (estado PENDIENTE)
+            java.util.List<Object[]> resultadosPendientes = prestamoController.obtenerMaterialesConPrestamosPendientes();
+            
+            // También obtener materiales en curso (estado EN_CURSO)
+            java.util.List<edu.udelar.pap.domain.Prestamo> todosLosPrestamos = prestamoController.obtenerTodosPrestamos();
+            
+            // Agrupar por material y contar préstamos EN_CURSO
+            java.util.Map<Object, Integer> materialesEnCurso = new java.util.HashMap<>();
+            for (edu.udelar.pap.domain.Prestamo p : todosLosPrestamos) {
+                if (p.getEstado() == edu.udelar.pap.domain.EstadoPrestamo.EN_CURSO && p.getMaterial() != null) {
+                    materialesEnCurso.put(p.getMaterial(), materialesEnCurso.getOrDefault(p.getMaterial(), 0) + 1);
+                }
+            }
+            
+            // Crear mapa consolidado de materiales con su información
+            java.util.Map<Long, MaterialPendienteInfo> materialesMap = new java.util.HashMap<>();
+            
+            // Procesar materiales con préstamos PENDIENTES
+            for (Object[] resultado : resultadosPendientes) {
+                edu.udelar.pap.domain.DonacionMaterial material = (edu.udelar.pap.domain.DonacionMaterial) resultado[0];
+                if (material != null) {
+                    Long materialId = material.getId();
+                    Long cantidadPendientes = ((Number) resultado[1]).longValue();
+                    
+                    MaterialPendienteInfo info = materialesMap.getOrDefault(materialId, new MaterialPendienteInfo());
+                    info.material = material;
+                    info.pendientes = cantidadPendientes.intValue();
+                    info.enCurso = materialesEnCurso.getOrDefault(material, 0);
+                    
+                    materialesMap.put(materialId, info);
+                }
+            }
+            
+            // Agregar materiales que solo tienen EN_CURSO (no tienen PENDIENTES)
+            for (java.util.Map.Entry<Object, Integer> entry : materialesEnCurso.entrySet()) {
+                edu.udelar.pap.domain.DonacionMaterial material = (edu.udelar.pap.domain.DonacionMaterial) entry.getKey();
+                Long materialId = material.getId();
+                
+                if (!materialesMap.containsKey(materialId)) {
+                    MaterialPendienteInfo info = new MaterialPendienteInfo();
+                    info.material = material;
+                    info.pendientes = 0;
+                    info.enCurso = entry.getValue();
+                    materialesMap.put(materialId, info);
+                }
+            }
+            
+            // Ordenar por total (pendientes + en curso) descendente
+            java.util.List<MaterialPendienteInfo> materialesOrdenados = new java.util.ArrayList<>(materialesMap.values());
+            materialesOrdenados.sort((a, b) -> Integer.compare(b.getTotal(), a.getTotal()));
+            
+            // Construir JSON
+            StringBuilder json = new StringBuilder();
+            json.append("{\"success\": true, \"materiales\": [");
+            
+            for (int i = 0; i < materialesOrdenados.size(); i++) {
+                if (i > 0) json.append(",");
+                MaterialPendienteInfo info = materialesOrdenados.get(i);
+                edu.udelar.pap.domain.DonacionMaterial material = info.material;
+                
+                String tipo = "ARTICULO";
+                String nombre = "Material";
+                
+                if (material instanceof edu.udelar.pap.domain.Libro) {
+                    tipo = "LIBRO";
+                    nombre = ((edu.udelar.pap.domain.Libro) material).getTitulo();
+                } else if (material instanceof edu.udelar.pap.domain.ArticuloEspecial) {
+                    tipo = "ARTICULO";
+                    nombre = ((edu.udelar.pap.domain.ArticuloEspecial) material).getDescripcion();
+                }
+                
+                int total = info.getTotal();
+                String prioridad = total >= 5 ? "ALTA" : (total >= 3 ? "MEDIA" : "BAJA");
+                
+                json.append(String.format(
+                    "{\"id\": %d, \"nombre\": \"%s\", \"tipo\": \"%s\", \"pendientes\": %d, \"enCurso\": %d, \"total\": %d, \"prioridad\": \"%s\"}",
+                    material.getId(),
+                    nombre.replace("\"", "\\\""),
+                    tipo,
+                    info.pendientes,
+                    info.enCurso,
+                    total,
+                    prioridad
+                ));
+            }
+            
+            json.append("]}");
+            return json.toString();
+            
+        } catch (Exception e) {
+            System.err.println("Error al obtener materiales pendientes: " + e.getMessage());
+            e.printStackTrace();
+            return String.format("{\"success\": false, \"message\": \"Error: %s\"}", 
+                e.getMessage().replace("\"", "\\\""));
+        }
+    }
+    
+    // Clase auxiliar para agrupar información de materiales
+    private static class MaterialPendienteInfo {
+        edu.udelar.pap.domain.DonacionMaterial material;
+        int pendientes = 0;
+        int enCurso = 0;
+        
+        int getTotal() {
+            return pendientes + enCurso;
+        }
+    }
+    
+    /**
      * Obtiene un reporte completo de préstamos agrupados por zona
      * @return JSON con estadísticas por cada zona
      */

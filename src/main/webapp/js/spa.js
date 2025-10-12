@@ -2508,12 +2508,12 @@ const BibliotecaSPA = {
                     <div class="col-6">
                         <div class="card">
                             <div class="card-header">
-                                <h4 style="margin: 0;">📈 Reporte de Préstamos</h4>
+                                <h4 style="margin: 0;">📦 Materiales Pendientes</h4>
                             </div>
                             <div class="card-body">
-                                <p>Generar reporte detallado de préstamos</p>
-                                <button class="btn btn-primary" onclick="BibliotecaSPA.generarReportePrestamos()">
-                                    Generar Reporte
+                                <p>Identificar materiales con muchos préstamos para priorizar su devolución o reposición</p>
+                                <button class="btn btn-danger" onclick="BibliotecaSPA.mostrarMaterialesPendientes()">
+                                    🔥 Ver Materiales Pendientes
                                 </button>
                             </div>
                         </div>
@@ -2952,6 +2952,259 @@ const BibliotecaSPA = {
         
         // Descargar archivo
         this.descargarCSV(csv, `reporte_prestamos_por_zona_${new Date().toISOString().split('T')[0]}.csv`);
+        
+        this.showAlert('Reporte exportado exitosamente', 'success');
+    },
+    
+    // ==================== MATERIALES PENDIENTES ====================
+    
+    // Mostrar materiales con muchos préstamos pendientes
+    mostrarMaterialesPendientes: async function() {
+        console.log('📦 Mostrando materiales con préstamos pendientes...');
+        
+        try {
+            // Mostrar loading
+            this.showLoading('Cargando materiales pendientes...');
+            
+            // Obtener materiales desde el backend
+            const data = await bibliotecaApi.get('/prestamo/materiales-pendientes');
+            
+            this.hideLoading();
+            
+            if (!data.success) {
+                this.showAlert('Error al cargar materiales: ' + (data.message || 'Error desconocido'), 'danger');
+                return;
+            }
+            
+            const materiales = data.materiales || [];
+            console.log('✅ Materiales pendientes cargados:', materiales.length);
+            
+            if (materiales.length === 0) {
+                this.showAlert('¡Excelente! No hay materiales con préstamos pendientes en este momento', 'success');
+                return;
+            }
+            
+            // Mostrar modal con los materiales
+            this.mostrarModalMaterialesPendientes(materiales);
+            
+        } catch (error) {
+            this.hideLoading();
+            console.error('❌ Error al cargar materiales pendientes:', error);
+            this.showAlert('Error al cargar materiales: ' + error.message, 'danger');
+        }
+    },
+    
+    // Mostrar modal con materiales pendientes
+    mostrarModalMaterialesPendientes: function(materiales) {
+        // Calcular estadísticas
+        const totalMateriales = materiales.length;
+        const prioridadAlta = materiales.filter(m => m.prioridad === 'ALTA').length;
+        const prioridadMedia = materiales.filter(m => m.prioridad === 'MEDIA').length;
+        const prioridadBaja = materiales.filter(m => m.prioridad === 'BAJA').length;
+        const totalPrestamos = materiales.reduce((sum, m) => sum + m.total, 0);
+        
+        const modalBody = `
+            <div class="materiales-header" style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 8px; color: white;">
+                <h5 style="margin: 0 0 10px 0;">📦 Materiales con Préstamos Pendientes</h5>
+                <p style="margin: 0; font-size: 14px; opacity: 0.9;">Priorizar devolución y considerar reposición</p>
+                <div class="stats-row" style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
+                    <div style="flex: 1; min-width: 100px; text-align: center;">
+                        <div style="font-size: 32px; font-weight: bold;">${totalMateriales}</div>
+                        <div style="font-size: 12px; opacity: 0.9;">Materiales</div>
+                    </div>
+                    <div style="flex: 1; min-width: 100px; text-align: center;">
+                        <div style="font-size: 32px; font-weight: bold;">${totalPrestamos}</div>
+                        <div style="font-size: 12px; opacity: 0.9;">Total Préstamos</div>
+                    </div>
+                    <div style="flex: 1; min-width: 100px; text-align: center;">
+                        <div style="font-size: 32px; font-weight: bold; color: #ffeb3b;">${prioridadAlta}</div>
+                        <div style="font-size: 12px; opacity: 0.9;">🔴 Alta</div>
+                    </div>
+                    <div style="flex: 1; min-width: 100px; text-align: center;">
+                        <div style="font-size: 32px; font-weight: bold;">${prioridadMedia}</div>
+                        <div style="font-size: 12px; opacity: 0.9;">🟡 Media</div>
+                    </div>
+                    <div style="flex: 1; min-width: 100px; text-align: center;">
+                        <div style="font-size: 32px; font-weight: bold;">${prioridadBaja}</div>
+                        <div style="font-size: 12px; opacity: 0.9;">🟢 Baja</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filtro de prioridad -->
+            <div class="filtros-materiales" style="margin-bottom: 15px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="filtroPrioridadMaterial" style="display: inline-block; margin-right: 10px; font-weight: 500;">Filtrar por prioridad:</label>
+                    <select id="filtroPrioridadMaterial" class="form-control" style="display: inline-block; width: auto; padding: 5px 10px;">
+                        <option value="">Todas</option>
+                        <option value="ALTA">🔴 Alta (≥5 préstamos)</option>
+                        <option value="MEDIA">🟡 Media (3-4 préstamos)</option>
+                        <option value="BAJA">🟢 Baja (1-2 préstamos)</option>
+                    </select>
+                    <button class="btn btn-secondary btn-sm" onclick="BibliotecaSPA.limpiarFiltroMaterialesPendientes()" style="margin-left: 10px;">
+                        🔄 Limpiar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Tabla de materiales -->
+            <div class="table-responsive">
+                <table class="table table-hover" style="margin-bottom: 0;">
+                    <thead style="background: #f8f9fa;">
+                        <tr>
+                            <th>#</th>
+                            <th>Material</th>
+                            <th>Tipo</th>
+                            <th class="text-center">Pendientes</th>
+                            <th class="text-center">En Curso</th>
+                            <th class="text-center">Total</th>
+                            <th class="text-center">Prioridad</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyMaterialesPendientes">
+                        <!-- Se llenará con JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Botón de exportación -->
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                <button class="btn btn-success" onclick="BibliotecaSPA.exportarMaterialesPendientes()">
+                    📥 Exportar a CSV
+                </button>
+                <span style="margin-left: 15px; color: #666; font-size: 14px;">
+                    💡 <strong>Tip:</strong> Materiales con prioridad ALTA necesitan atención inmediata
+                </span>
+            </div>
+        `;
+        
+        ModalManager.show({
+            title: `📦 Materiales Pendientes`,
+            body: modalBody,
+            footer: `<button class="btn btn-secondary" onclick="ModalManager.close('modal-materiales-pendientes')">Cerrar</button>`,
+            id: 'modal-materiales-pendientes',
+            size: 'xl'
+        });
+        
+        // Guardar datos para exportación y filtrado
+        this.materialesPendientesActual = materiales;
+        
+        // Renderizar tabla
+        this.renderTablaMaterialesPendientes(materiales);
+        
+        // Agregar listener para filtro
+        setTimeout(() => {
+            $('#filtroPrioridadMaterial').on('change', () => {
+                this.aplicarFiltroMaterialesPendientes();
+            });
+        }, 100);
+    },
+    
+    // Renderizar tabla de materiales pendientes
+    renderTablaMaterialesPendientes: function(materiales) {
+        const tbody = $('#bodyMaterialesPendientes');
+        
+        if (!materiales || materiales.length === 0) {
+            tbody.html(`
+                <tr>
+                    <td colspan="7" class="text-center" style="padding: 20px; color: #999;">
+                        No hay materiales con préstamos pendientes
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+        
+        let html = '';
+        materiales.forEach((material, index) => {
+            // Badge de prioridad
+            let badgePrioridad = '';
+            if (material.prioridad === 'ALTA') {
+                badgePrioridad = '<span class="badge badge-danger" style="font-size: 13px;">🔴 ALTA</span>';
+            } else if (material.prioridad === 'MEDIA') {
+                badgePrioridad = '<span class="badge badge-warning" style="font-size: 13px;">🟡 MEDIA</span>';
+            } else {
+                badgePrioridad = '<span class="badge badge-success" style="font-size: 13px;">🟢 BAJA</span>';
+            }
+            
+            // Estilo de fila según prioridad
+            let estiloFila = '';
+            if (material.prioridad === 'ALTA') {
+                estiloFila = 'background-color: #ffebee;';
+            } else if (material.prioridad === 'MEDIA') {
+                estiloFila = 'background-color: #fff3e0;';
+            }
+            
+            html += `
+                <tr style="${estiloFila}">
+                    <td><strong>${index + 1}</strong></td>
+                    <td>${material.nombre || 'N/A'}</td>
+                    <td><span class="badge badge-info">${material.tipo}</span></td>
+                    <td class="text-center"><span class="badge badge-warning" style="font-size: 14px;">${material.pendientes}</span></td>
+                    <td class="text-center"><span class="badge badge-success" style="font-size: 14px;">${material.enCurso}</span></td>
+                    <td class="text-center"><span class="badge badge-primary" style="font-size: 16px;"><strong>${material.total}</strong></span></td>
+                    <td class="text-center">${badgePrioridad}</td>
+                </tr>
+            `;
+        });
+        
+        tbody.html(html);
+    },
+    
+    // Aplicar filtro de prioridad
+    aplicarFiltroMaterialesPendientes: function() {
+        const prioridadFiltro = $('#filtroPrioridadMaterial').val();
+        console.log('🔍 Filtrando materiales por prioridad:', prioridadFiltro);
+        
+        const todosMateriales = this.materialesPendientesActual || [];
+        
+        let materialesFiltrados = todosMateriales;
+        if (prioridadFiltro) {
+            materialesFiltrados = todosMateriales.filter(m => m.prioridad === prioridadFiltro);
+        }
+        
+        console.log(`✅ Materiales filtrados: ${materialesFiltrados.length} de ${todosMateriales.length}`);
+        this.renderTablaMaterialesPendientes(materialesFiltrados);
+    },
+    
+    // Limpiar filtro de materiales pendientes
+    limpiarFiltroMaterialesPendientes: function() {
+        $('#filtroPrioridadMaterial').val('');
+        const todosMateriales = this.materialesPendientesActual || [];
+        this.renderTablaMaterialesPendientes(todosMateriales);
+        console.log('🔄 Filtro de materiales pendientes limpiado');
+    },
+    
+    // Exportar materiales pendientes a CSV
+    exportarMaterialesPendientes: function() {
+        if (!this.materialesPendientesActual) {
+            this.showAlert('No hay datos para exportar', 'warning');
+            return;
+        }
+        
+        const materiales = this.materialesPendientesActual;
+        
+        // Crear CSV
+        let csv = 'Posición,Material,Tipo,Pendientes,En Curso,Total,Prioridad,Recomendación\n';
+        
+        materiales.forEach((m, index) => {
+            const recomendacion = m.prioridad === 'ALTA' ? 'Priorizar devolución inmediata' : 
+                                  m.prioridad === 'MEDIA' ? 'Monitorear y considerar reposición' : 
+                                  'Seguimiento normal';
+            
+            csv += `${index + 1},"${m.nombre.replace(/"/g, '""')}",${m.tipo},${m.pendientes},${m.enCurso},${m.total},${m.prioridad},"${recomendacion}"\n`;
+        });
+        
+        // Agregar resumen
+        csv += '\n--- RESUMEN ---\n';
+        csv += `Total de Materiales,${materiales.length}\n`;
+        csv += `Materiales Prioridad Alta,${materiales.filter(m => m.prioridad === 'ALTA').length}\n`;
+        csv += `Materiales Prioridad Media,${materiales.filter(m => m.prioridad === 'MEDIA').length}\n`;
+        csv += `Materiales Prioridad Baja,${materiales.filter(m => m.prioridad === 'BAJA').length}\n`;
+        csv += `Total Préstamos,${materiales.reduce((sum, m) => sum + m.total, 0)}\n`;
+        
+        // Descargar archivo
+        this.descargarCSV(csv, `materiales_pendientes_${new Date().toISOString().split('T')[0]}.csv`);
         
         this.showAlert('Reporte exportado exitosamente', 'success');
     },
