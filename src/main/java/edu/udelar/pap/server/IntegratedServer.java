@@ -599,13 +599,15 @@ public class IntegratedServer {
                     String lectorId = params.get("lectorId");
                     String bibliotecarioIdParam = params.get("bibliotecarioId");
                     String materialId = params.get("materialId");
-                    String fechaDevolucion = params.get("fechaDevolucion");
+                    String fechaEstimadaDevolucion = params.get("fechaEstimadaDevolucion");
+                    String estadoParam = params.get("estado");
                     
                     System.out.println("📚 IntegratedServer - Creando préstamo:");
                     System.out.println("   Lector ID: " + lectorId);
                     System.out.println("   Bibliotecario ID (del formulario): " + bibliotecarioIdParam);
                     System.out.println("   Material ID: " + materialId);
-                    System.out.println("   Fecha devolución: " + fechaDevolucion);
+                    System.out.println("   Fecha estimada devolución: " + fechaEstimadaDevolucion);
+                    System.out.println("   Estado: " + estadoParam);
                     
                     // Verificar que los parámetros no sean nulos
                     if (lectorId == null || lectorId.isEmpty()) {
@@ -616,9 +618,9 @@ public class IntegratedServer {
                         System.err.println("❌ materialId es nulo o vacío");
                         return "{\"success\": false, \"message\": \"materialId es requerido\"}";
                     }
-                    if (fechaDevolucion == null || fechaDevolucion.isEmpty()) {
-                        System.err.println("❌ fechaDevolucion es nulo o vacío");
-                        return "{\"success\": false, \"message\": \"fechaDevolucion es requerido\"}";
+                    if (fechaEstimadaDevolucion == null || fechaEstimadaDevolucion.isEmpty()) {
+                        System.err.println("❌ fechaEstimadaDevolucion es nulo o vacío");
+                        return "{\"success\": false, \"message\": \"fechaEstimadaDevolucion es requerido\"}";
                     }
                     
                     // Usar el bibliotecarioId del formulario si está presente, sino obtener el primero disponible
@@ -637,15 +639,107 @@ public class IntegratedServer {
                         }
                     }
                     
+                    // Convertir fecha de formato YYYY-MM-DD a DD/MM/YYYY
+                    String fechaDevolucion = fechaEstimadaDevolucion;
+                    if (fechaEstimadaDevolucion.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                        String[] partes = fechaEstimadaDevolucion.split("-");
+                        fechaDevolucion = partes[2] + "/" + partes[1] + "/" + partes[0];
+                        System.out.println("   Fecha convertida a: " + fechaDevolucion);
+                    }
+                    
+                    // Usar estado del formulario o EN_CURSO por defecto
+                    String estado = (estadoParam != null && !estadoParam.isEmpty()) ? estadoParam : "EN_CURSO";
+                    
                     String resultado = factory.getPrestamoPublisher().crearPrestamo(
                         Long.parseLong(lectorId),
-                        bibliotecarioId,  // Usa el bibliotecario seleccionado por el usuario
+                        bibliotecarioId,
                         Long.parseLong(materialId),
                         fechaDevolucion,
-                        "EN_CURSO"  // Estado inicial - Aprobado automáticamente
+                        estado
                     );
                     
                     System.out.println("📚 IntegratedServer - Resultado de crearPrestamo: " + resultado);
+                    return resultado;
+                } else if (path.equals("/prestamo/actualizar") && method.equals("POST")) {
+                    // Actualizar préstamo
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body recibido para actualizar préstamo: " + body);
+                    
+                    java.util.Map<String, String> params = new java.util.HashMap<>();
+                    if (body != null && !body.isEmpty()) {
+                        for (String param : body.split("&")) {
+                            String[] keyValue = param.split("=");
+                            if (keyValue.length == 2) {
+                                String key = java.net.URLDecoder.decode(keyValue[0], "UTF-8");
+                                String value = java.net.URLDecoder.decode(keyValue[1], "UTF-8");
+                                params.put(key, value);
+                            }
+                        }
+                    }
+                    
+                    String prestamoIdStr = params.get("prestamoId");
+                    String nuevoEstado = params.get("nuevoEstado");
+                    String fechaEstimadaDevolucion = params.get("fechaEstimadaDevolucion");
+                    
+                    System.out.println("📚 IntegratedServer - Actualizando préstamo:");
+                    System.out.println("   Préstamo ID: " + prestamoIdStr);
+                    System.out.println("   Nuevo estado: " + nuevoEstado);
+                    System.out.println("   Nueva fecha devolución: " + fechaEstimadaDevolucion);
+                    
+                    if (prestamoIdStr == null || prestamoIdStr.isEmpty()) {
+                        return "{\"success\": false, \"message\": \"prestamoId es requerido\"}";
+                    }
+                    
+                    Long prestamoId = Long.parseLong(prestamoIdStr);
+                    String resultado = factory.getPrestamoPublisher().actualizarPrestamo(prestamoId, nuevoEstado, fechaEstimadaDevolucion);
+                    
+                    System.out.println("📚 IntegratedServer - Resultado de actualizarPrestamo: " + resultado);
+                    return resultado;
+                } else if (path.equals("/prestamo/actualizar-completo") && method.equals("POST")) {
+                    // Actualizar TODOS los atributos del préstamo
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body recibido para actualizar préstamo completo: " + body);
+                    
+                    java.util.Map<String, String> params = new java.util.HashMap<>();
+                    if (body != null && !body.isEmpty()) {
+                        for (String param : body.split("&")) {
+                            String[] keyValue = param.split("=");
+                            if (keyValue.length == 2) {
+                                String key = java.net.URLDecoder.decode(keyValue[0], "UTF-8");
+                                String value = java.net.URLDecoder.decode(keyValue[1], "UTF-8");
+                                params.put(key, value);
+                            }
+                        }
+                    }
+                    
+                    String prestamoIdStr = params.get("prestamoId");
+                    String lectorIdStr = params.get("lectorId");
+                    String materialIdStr = params.get("materialId");
+                    String fechaSolicitud = params.get("fechaSolicitud");
+                    String fechaEstimadaDevolucion = params.get("fechaEstimadaDevolucion");
+                    String nuevoEstado = params.get("nuevoEstado");
+                    
+                    System.out.println("📚 IntegratedServer - Actualizando préstamo completo:");
+                    System.out.println("   Préstamo ID: " + prestamoIdStr);
+                    System.out.println("   Lector ID: " + lectorIdStr);
+                    System.out.println("   Material ID: " + materialIdStr);
+                    System.out.println("   Fecha solicitud: " + fechaSolicitud);
+                    System.out.println("   Fecha devolución: " + fechaEstimadaDevolucion);
+                    System.out.println("   Nuevo estado: " + nuevoEstado);
+                    
+                    if (prestamoIdStr == null || lectorIdStr == null || materialIdStr == null || 
+                        fechaSolicitud == null || fechaEstimadaDevolucion == null || nuevoEstado == null) {
+                        return "{\"success\": false, \"message\": \"Todos los campos son requeridos\"}";
+                    }
+                    
+                    Long prestamoId = Long.parseLong(prestamoIdStr);
+                    Long lectorId = Long.parseLong(lectorIdStr);
+                    Long materialId = Long.parseLong(materialIdStr);
+                    
+                    String resultado = factory.getPrestamoPublisher().actualizarPrestamoCompleto(
+                        prestamoId, lectorId, materialId, fechaSolicitud, fechaEstimadaDevolucion, nuevoEstado);
+                    
+                    System.out.println("📚 IntegratedServer - Resultado de actualizarPrestamoCompleto: " + resultado);
                     return resultado;
                 } else if (path.equals("/prestamo/estado")) {
                     return factory.getPrestamoPublisher().obtenerEstado();
@@ -837,6 +931,42 @@ public class IntegratedServer {
                         result = "{\"success\": false, \"message\": \"El número de páginas es requerido\"}";
                     } else {
                         result = factory.getDonacionPublisher().crearLibro(titulo, paginas);
+                    }
+                }
+                else if (method.equals("POST") && path.equals("/donacion/actualizar-libro")) {
+                    // Leer el cuerpo de la petición
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body recibido para actualizar libro: " + body);
+                    
+                    // Parsear parámetros del body
+                    java.util.Map<String, String> params = new java.util.HashMap<>();
+                    if (body != null && !body.isEmpty()) {
+                        for (String param : body.split("&")) {
+                            String[] keyValue = param.split("=");
+                            if (keyValue.length == 2) {
+                                String key = java.net.URLDecoder.decode(keyValue[0], "UTF-8");
+                                String value = java.net.URLDecoder.decode(keyValue[1], "UTF-8");
+                                params.put(key, value);
+                            }
+                        }
+                    }
+                    
+                    String id = params.get("id");
+                    String titulo = params.get("titulo");
+                    String paginas = params.get("paginas");
+                    String donante = params.get("donante");
+                    String fechaIngreso = params.get("fechaIngreso");
+                    
+                    System.out.println("📖 Actualizando libro: id=" + id + ", titulo=" + titulo + ", paginas=" + paginas + ", donante=" + donante + ", fechaIngreso=" + fechaIngreso);
+                    
+                    if (id == null || id.trim().isEmpty()) {
+                        result = "{\"success\": false, \"message\": \"El ID es requerido\"}";
+                    } else if (titulo == null || titulo.trim().isEmpty()) {
+                        result = "{\"success\": false, \"message\": \"El título es requerido\"}";
+                    } else if (paginas == null || paginas.trim().isEmpty()) {
+                        result = "{\"success\": false, \"message\": \"El número de páginas es requerido\"}";
+                    } else {
+                        result = factory.getDonacionPublisher().actualizarLibro(id, titulo, paginas, donante, fechaIngreso);
                     }
                 }
                 else if (method.equals("POST") && path.equals("/donacion/crear-articulo")) {

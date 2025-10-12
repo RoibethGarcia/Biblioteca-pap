@@ -155,18 +155,17 @@ const BibliotecaAPI = {
                     lectorId: lectorId,
                     nuevoEstado: newStatus
                 },
+                dataType: 'json',
                 timeout: BibliotecaAPI.config.timeout
             }).then(response => {
-                return {
-                    success: true,
-                    message: `Estado cambiado a ${newStatus}`,
-                    data: response
-                };
+                console.log('📊 changeStatus response:', response);
+                // El servidor ya retorna un JSON con success y message
+                return response;
             }).catch(error => {
                 console.error('Error cambiando estado:', error);
                 return {
                     success: false,
-                    message: 'Error al cambiar estado'
+                    message: error.responseJSON?.message || 'Error al cambiar estado'
                 };
             });
         },
@@ -180,18 +179,17 @@ const BibliotecaAPI = {
                     lectorId: lectorId,
                     nuevaZona: newZone
                 },
+                dataType: 'json',
                 timeout: BibliotecaAPI.config.timeout
             }).then(response => {
-                return {
-                    success: true,
-                    message: `Zona cambiada a ${newZone}`,
-                    data: response
-                };
+                console.log('📍 changeZone response:', response);
+                // El servidor ya retorna un JSON con success y message
+                return response;
             }).catch(error => {
                 console.error('Error cambiando zona:', error);
                 return {
                     success: false,
-                    message: 'Error al cambiar zona'
+                    message: error.responseJSON?.message || 'Error al cambiar zona'
                 };
             });
         }
@@ -263,22 +261,42 @@ const BibliotecaAPI = {
         
         // Crear préstamo
         create: function(prestamoData) {
+            console.log('📝 API: Enviando datos de préstamo:', prestamoData);
+            
             return $.ajax({
                 url: `${BibliotecaAPI.config.baseUrl}/prestamo/crear`,
                 method: 'POST',
                 data: prestamoData,
-                timeout: BibliotecaAPI.config.timeout
+                timeout: BibliotecaAPI.config.timeout,
+                dataType: 'json'
             }).then(response => {
+                console.log('✅ API: Respuesta del servidor:', response);
+                
+                // Si el backend retorna success:true, usar eso
+                if (response.success) {
+                    return response;
+                }
+                
+                // Fallback para respuestas que no tienen el campo success
                 return {
                     success: true,
                     message: 'Préstamo creado exitosamente',
                     data: response
                 };
             }).catch(error => {
-                console.error('Error creando préstamo:', error);
+                console.error('❌ API: Error creando préstamo:', error);
+                console.error('Response:', error.responseJSON);
+                console.error('Status:', error.status);
+                console.error('Status Text:', error.statusText);
+                
+                // Extraer mensaje de error del backend si está disponible
+                const errorMessage = error.responseJSON?.message || 
+                                   error.responseText || 
+                                   'Error al crear préstamo';
+                
                 return {
                     success: false,
-                    message: 'Error al crear préstamo'
+                    message: errorMessage
                 };
             });
         },
@@ -376,6 +394,26 @@ const BibliotecaAPI = {
                 return {
                     success: false,
                     message: 'Error al registrar artículo'
+                };
+            });
+        },
+        
+        // Actualizar libro
+        updateLibro: function(libroData) {
+            return $.ajax({
+                url: `${BibliotecaAPI.config.baseUrl}/donacion/actualizar-libro`,
+                method: 'POST',
+                data: libroData,
+                timeout: BibliotecaAPI.config.timeout
+            }).then(response => {
+                console.log('📚 Respuesta de actualización:', response);
+                // El servidor ya retorna el JSON con success y message
+                return response;
+            }).catch(error => {
+                console.error('Error actualizando libro:', error);
+                return {
+                    success: false,
+                    message: error.responseJSON?.message || 'Error al actualizar libro'
                 };
             });
         }

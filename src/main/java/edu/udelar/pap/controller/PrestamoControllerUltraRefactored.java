@@ -1941,15 +1941,25 @@ public class PrestamoControllerUltraRefactored {
      */
     public List<Prestamo> obtenerPrestamosPorLector(Long lectorId) {
         try {
-            List<Prestamo> prestamos = prestamoService.obtenerTodosLosPrestamosActivos();
+            // Obtener TODOS los préstamos (incluye EN_CURSO, PENDIENTE y DEVUELTO)
+            List<Prestamo> prestamos = prestamoService.obtenerTodosLosPrestamos();
             List<Prestamo> prestamosPorLector = new java.util.ArrayList<>();
+            
+            System.out.println("🔍 obtenerPrestamosPorLector - Total prestamos en sistema: " + prestamos.size());
+            System.out.println("🔍 obtenerPrestamosPorLector - Buscando para lector ID: " + lectorId);
+            
             for (Prestamo prestamo : prestamos) {
-                if (prestamo.getLector().getId().equals(lectorId)) {
+                if (prestamo.getLector() != null && prestamo.getLector().getId().equals(lectorId)) {
                     prestamosPorLector.add(prestamo);
                 }
             }
+            
+            System.out.println("✅ obtenerPrestamosPorLector - Encontrados: " + prestamosPorLector.size() + " préstamos");
+            
             return prestamosPorLector;
         } catch (Exception ex) {
+            System.err.println("❌ Error en obtenerPrestamosPorLector: " + ex.getMessage());
+            ex.printStackTrace();
             return new java.util.ArrayList<>();
         }
     }
@@ -1991,6 +2001,160 @@ public class PrestamoControllerUltraRefactored {
             }
             return false;
         } catch (Exception ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Actualiza un préstamo existente (estado y fecha de devolución)
+     * @param prestamoId ID del préstamo
+     * @param nuevoEstado Nuevo estado
+     * @param nuevaFechaDevolucion Nueva fecha de devolución (YYYY-MM-DD)
+     * @return true si se actualizó correctamente
+     */
+    public boolean actualizarPrestamoWeb(Long prestamoId, String nuevoEstado, String nuevaFechaDevolucion) {
+        try {
+            System.out.println("🔍 actualizarPrestamoWeb - Parámetros:");
+            System.out.println("   prestamoId: " + prestamoId);
+            System.out.println("   nuevoEstado: " + nuevoEstado);
+            System.out.println("   nuevaFechaDevolucion: " + nuevaFechaDevolucion);
+            
+            // Obtener préstamo existente
+            Prestamo prestamo = prestamoService.obtenerPrestamoPorId(prestamoId);
+            if (prestamo == null) {
+                System.err.println("❌ Préstamo no encontrado");
+                return false;
+            }
+            
+            // Actualizar estado si se proporcionó
+            if (nuevoEstado != null && !nuevoEstado.trim().isEmpty()) {
+                try {
+                    EstadoPrestamo estado = EstadoPrestamo.valueOf(nuevoEstado.toUpperCase());
+                    prestamo.setEstado(estado);
+                    System.out.println("✅ Estado actualizado a: " + estado);
+                } catch (IllegalArgumentException e) {
+                    System.err.println("❌ Estado inválido: " + nuevoEstado);
+                    return false;
+                }
+            }
+            
+            // Actualizar fecha de devolución si se proporcionó
+            if (nuevaFechaDevolucion != null && !nuevaFechaDevolucion.trim().isEmpty()) {
+                try {
+                    java.time.LocalDate fecha = java.time.LocalDate.parse(nuevaFechaDevolucion);
+                    prestamo.setFechaEstimadaDevolucion(fecha);
+                    System.out.println("✅ Fecha actualizada a: " + fecha);
+                } catch (Exception e) {
+                    System.err.println("❌ Fecha inválida: " + nuevaFechaDevolucion);
+                    return false;
+                }
+            }
+            
+            // Guardar cambios
+            prestamoService.actualizarPrestamo(prestamo);
+            System.out.println("✅ Préstamo actualizado exitosamente");
+            return true;
+            
+        } catch (Exception ex) {
+            System.err.println("❌ Error actualizando préstamo: " + ex.getMessage());
+            ex.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Actualiza TODOS los atributos de un préstamo desde la web
+     * @param prestamoId ID del préstamo
+     * @param lectorId ID del nuevo lector
+     * @param materialId ID del nuevo material
+     * @param fechaSolicitud Nueva fecha de solicitud (YYYY-MM-DD)
+     * @param fechaEstimadaDevolucion Nueva fecha estimada de devolución (YYYY-MM-DD)
+     * @param nuevoEstado Nuevo estado
+     * @return true si se actualizó exitosamente, false en caso contrario
+     */
+    public boolean actualizarPrestamoCompletoWeb(Long prestamoId, Long lectorId, Long materialId,
+                                                  String fechaSolicitud, String fechaEstimadaDevolucion, String nuevoEstado) {
+        try {
+            System.out.println("🔍 actualizarPrestamoCompletoWeb - Parámetros:");
+            System.out.println("   prestamoId: " + prestamoId);
+            System.out.println("   lectorId: " + lectorId);
+            System.out.println("   materialId: " + materialId);
+            System.out.println("   fechaSolicitud: " + fechaSolicitud);
+            System.out.println("   fechaEstimadaDevolucion: " + fechaEstimadaDevolucion);
+            System.out.println("   nuevoEstado: " + nuevoEstado);
+            
+            // Obtener préstamo existente
+            Prestamo prestamo = prestamoService.obtenerPrestamoPorId(prestamoId);
+            if (prestamo == null) {
+                System.err.println("❌ Préstamo no encontrado");
+                return false;
+            }
+            
+            // Obtener y actualizar lector
+            Lector lector = lectorService.obtenerLectorPorId(lectorId);
+            if (lector == null) {
+                System.err.println("❌ Lector no encontrado con ID: " + lectorId);
+                return false;
+            }
+            prestamo.setLector(lector);
+            System.out.println("✅ Lector actualizado");
+            
+            // Obtener y actualizar material (intentar primero como Libro, luego como ArticuloEspecial)
+            DonacionMaterial material = donacionService.obtenerLibroPorId(materialId);
+            if (material == null) {
+                material = donacionService.obtenerArticuloEspecialPorId(materialId);
+            }
+            if (material == null) {
+                System.err.println("❌ Material no encontrado con ID: " + materialId);
+                return false;
+            }
+            prestamo.setMaterial(material);
+            System.out.println("✅ Material actualizado");
+            
+            // Actualizar fecha de solicitud
+            if (fechaSolicitud != null && !fechaSolicitud.trim().isEmpty()) {
+                try {
+                    java.time.LocalDate fecha = java.time.LocalDate.parse(fechaSolicitud);
+                    prestamo.setFechaSolicitud(fecha);
+                    System.out.println("✅ Fecha solicitud actualizada a: " + fecha);
+                } catch (Exception e) {
+                    System.err.println("❌ Fecha solicitud inválida: " + fechaSolicitud);
+                    return false;
+                }
+            }
+            
+            // Actualizar fecha estimada de devolución
+            if (fechaEstimadaDevolucion != null && !fechaEstimadaDevolucion.trim().isEmpty()) {
+                try {
+                    java.time.LocalDate fecha = java.time.LocalDate.parse(fechaEstimadaDevolucion);
+                    prestamo.setFechaEstimadaDevolucion(fecha);
+                    System.out.println("✅ Fecha devolución actualizada a: " + fecha);
+                } catch (Exception e) {
+                    System.err.println("❌ Fecha devolución inválida: " + fechaEstimadaDevolucion);
+                    return false;
+                }
+            }
+            
+            // Actualizar estado
+            if (nuevoEstado != null && !nuevoEstado.trim().isEmpty()) {
+                try {
+                    EstadoPrestamo estado = EstadoPrestamo.valueOf(nuevoEstado.toUpperCase());
+                    prestamo.setEstado(estado);
+                    System.out.println("✅ Estado actualizado a: " + estado);
+                } catch (IllegalArgumentException e) {
+                    System.err.println("❌ Estado inválido: " + nuevoEstado);
+                    return false;
+                }
+            }
+            
+            // Guardar cambios
+            prestamoService.actualizarPrestamo(prestamo);
+            System.out.println("✅ Préstamo actualizado exitosamente (todos los atributos)");
+            return true;
+            
+        } catch (Exception ex) {
+            System.err.println("❌ Error actualizando préstamo completo: " + ex.getMessage());
+            ex.printStackTrace();
             return false;
         }
     }

@@ -205,10 +205,14 @@ public class PrestamoPublisher {
                 String lectorNombre = "";
                 String lectorEmail = "";
                 Long lectorId = null;
+                String lectorZona = "N/A";
                 if (prestamo.getLector() != null) {
                     lectorNombre = prestamo.getLector().getNombre();
                     lectorEmail = prestamo.getLector().getEmail();
                     lectorId = prestamo.getLector().getId();
+                    if (prestamo.getLector().getZona() != null) {
+                        lectorZona = prestamo.getLector().getZona().toString();
+                    }
                 }
                 
                 // Información del bibliotecario
@@ -220,7 +224,7 @@ public class PrestamoPublisher {
                 }
                 
                 json.append(String.format(
-                    "{\"id\": %d, \"lectorId\": %d, \"lectorNombre\": \"%s\", \"lectorEmail\": \"%s\", " +
+                    "{\"id\": %d, \"lectorId\": %d, \"lectorNombre\": \"%s\", \"lectorEmail\": \"%s\", \"lectorZona\": \"%s\", " +
                     "\"materialId\": %d, \"material\": \"%s\", \"tipo\": \"%s\", " +
                     "\"fechaSolicitud\": \"%s\", \"fechaDevolucion\": \"%s\", \"estado\": \"%s\", " +
                     "\"bibliotecarioId\": %d, \"bibliotecario\": \"%s\", \"diasRestantes\": %d}", 
@@ -228,6 +232,7 @@ public class PrestamoPublisher {
                     lectorId != null ? lectorId : 0,
                     lectorNombre.replace("\"", "\\\""),
                     lectorEmail.replace("\"", "\\\""),
+                    lectorZona.replace("\"", "\\\""),
                     materialId != null ? materialId : 0,
                     materialNombre.replace("\"", "\\\""),
                     tipo,
@@ -331,6 +336,63 @@ public class PrestamoPublisher {
                 return "{\"success\": false, \"message\": \"Error al cambiar estado. Verifique el ID y el estado.\"}";
             }
         } catch (Exception e) {
+            return String.format("{\"success\": false, \"message\": \"Error interno: %s\"}", e.getMessage());
+        }
+    }
+    
+    /**
+     * Actualiza un préstamo (estado y fecha de devolución)
+     * @param prestamoId ID del préstamo
+     * @param nuevoEstado Nuevo estado
+     * @param nuevaFechaDevolucion Nueva fecha de devolución (YYYY-MM-DD)
+     * @return JSON con el resultado
+     */
+    public String actualizarPrestamo(Long prestamoId, String nuevoEstado, String nuevaFechaDevolucion) {
+        try {
+            System.out.println("📋 PrestamoPublisher.actualizarPrestamo - Parámetros:");
+            System.out.println("   prestamoId: " + prestamoId);
+            System.out.println("   nuevoEstado: " + nuevoEstado);
+            System.out.println("   nuevaFechaDevolucion: " + nuevaFechaDevolucion);
+            
+            boolean exito = prestamoController.actualizarPrestamoWeb(prestamoId, nuevoEstado, nuevaFechaDevolucion);
+            
+            if (exito) {
+                return "{\"success\": true, \"message\": \"Préstamo actualizado exitosamente\"}";
+            } else {
+                return "{\"success\": false, \"message\": \"Error al actualizar préstamo. Verifique los datos.\"}";
+            }
+        } catch (Exception e) {
+            System.err.println("❌ PrestamoPublisher.actualizarPrestamo - Error: " + e.getMessage());
+            e.printStackTrace();
+            return String.format("{\"success\": false, \"message\": \"Error interno: %s\"}", e.getMessage());
+        }
+    }
+    
+    /**
+     * Actualizar TODOS los atributos de un préstamo
+     */
+    public String actualizarPrestamoCompleto(Long prestamoId, Long lectorId, Long materialId, 
+                                              String fechaSolicitud, String fechaEstimadaDevolucion, String nuevoEstado) {
+        try {
+            System.out.println("📋 PrestamoPublisher.actualizarPrestamoCompleto - Parámetros:");
+            System.out.println("   prestamoId: " + prestamoId);
+            System.out.println("   lectorId: " + lectorId);
+            System.out.println("   materialId: " + materialId);
+            System.out.println("   fechaSolicitud: " + fechaSolicitud);
+            System.out.println("   fechaEstimadaDevolucion: " + fechaEstimadaDevolucion);
+            System.out.println("   nuevoEstado: " + nuevoEstado);
+            
+            boolean exito = prestamoController.actualizarPrestamoCompletoWeb(
+                prestamoId, lectorId, materialId, fechaSolicitud, fechaEstimadaDevolucion, nuevoEstado);
+            
+            if (exito) {
+                return "{\"success\": true, \"message\": \"Préstamo actualizado exitosamente\"}";
+            } else {
+                return "{\"success\": false, \"message\": \"Error al actualizar préstamo. Verifique los datos.\"}";
+            }
+        } catch (Exception e) {
+            System.err.println("❌ PrestamoPublisher.actualizarPrestamoCompleto - Error: " + e.getMessage());
+            e.printStackTrace();
             return String.format("{\"success\": false, \"message\": \"Error interno: %s\"}", e.getMessage());
         }
     }

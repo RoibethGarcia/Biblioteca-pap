@@ -434,6 +434,7 @@ public class DonacionController {
                 json.append("\"id\": ").append(libro.getId()).append(",");
                 json.append("\"titulo\": \"").append(escapeJson(libro.getTitulo())).append("\",");
                 json.append("\"paginas\": ").append(libro.getPaginas()).append(",");
+                json.append("\"donante\": \"").append(escapeJson(libro.getDonante() != null ? libro.getDonante() : "Anónimo")).append("\",");
                 json.append("\"fechaIngreso\": \"").append(libro.getFechaIngreso()).append("\"");
                 json.append("}");
                 
@@ -465,6 +466,7 @@ public class DonacionController {
                 json.append("\"descripcion\": \"").append(escapeJson(articulo.getDescripcion())).append("\",");
                 json.append("\"peso\": ").append(articulo.getPeso()).append(",");
                 json.append("\"dimensiones\": \"").append(escapeJson(articulo.getDimensiones())).append("\",");
+                json.append("\"donante\": \"").append(escapeJson(articulo.getDonante() != null ? articulo.getDonante() : "Anónimo")).append("\",");
                 json.append("\"fechaIngreso\": \"").append(articulo.getFechaIngreso()).append("\"");
                 json.append("}");
                 
@@ -574,6 +576,78 @@ public class DonacionController {
             
         } catch (Exception ex) {
             return -1L;
+        }
+    }
+    
+    /**
+     * Actualiza un libro existente
+     * @param id ID del libro a actualizar
+     * @param titulo Nuevo título
+     * @param paginas Nuevo número de páginas
+     * @param donante Nuevo donante (opcional)
+     * @param fechaIngreso Nueva fecha de ingreso (opcional)
+     * @return true si se actualizó correctamente, false en caso contrario
+     */
+    public boolean actualizarLibroWeb(String id, String titulo, String paginas, String donante, String fechaIngreso) {
+        try {
+            // Validaciones básicas
+            if (id == null || id.trim().isEmpty() ||
+                titulo == null || titulo.trim().isEmpty() ||
+                paginas == null || paginas.trim().isEmpty()) {
+                return false;
+            }
+            
+            // Parsear ID
+            Long libroId;
+            try {
+                libroId = Long.parseLong(id.trim());
+            } catch (NumberFormatException e) {
+                return false;
+            }
+            
+            // Obtener libro existente
+            Libro libro = donacionService.obtenerLibroPorId(libroId);
+            if (libro == null) {
+                return false;
+            }
+            
+            // Validar páginas
+            int numPaginas;
+            try {
+                numPaginas = Integer.parseInt(paginas.trim());
+                if (numPaginas <= 0) {
+                    return false;
+                }
+            } catch (NumberFormatException e) {
+                return false;
+            }
+            
+            // Actualizar campos
+            libro.setTitulo(titulo.trim());
+            libro.setPaginas(numPaginas);
+            
+            if (donante != null && !donante.trim().isEmpty() && !donante.trim().equals("Anónimo")) {
+                libro.setDonante(donante.trim());
+            } else {
+                libro.setDonante(null);
+            }
+            
+            if (fechaIngreso != null && !fechaIngreso.trim().isEmpty()) {
+                try {
+                    libro.setFechaIngreso(LocalDate.parse(fechaIngreso.trim()));
+                } catch (Exception e) {
+                    // Si hay error en el parseo de fecha, mantener la fecha actual
+                }
+            }
+            
+            // Actualizar usando el servicio
+            donacionService.actualizarLibro(libro);
+            
+            return true;
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return false;
         }
     }
     

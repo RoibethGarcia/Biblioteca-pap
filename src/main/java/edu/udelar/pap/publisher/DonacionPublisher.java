@@ -57,6 +57,29 @@ public class DonacionPublisher {
         }
     }
     
+    /**
+     * Actualiza un libro existente
+     * @param id ID del libro
+     * @param titulo Nuevo título
+     * @param paginas Nuevo número de páginas
+     * @param donante Nuevo donante (opcional)
+     * @param fechaIngreso Nueva fecha de ingreso (opcional)
+     * @return JSON con el resultado de la operación
+     */
+    public String actualizarLibro(String id, String titulo, String paginas, String donante, String fechaIngreso) {
+        try {
+            boolean resultado = donacionController.actualizarLibroWeb(id, titulo, paginas, donante, fechaIngreso);
+            
+            if (resultado) {
+                return "{\"success\": true, \"message\": \"Libro actualizado exitosamente\"}";
+            } else {
+                return "{\"success\": false, \"message\": \"Error al actualizar libro. Verifique los datos ingresados.\"}";
+            }
+        } catch (Exception e) {
+            return String.format("{\"success\": false, \"message\": \"Error interno: %s\"}", e.getMessage());
+        }
+    }
+    
     // ==================== MÉTODOS DE CONSULTA ====================
     
     /**
