@@ -331,8 +331,6 @@ const BibliotecaSPA = {
                 <h4>📚 Mis Servicios</h4>
                 <ul>
                     <li><a href="#dashboard" class="nav-link" data-page="dashboard">📊 Mi Dashboard</a></li>
-                    <li><a href="#prestamos" class="nav-link" data-page="prestamos">📖 Mis Préstamos</a></li>
-                    <li><a href="#historial" class="nav-link" data-page="historial">📋 Mi Historial</a></li>
                 </ul>
             </div>
             <div class="nav-section">
@@ -377,7 +375,6 @@ const BibliotecaSPA = {
                 <ul>
                     <li><a href="#management/prestamos" class="nav-link" data-page="management/prestamos">📚 Gestionar Préstamos</a></li>
                     <li><a href="#management/prestamos-activos" class="nav-link" data-page="management/prestamos-activos">⏰ Préstamos Activos</a></li>
-                    <li><a href="#management/devoluciones" class="nav-link" data-page="management/devoluciones">↩️ Devoluciones</a></li>
                 </ul>
             </div>
         `;
@@ -586,6 +583,9 @@ const BibliotecaSPA = {
                 break;
             case 'management/prestamos-activos':
                 this.renderPrestamosActivos();
+                break;
+            case 'management/devoluciones':
+                this.renderDevoluciones();
                 break;
             case 'management/donaciones':
                 this.renderDonacionesManagement();
@@ -2006,12 +2006,70 @@ const BibliotecaSPA = {
     
     // Solicitar préstamo
     solicitarPrestamo: function() {
-        this.showLoading('Cargando formulario de préstamo...');
+        console.log('📖 solicitarPrestamo called');
         
-        setTimeout(() => {
+        // Verificar que el usuario es un lector
+        if (!this.config.userSession || this.config.userSession.userType !== 'LECTOR') {
+            this.showAlert('Solo lectores pueden solicitar préstamos', 'danger');
+            return;
+        }
+        
+        const lectorId = this.config.userSession?.userData?.id;
+        if (!lectorId) {
+            this.showAlert('Error: No se pudo identificar al usuario. Por favor, vuelva a iniciar sesión.', 'danger');
+            return;
+        }
+        
+        console.log('👤 Verificando estado del lector ID:', lectorId);
+        this.showLoading('Verificando estado del lector...');
+        
+        // Obtener información del lector para verificar su estado
+        $.ajax({
+            url: this.config.apiBaseUrl + '/lector/lista',
+            method: 'GET',
+            dataType: 'json'
+        })
+        .then(response => {
+            console.log('✅ Lectores recibidos:', response);
+            
+            if (response.success && response.lectores) {
+                // Buscar el lector actual
+                const lectorActual = response.lectores.find(l => l.id === lectorId);
+                
+                if (!lectorActual) {
+                    this.hideLoading();
+                    this.showAlert('Error: No se pudo obtener información del lector', 'danger');
+                    return;
+                }
+                
+                console.log('👤 Lector encontrado:', lectorActual);
+                console.log('📊 Estado del lector:', lectorActual.estado);
+                
+                // Verificar si el lector está suspendido
+                if (lectorActual.estado === 'SUSPENDIDO') {
+                    this.hideLoading();
+                    this.showAlert(
+                        '⚠️ Su cuenta está SUSPENDIDA. No puede solicitar nuevos préstamos. Por favor, contacte a la biblioteca para más información.',
+                        'danger'
+                    );
+                    console.warn('❌ Lector suspendido, no puede solicitar préstamos');
+                    return;
+                }
+                
+                // Si el estado es ACTIVO, mostrar el formulario
+                console.log('✅ Lector activo, mostrando formulario');
+                this.hideLoading();
+                this.renderSolicitarPrestamo();
+            } else {
+                this.hideLoading();
+                this.showAlert('Error al verificar estado del lector', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error al verificar estado del lector:', error);
             this.hideLoading();
-            this.renderSolicitarPrestamo();
-        }, 1000);
+            this.showAlert('Error al comunicarse con el servidor', 'danger');
+        });
     },
     
     // Renderizar formulario de solicitar préstamo
@@ -5867,10 +5925,8 @@ const BibliotecaSPA = {
         prestamos.forEach(prestamo => {
             const estadoBadge = this.getEstadoBadge(prestamo.estado);
             
-            // Calcular días transcurridos
-            const fechaSolicitud = new Date(prestamo.fechaSolicitud);
-            const hoy = new Date();
-            const diasTranscurridos = Math.floor((hoy - fechaSolicitud) / (1000 * 60 * 60 * 24));
+            // Calcular días transcurridos usando la función centralizada
+            const diasTranscurridos = this.calcularDiasTranscurridos(prestamo.fechaSolicitud);
             
             const row = `
                 <tr>
@@ -5927,6 +5983,536 @@ const BibliotecaSPA = {
                         this.hideLoading();
                         this.showAlert('Error al comunicarse con el servidor', 'danger');
                     });
+            }
+        );
+    },
+    
+    // ==================== GESTIONAR DEVOLUCIONES ====================
+    
+    renderDevoluciones: function() {
+        console.log('📦 renderDevoluciones called');
+        
+        // Verificar que el usuario es bibliotecario
+        if (!this.config.userSession || this.config.userSession.userType !== 'BIBLIOTECARIO') {
+            this.showAlert('Acceso denegado. Solo bibliotecarios pueden gestionar devoluciones.', 'danger');
+            this.navigateTo('dashboard');
+            return;
+        }
+        
+        const content = `
+            <div class="fade-in-up">
+                <h2 class="text-gradient mb-3">↩️ Gestionar Devoluciones</h2>
+                
+                <div class="alert alert-info mb-4">
+                    <strong>ℹ️ Información:</strong> En esta página puede finalizar préstamos que están EN CURSO cambiando su estado a DEVUELTO.
+                </div>
+                
+                <!-- Filtros de búsqueda -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4 style="margin: 0;">🔍 Buscar Lector</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label for="filtroLectorNombre">Nombre del Lector:</label>
+                                    <input type="text" id="filtroLectorNombre" class="form-control" 
+                                           placeholder="Ingrese nombre del lector...">
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label for="filtroLectorEmail">Email del Lector:</label>
+                                    <input type="text" id="filtroLectorEmail" class="form-control" 
+                                           placeholder="Ingrese email del lector...">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label style="visibility: hidden;">Acciones</label>
+                                <div>
+                                    <button class="btn btn-primary btn-block mb-2" onclick="BibliotecaSPA.buscarLectoresParaDevoluciones()">
+                                        🔍 Buscar Lector
+                                    </button>
+                                    <button class="btn btn-secondary btn-block" onclick="BibliotecaSPA.limpiarFiltrosDevoluciones()">
+                                        🔄 Ver Todos
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Resultados de búsqueda de lectores -->
+                        <div id="lectoresResultadosDevoluciones" style="display: none; margin-top: 15px;">
+                            <hr>
+                            <h5>👥 Lectores Encontrados:</h5>
+                            <div id="lectoresListaDevoluciones" class="list-group" style="max-height: 300px; overflow-y: auto;">
+                                <!-- Se llenan dinámicamente -->
+                            </div>
+                        </div>
+                        
+                        <!-- Lector seleccionado -->
+                        <div id="lectorSeleccionadoDevoluciones" style="display: none; margin-top: 15px;">
+                            <hr>
+                            <div class="alert alert-success">
+                                <strong>👤 Lector Seleccionado:</strong> <span id="nombreLectorSeleccionado"></span> (<span id="emailLectorSeleccionado"></span>)
+                                <button class="btn btn-sm btn-secondary float-right" onclick="BibliotecaSPA.limpiarFiltrosDevoluciones()">
+                                    ✖️ Quitar Filtro
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Estadísticas -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="stat-card">
+                            <div class="stat-icon">📚</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="statTotalEnCurso">0</div>
+                                <div class="stat-label">Total en Curso</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="statLectoresActivos">0</div>
+                                <div class="stat-label">Lectores Activos</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card">
+                            <div class="stat-icon">⏰</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="statPorVencer">0</div>
+                                <div class="stat-label">Por Vencer (< 3 días)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tabla de préstamos en curso -->
+                <div class="card">
+                    <div class="card-header">
+                        <h4 style="margin: 0;">📋 Préstamos en Curso</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table" id="devolucionesTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Lector</th>
+                                        <th>Email</th>
+                                        <th>Material</th>
+                                        <th>Tipo</th>
+                                        <th>Fecha Solicitud</th>
+                                        <th>Fecha Devolución</th>
+                                        <th>Días Transcurridos</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="devolucionesTableBody">
+                                    <tr>
+                                        <td colspan="10" class="text-center">Cargando préstamos...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        $('#devolucionesContent').html(content);
+        this.showPage('devoluciones');
+        
+        // Cargar datos
+        this.loadDevolucionesData();
+    },
+    
+    loadDevolucionesData: function() {
+        console.log('📊 loadDevolucionesData called');
+        console.log('API Base URL:', this.config.apiBaseUrl);
+        console.log('Full URL:', this.config.apiBaseUrl + '/prestamo/lista');
+        
+        this.showLoading('Cargando préstamos en curso...');
+        
+        $.ajax({
+            url: this.config.apiBaseUrl + '/prestamo/lista',
+            method: 'GET',
+            dataType: 'json',
+            timeout: 30000
+        })
+        .done(response => {
+            console.log('✅ AJAX done - Préstamos recibidos:', response);
+            console.log('Response type:', typeof response);
+            console.log('Response.success:', response.success);
+            console.log('Response.prestamos length:', response.prestamos ? response.prestamos.length : 'undefined');
+            
+            this.hideLoading();
+            
+            if (response.success && response.prestamos) {
+                // Filtrar solo préstamos EN_CURSO
+                this.allDevolucionesPrestamos = response.prestamos.filter(p => 
+                    p.estado === 'EN_CURSO'
+                );
+                
+                console.log(`📚 Préstamos EN_CURSO: ${this.allDevolucionesPrestamos.length}`);
+                console.log('Sample prestamo:', this.allDevolucionesPrestamos[0]);
+                
+                this.renderDevolucionesTable(this.allDevolucionesPrestamos);
+            } else {
+                console.error('❌ Response invalid:', response);
+                this.showAlert('Error al cargar préstamos: ' + (response.message || 'Error desconocido'), 'danger');
+                $('#devolucionesTableBody').html('<tr><td colspan="10" class="text-center">Error al cargar datos</td></tr>');
+            }
+        })
+        .fail((xhr, status, error) => {
+            console.error('❌ AJAX failed!');
+            console.error('XHR:', xhr);
+            console.error('Status:', status);
+            console.error('Error:', error);
+            console.error('Response Text:', xhr.responseText);
+            console.error('Response Status:', xhr.status);
+            
+            this.hideLoading();
+            
+            let errorMsg = 'Error al comunicarse con el servidor';
+            if (xhr.status === 404) {
+                errorMsg = 'Endpoint no encontrado (/prestamo/lista). Verifique el servidor.';
+            } else if (xhr.status === 500) {
+                errorMsg = 'Error interno del servidor (500)';
+            } else if (status === 'timeout') {
+                errorMsg = 'Tiempo de espera agotado. El servidor no responde.';
+            } else if (status === 'parsererror') {
+                errorMsg = 'Error al procesar la respuesta del servidor (JSON inválido)';
+            }
+            
+            this.showAlert(errorMsg + ' - ' + error, 'danger');
+            $('#devolucionesTableBody').html('<tr><td colspan="10" class="text-center">Error al cargar datos</td></tr>');
+        });
+    },
+    
+    buscarLectoresParaDevoluciones: function() {
+        console.log('🔍 buscarLectoresParaDevoluciones called');
+        
+        const nombre = $('#filtroLectorNombre').val().toLowerCase().trim();
+        const email = $('#filtroLectorEmail').val().toLowerCase().trim();
+        
+        if (!nombre && !email) {
+            this.showAlert('Por favor ingrese nombre y/o email del lector', 'warning');
+            return;
+        }
+        
+        this.showLoading('Buscando lectores...');
+        
+        // Obtener todos los lectores
+        $.ajax({
+            url: this.config.apiBaseUrl + '/lector/lista',
+            method: 'GET',
+            dataType: 'json'
+        })
+        .then(response => {
+            console.log('✅ Lectores recibidos:', response);
+            this.hideLoading();
+            
+            if (response.success && response.lectores) {
+                // Filtrar lectores por nombre y/o email
+                const lectoresFiltrados = response.lectores.filter(lector => {
+                    const matchNombre = !nombre || (lector.nombre && lector.nombre.toLowerCase().includes(nombre));
+                    const matchEmail = !email || (lector.email && lector.email.toLowerCase().includes(email));
+                    return matchNombre && matchEmail;
+                });
+                
+                console.log(`📊 Lectores encontrados: ${lectoresFiltrados.length}`);
+                
+                if (lectoresFiltrados.length === 0) {
+                    this.showAlert('No se encontraron lectores con los criterios especificados', 'info');
+                    $('#lectoresResultadosDevoluciones').hide();
+                    return;
+                }
+                
+                // Mostrar lista de lectores
+                this.renderLectoresResultadosDevoluciones(lectoresFiltrados);
+            } else {
+                this.showAlert('Error al buscar lectores: ' + (response.message || 'Error desconocido'), 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error al buscar lectores:', error);
+            this.hideLoading();
+            this.showAlert('Error al comunicarse con el servidor', 'danger');
+        });
+    },
+    
+    renderLectoresResultadosDevoluciones: function(lectores) {
+        console.log('📋 renderLectoresResultadosDevoluciones called with', lectores.length, 'lectores');
+        
+        const lista = $('#lectoresListaDevoluciones');
+        let html = '';
+        
+        lectores.forEach(lector => {
+            html += `
+                <a href="#" class="list-group-item list-group-item-action" 
+                   onclick="BibliotecaSPA.seleccionarLectorDevoluciones(${lector.id}, '${this.escapeHtml(lector.nombre || '')}', '${this.escapeHtml(lector.email || '')}'); return false;">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">${this.escapeHtml(lector.nombre || 'Sin nombre')}</h5>
+                        <small><span class="badge badge-info">${lector.zona || 'Sin zona'}</span></small>
+                    </div>
+                    <p class="mb-1">
+                        <strong>Email:</strong> ${this.escapeHtml(lector.email || 'Sin email')}
+                    </p>
+                    <small><strong>Estado:</strong> ${lector.estado || 'N/A'}</small>
+                </a>
+            `;
+        });
+        
+        lista.html(html);
+        $('#lectoresResultadosDevoluciones').show();
+        $('#lectorSeleccionadoDevoluciones').hide();
+    },
+    
+    seleccionarLectorDevoluciones: function(lectorId, lectorNombre, lectorEmail) {
+        console.log('👤 seleccionarLectorDevoluciones called:', lectorId, lectorNombre, lectorEmail);
+        
+        // Guardar lector seleccionado
+        this.lectorSeleccionadoDevolucionesId = lectorId;
+        this.lectorSeleccionadoDevolucionesNombre = lectorNombre;
+        this.lectorSeleccionadoDevolucionesEmail = lectorEmail;
+        
+        // Mostrar lector seleccionado
+        $('#nombreLectorSeleccionado').text(lectorNombre);
+        $('#emailLectorSeleccionado').text(lectorEmail);
+        $('#lectorSeleccionadoDevoluciones').show();
+        $('#lectoresResultadosDevoluciones').hide();
+        
+        // Filtrar préstamos por este lector
+        this.filtrarPrestamosPorLector(lectorId);
+    },
+    
+    filtrarPrestamosPorLector: function(lectorId) {
+        console.log('📊 filtrarPrestamosPorLector called for lector:', lectorId);
+        
+        if (!this.allDevolucionesPrestamos) {
+            this.showAlert('No hay datos para filtrar', 'warning');
+            return;
+        }
+        
+        const prestamosFiltrados = this.allDevolucionesPrestamos.filter(prestamo => 
+            prestamo.lectorId === lectorId
+        );
+        
+        console.log(`📚 Préstamos del lector: ${prestamosFiltrados.length} de ${this.allDevolucionesPrestamos.length}`);
+        
+        if (prestamosFiltrados.length === 0) {
+            this.showAlert(`El lector seleccionado no tiene préstamos en curso`, 'info');
+        }
+        
+        this.renderDevolucionesTable(prestamosFiltrados);
+    },
+    
+    limpiarFiltrosDevoluciones: function() {
+        console.log('🔄 limpiarFiltrosDevoluciones called');
+        
+        // Limpiar campos
+        $('#filtroLectorNombre').val('');
+        $('#filtroLectorEmail').val('');
+        
+        // Ocultar resultados y selección
+        $('#lectoresResultadosDevoluciones').hide();
+        $('#lectorSeleccionadoDevoluciones').hide();
+        
+        // Limpiar variables
+        this.lectorSeleccionadoDevolucionesId = null;
+        this.lectorSeleccionadoDevolucionesNombre = null;
+        this.lectorSeleccionadoDevolucionesEmail = null;
+        
+        // Mostrar todos los préstamos EN_CURSO
+        if (this.allDevolucionesPrestamos) {
+            this.renderDevolucionesTable(this.allDevolucionesPrestamos);
+        }
+    },
+    
+    renderDevolucionesTable: function(prestamos) {
+        console.log('📋 renderDevolucionesTable called with', prestamos.length, 'prestamos');
+        
+        const tbody = $('#devolucionesTableBody');
+        
+        if (!prestamos || prestamos.length === 0) {
+            tbody.html('<tr><td colspan="10" class="text-center">No hay préstamos en curso</td></tr>');
+            this.updateDevolucionesStats([]);
+            return;
+        }
+        
+        // Ordenar por fecha de solicitud (más antiguos primero)
+        const prestamosSorted = [...prestamos].sort((a, b) => {
+            return new Date(a.fechaSolicitud) - new Date(b.fechaSolicitud);
+        });
+        
+        let html = '';
+        prestamosSorted.forEach(prestamo => {
+            const diasTranscurridos = this.calcularDiasTranscurridos(prestamo.fechaSolicitud);
+            // Backend sends "fechaDevolucion", frontend might use "fechaEstimadaDevolucion"
+            const fechaDev = prestamo.fechaDevolucion || prestamo.fechaEstimadaDevolucion;
+            const diasHastaDevolucion = this.calcularDiasHastaDevolucion(fechaDev);
+            const isUrgent = diasHastaDevolucion <= 3 && diasHastaDevolucion >= 0;
+            const isOverdue = diasHastaDevolucion < 0;
+            
+            const rowClass = isOverdue ? 'table-danger' : (isUrgent ? 'table-warning' : '');
+            
+            // Material info - backend sends "material" and "tipo"
+            const materialNombre = prestamo.material || prestamo.materialTitulo || prestamo.materialDescripcion || 'N/A';
+            const materialTipo = prestamo.tipo || prestamo.materialTipo || 'N/A';
+            
+            // Date info - backend sends "fechaDevolucion"
+            const fechaDevolucion = prestamo.fechaDevolucion || prestamo.fechaEstimadaDevolucion || 'N/A';
+            
+            html += `
+                <tr class="${rowClass}">
+                    <td>${prestamo.id}</td>
+                    <td>${this.escapeHtml(prestamo.lectorNombre || 'N/A')}</td>
+                    <td>${this.escapeHtml(prestamo.lectorEmail || 'N/A')}</td>
+                    <td>${this.escapeHtml(materialNombre)}</td>
+                    <td><span class="badge badge-info">${materialTipo}</span></td>
+                    <td>${prestamo.fechaSolicitud || 'N/A'}</td>
+                    <td>${fechaDevolucion}</td>
+                    <td>
+                        ${diasTranscurridos} días
+                        ${isOverdue ? '<br><span class="badge badge-danger">VENCIDO</span>' : ''}
+                        ${isUrgent && !isOverdue ? '<br><span class="badge badge-warning">URGENTE</span>' : ''}
+                    </td>
+                    <td><span class="badge badge-primary">EN CURSO</span></td>
+                    <td>
+                        <button class="btn btn-success btn-sm" onclick="BibliotecaSPA.finalizarPrestamo(${prestamo.id}, '${this.escapeHtml(prestamo.lectorNombre || 'N/A')}')">
+                            ✅ Finalizar Préstamo
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.html(html);
+        this.updateDevolucionesStats(prestamos);
+    },
+    
+    updateDevolucionesStats: function(prestamos) {
+        const total = prestamos.length;
+        
+        // Contar lectores únicos
+        const lectoresUnicos = new Set(prestamos.map(p => p.lectorId));
+        const lectoresActivos = lectoresUnicos.size;
+        
+        // Contar préstamos por vencer (menos de 3 días)
+        const porVencer = prestamos.filter(p => {
+            // Backend sends "fechaDevolucion", frontend might use "fechaEstimadaDevolucion"
+            const fechaDev = p.fechaDevolucion || p.fechaEstimadaDevolucion;
+            const dias = this.calcularDiasHastaDevolucion(fechaDev);
+            return dias <= 3 && dias >= 0;
+        }).length;
+        
+        $('#statTotalEnCurso').text(total);
+        $('#statLectoresActivos').text(lectoresActivos);
+        $('#statPorVencer').text(porVencer);
+    },
+    
+    calcularDiasHastaDevolucion: function(fechaDevolucion) {
+        if (!fechaDevolucion) return 999;
+        
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        
+        const partes = fechaDevolucion.split('/');
+        const fecha = new Date(partes[2], partes[1] - 1, partes[0]);
+        fecha.setHours(0, 0, 0, 0);
+        
+        const diff = fecha - hoy;
+        return Math.floor(diff / (1000 * 60 * 60 * 24));
+    },
+    
+    calcularDiasTranscurridos: function(fechaSolicitud) {
+        if (!fechaSolicitud) {
+            console.warn('⚠️ calcularDiasTranscurridos: fechaSolicitud is empty');
+            return 0;
+        }
+        
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        
+        // Handle both DD/MM/YYYY and YYYY-MM-DD formats
+        let fecha;
+        if (fechaSolicitud.includes('/')) {
+            // DD/MM/YYYY format
+            const partes = fechaSolicitud.split('/');
+            if (partes.length !== 3) {
+                console.warn('⚠️ Invalid date format (not DD/MM/YYYY):', fechaSolicitud);
+                return 0;
+            }
+            fecha = new Date(partes[2], partes[1] - 1, partes[0]);
+        } else if (fechaSolicitud.includes('-')) {
+            // YYYY-MM-DD format
+            fecha = new Date(fechaSolicitud);
+        } else {
+            console.warn('⚠️ Unknown date format:', fechaSolicitud);
+            return 0;
+        }
+        
+        fecha.setHours(0, 0, 0, 0);
+        
+        // Validate the date
+        if (isNaN(fecha.getTime())) {
+            console.warn('⚠️ Invalid date object created from:', fechaSolicitud);
+            return 0;
+        }
+        
+        const diff = hoy - fecha;
+        const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+        
+        return dias;
+    },
+    
+    finalizarPrestamo: function(prestamoId, lectorNombre) {
+        console.log('✅ finalizarPrestamo called for ID:', prestamoId);
+        
+        // Mostrar confirmación
+        this.showConfirmModal(
+            '¿Finalizar Préstamo?',
+            `¿Está seguro de que desea finalizar el préstamo #${prestamoId} del lector "${lectorNombre}"? El estado cambiará a DEVUELTO.`,
+            () => {
+                this.showLoading('Finalizando préstamo...');
+                
+                // Llamar al API para actualizar el estado
+                $.ajax({
+                    url: this.config.apiBaseUrl + '/prestamo/actualizar',
+                    method: 'POST',
+                    data: {
+                        prestamoId: prestamoId,
+                        nuevoEstado: 'DEVUELTO',
+                        nuevaFechaDevolucion: '' // No cambiar fecha
+                    },
+                    dataType: 'json'
+                })
+                .then(response => {
+                    console.log('✅ Respuesta de actualizar:', response);
+                    this.hideLoading();
+                    
+                    if (response.success) {
+                        this.showAlert(`✅ Préstamo #${prestamoId} finalizado exitosamente. Estado cambiado a DEVUELTO.`, 'success');
+                        // Recargar datos
+                        this.loadDevolucionesData();
+                    } else {
+                        this.showAlert('Error al finalizar préstamo: ' + (response.message || 'Error desconocido'), 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Error al finalizar préstamo:', error);
+                    this.hideLoading();
+                    this.showAlert('Error al comunicarse con el servidor', 'danger');
+                });
             }
         );
     },
