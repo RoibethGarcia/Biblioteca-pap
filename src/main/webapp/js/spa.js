@@ -327,58 +327,70 @@ const BibliotecaSPA = {
     // Actualizar navegación principal para lector
     updateMainNavigationForLector: function() {
         const navHtml = `
-            <div class="nav-section">
-                <h4>📚 Mis Servicios</h4>
-                <ul>
-                    <li><a href="#dashboard" class="nav-link" data-page="dashboard">📊 Mi Dashboard</a></li>
-                </ul>
-            </div>
-            <div class="nav-section">
-                <h4>🔍 Buscar</h4>
-                <ul>
-                    <li><a href="#buscar-libros" class="nav-link" data-page="buscar-libros">📚 Buscar Libros</a></li>
-                    <li><a href="#buscar-materiales" class="nav-link" data-page="buscar-materiales">📄 Buscar Materiales</a></li>
-                </ul>
+            <button class="mobile-nav-toggle" id="mobileNavToggle">
+                <i class="fas fa-bars"></i> Menú
+            </button>
+            <div class="nav-content" id="navContent">
+                <div class="nav-section">
+                    <h4>📚 Mis Servicios</h4>
+                    <ul>
+                        <li><a href="#dashboard" class="nav-link" data-page="dashboard">📊 Mi Dashboard</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h4>🔍 Buscar</h4>
+                    <ul>
+                        <li><a href="#buscar-libros" class="nav-link" data-page="buscar-libros">📚 Buscar Libros</a></li>
+                        <li><a href="#buscar-materiales" class="nav-link" data-page="buscar-materiales">📄 Buscar Materiales</a></li>
+                    </ul>
+                </div>
             </div>
         `;
-        $('#mainNavigation .nav-content').html(navHtml);
+        $('#mainNavigation .container').append(navHtml);
+        this.initMobileNavToggle();
     },
     
     // Actualizar navegación principal para bibliotecario
     updateMainNavigationForBibliotecario: function() {
         const navHtml = `
-            <div class="nav-section">
-                <h4>📊 Gestión General</h4>
-                <ul>
-                    <li><a href="#dashboard" class="nav-link" data-page="dashboard">📈 Dashboard</a></li>
-                    <li><a href="#reportes" class="nav-link" data-page="reportes">📊 Reportes</a></li>
-                    <li><a href="#estadisticas" class="nav-link" data-page="estadisticas">📈 Estadísticas</a></li>
-                </ul>
-            </div>
-            <div class="nav-section">
-                <h4>👥 Gestión de Usuarios</h4>
-                <ul>
-                    <li><a href="#management/lectores" class="nav-link" data-page="management/lectores">👤 Gestionar Lectores</a></li>
-                    <li><a href="#management/bibliotecarios" class="nav-link" data-page="management/bibliotecarios">👨‍💼 Gestionar Bibliotecarios</a></li>
-                </ul>
-            </div>
-            <div class="nav-section">
-                <h4>📚 Gestión de Materiales</h4>
-                <ul>
-                    <li><a href="#management/libros" class="nav-link" data-page="management/libros">📖 Gestionar Libros</a></li>
-                    <li><a href="#management/donaciones" class="nav-link" data-page="management/donaciones">🎁 Gestionar Donaciones</a></li>
-                    <li><a href="#management/materiales" class="nav-link" data-page="management/materiales">📄 Gestionar Materiales</a></li>
-                </ul>
-            </div>
-            <div class="nav-section">
-                <h4>📋 Gestión de Préstamos</h4>
-                <ul>
-                    <li><a href="#management/prestamos" class="nav-link" data-page="management/prestamos">📚 Gestionar Préstamos</a></li>
-                    <li><a href="#management/prestamos-activos" class="nav-link" data-page="management/prestamos-activos">⏰ Préstamos Activos</a></li>
-                </ul>
+            <button class="mobile-nav-toggle" id="mobileNavToggle">
+                <i class="fas fa-bars"></i> Menú
+            </button>
+            <div class="nav-content" id="navContent">
+                <div class="nav-section">
+                    <h4>📊 Gestión General</h4>
+                    <ul>
+                        <li><a href="#dashboard" class="nav-link" data-page="dashboard">📈 Dashboard</a></li>
+                        <li><a href="#reportes" class="nav-link" data-page="reportes">📊 Reportes</a></li>
+                        <li><a href="#estadisticas" class="nav-link" data-page="estadisticas">📈 Estadísticas</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h4>👥 Gestión de Usuarios</h4>
+                    <ul>
+                        <li><a href="#management/lectores" class="nav-link" data-page="management/lectores">👤 Gestionar Lectores</a></li>
+                        <li><a href="#management/bibliotecarios" class="nav-link" data-page="management/bibliotecarios">👨‍💼 Gestionar Bibliotecarios</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h4>📚 Gestión de Materiales</h4>
+                    <ul>
+                        <li><a href="#management/libros" class="nav-link" data-page="management/libros">📖 Gestionar Libros</a></li>
+                        <li><a href="#management/donaciones" class="nav-link" data-page="management/donaciones">🎁 Gestionar Donaciones</a></li>
+                        <li><a href="#management/materiales" class="nav-link" data-page="management/materiales">📄 Gestionar Materiales</a></li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <h4>📋 Gestión de Préstamos</h4>
+                    <ul>
+                        <li><a href="#management/prestamos" class="nav-link" data-page="management/prestamos">📚 Gestionar Préstamos</a></li>
+                        <li><a href="#management/prestamos-activos" class="nav-link" data-page="management/prestamos-activos">⏰ Préstamos Activos</a></li>
+                    </ul>
+                </div>
             </div>
         `;
-        $('#mainNavigation .nav-content').html(navHtml);
+        $('#mainNavigation .container').append(navHtml);
+        this.initMobileNavToggle();
     },
     
     // Actualizar información del usuario en la UI
@@ -2959,6 +2971,46 @@ const BibliotecaSPA = {
         
         // Mostrar notificación
         this.showAlert(`Tema cambiado a ${newTheme === 'dark' ? 'oscuro' : 'claro'}`, 'info');
+    },
+    
+    // Initialize mobile navigation toggle
+    initMobileNavToggle: function() {
+        console.log('📱 Initializing mobile navigation toggle');
+        
+        // Remove previous event listeners to avoid duplicates
+        $('#mobileNavToggle').off('click');
+        
+        // Add click event listener
+        $('#mobileNavToggle').on('click', function() {
+            console.log('📱 Mobile nav toggle clicked');
+            const $navContent = $('#navContent');
+            const $toggle = $(this);
+            
+            // Toggle the show class
+            $navContent.toggleClass('show');
+            $toggle.toggleClass('active');
+            
+            // Update icon
+            const $icon = $toggle.find('i');
+            if ($navContent.hasClass('show')) {
+                $icon.removeClass('fa-bars').addClass('fa-times');
+                console.log('📱 Mobile nav opened');
+            } else {
+                $icon.removeClass('fa-times').addClass('fa-bars');
+                console.log('📱 Mobile nav closed');
+            }
+        });
+        
+        // Close mobile nav when clicking on a link
+        $('.nav-content a').on('click', function() {
+            if (window.innerWidth <= 768) {
+                console.log('📱 Closing mobile nav after link click');
+                $('#navContent').removeClass('show');
+                $('#mobileNavToggle').removeClass('active').find('i').removeClass('fa-times').addClass('fa-bars');
+            }
+        });
+        
+        console.log('✅ Mobile navigation toggle initialized');
     },
     
     // ==================== FUNCIONES PARA BOTONES DE SERVICIOS ====================
