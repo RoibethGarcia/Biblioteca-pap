@@ -202,3 +202,4 @@ Si alguien del equipo tiene problemas en Windows:
 🎉 **El proyecto ahora funciona perfectamente en Windows, Mac y Linux.**
 
 
+

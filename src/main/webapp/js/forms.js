@@ -70,7 +70,7 @@ const BibliotecaForms = {
             const formId = form.attr('id');
             
             // Ignorar formularios que son manejados por BibliotecaSPA
-            const spaForms = ['solicitarPrestamoForm', 'filtroHistorialForm', 'filtroPrestamosForm'];
+            const spaForms = ['loginForm', 'registerForm', 'solicitarPrestamoForm', 'filtroHistorialForm', 'filtroPrestamosForm'];
             if (spaForms.includes(formId)) {
                 console.log('⏭️ Formulario ignorado por forms.js, será manejado por spa.js:', formId);
                 // No hacer nada, dejar que spa.js lo maneje

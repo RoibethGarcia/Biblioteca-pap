@@ -562,6 +562,15 @@ public class IntegratedServer {
                     return factory.getPrestamoPublisher().obtenerCantidadPrestamos();
                 } else if (path.equals("/prestamo/cantidad-vencidos")) {
                     return factory.getPrestamoPublisher().obtenerCantidadPrestamosVencidos();
+                } else if (path.equals("/prestamo/cantidad-por-estado")) {
+                    // Obtener estado del query string
+                    if (query != null && query.contains("estado=")) {
+                        String estado = query.split("estado=")[1].split("&")[0];
+                        System.out.println("📊 Obteniendo cantidad de préstamos para estado: " + estado);
+                        return factory.getPrestamoPublisher().obtenerCantidadPrestamosPorEstado(estado);
+                    } else {
+                        return "{\"error\":\"estado es requerido\"}";
+                    }
                 } else if (path.equals("/prestamo/cantidad-por-lector")) {
                     // Obtener lectorId del query string
                     if (query != null && query.contains("lectorId=")) {

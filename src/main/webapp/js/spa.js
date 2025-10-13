@@ -369,14 +369,12 @@ const BibliotecaSPA = {
                 <ul>
                     <li><a href="#dashboard" class="nav-link" data-page="dashboard">📊 Mi Dashboard</a></li>
                     <li><a href="#prestamos" class="nav-link" data-page="prestamos">📖 Mis Préstamos</a></li>
-                    <li><a href="#historial" class="nav-link" data-page="historial">📋 Mi Historial</a></li>
                 </ul>
             </div>
             <div class="nav-section">
-                <h4>🔍 Buscar</h4>
+                <h4>📖 Catálogo</h4>
                 <ul>
-                    <li><a href="#buscar-libros" class="nav-link" data-page="buscar-libros">📚 Buscar Libros</a></li>
-                    <li><a href="#buscar-materiales" class="nav-link" data-page="buscar-materiales">📄 Buscar Materiales</a></li>
+                    <li><a href="#catalogo" class="nav-link" data-page="catalogo">📚 Ver Catálogo</a></li>
                 </ul>
             </div>
         `;
@@ -598,11 +596,8 @@ const BibliotecaSPA = {
             case 'historial':
                 this.verMiHistorial();
                 break;
-            case 'buscar-libros':
-                this.buscarLibros();
-                break;
-            case 'buscar-materiales':
-                this.buscarMateriales();
+            case 'catalogo':
+                this.verCatalogo();
                 break;
         }
     },
@@ -849,7 +844,7 @@ const BibliotecaSPA = {
                                 <h4 style="margin: 0;">📚 Catálogo de Materiales</h4>
                             </div>
                             <div class="card-body">
-                                <p>Explora todos los libros y artículos especiales disponibles</p>
+                                <p>Explora libros y artículos disponibles</p>
                                 <button class="btn btn-secondary" onclick="BibliotecaSPA.verCatalogo()">
                                     Ver Catálogo Completo
                                 </button>
@@ -1194,13 +1189,13 @@ const BibliotecaSPA = {
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-4">
+                            <div class="col-5">
                                 <div class="form-group">
                                     <label for="searchPrestamoInput">Buscar por lector o material:</label>
                                     <input type="text" id="searchPrestamoInput" class="form-control" placeholder="Ingrese nombre o título...">
                                 </div>
                             </div>
-                            <div class="col-3">
+                            <div class="col-2">
                                 <div class="form-group">
                                     <label for="estadoPrestamoFilter">Filtrar por estado:</label>
                                     <select id="estadoPrestamoFilter" class="form-control">
@@ -1211,7 +1206,7 @@ const BibliotecaSPA = {
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-3">
+                            <div class="col-2">
                                 <div class="form-group">
                                     <label for="tipoMaterialPrestamoFilter">Filtrar por tipo:</label>
                                     <select id="tipoMaterialPrestamoFilter" class="form-control">
@@ -1221,10 +1216,20 @@ const BibliotecaSPA = {
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-2">
+                            <div class="col-1">
                                 <div class="form-group">
                                     <label>&nbsp;</label>
-                                    <button id="searchPrestamoBtn" class="btn btn-primary" style="width: 100%;">Buscar</button>
+                                    <button id="searchPrestamoBtn" class="btn btn-primary" style="width: 100%;" title="Buscar">
+                                        🔍
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-1">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <button id="limpiarFiltrosPrestamoBtn" class="btn btn-secondary" style="width: 100%;" title="Limpiar filtros" onclick="BibliotecaSPA.limpiarFiltrosPrestamosGestion()">
+                                        🔄
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1303,7 +1308,14 @@ const BibliotecaSPA = {
             const data = await bibliotecaApi.prestamos.lista();
             const prestamos = data.prestamos || [];
             console.log('✅ Préstamos loaded from server:', prestamos.length);
+            
+            // Almacenar préstamos originales para filtrado
+            this.config.allPrestamosGestion = prestamos;
+            
             this.renderPrestamosGestionTable(prestamos);
+            
+            // Configurar event listeners para filtros después de renderizar
+            this.setupPrestamosGestionFilters();
         } catch (error) {
             console.error('❌ Error loading préstamos:', error);
             renderer.showError('Error al cargar los préstamos: ' + error.message, 7);
@@ -1350,9 +1362,23 @@ const BibliotecaSPA = {
             { field: 'materialTitulo', header: 'Material',
               render: (p) => p.materialTitulo || 'N/A' },
             { field: 'fechaSolicitud', header: 'Fecha Solicitud', width: '120px',
-              render: (p) => BibliotecaFormatter.formatDate(p.fechaSolicitud) },
+              render: (p) => {
+                // Si la fecha ya viene formateada (contiene /), mostrarla directamente
+                if (p.fechaSolicitud && p.fechaSolicitud.includes('/')) {
+                    return p.fechaSolicitud;
+                }
+                // Si viene en formato ISO, formatear
+                return BibliotecaFormatter.formatDate(p.fechaSolicitud);
+              }},
             { field: 'fechaDevolucion', header: 'Fecha Devolución', width: '120px',
-              render: (p) => BibliotecaFormatter.formatDate(p.fechaDevolucion) },
+              render: (p) => {
+                // Si la fecha ya viene formateada (contiene /), mostrarla directamente
+                if (p.fechaDevolucion && p.fechaDevolucion.includes('/')) {
+                    return p.fechaDevolucion;
+                }
+                // Si viene en formato ISO, formatear
+                return BibliotecaFormatter.formatDate(p.fechaDevolucion);
+              }},
             { field: 'estado', header: 'Estado', width: '120px',
               render: (p) => BibliotecaFormatter.getEstadoBadge(p.estado) },
             { field: 'acciones', header: 'Acciones', width: '120px',
@@ -1365,48 +1391,187 @@ const BibliotecaSPA = {
     },
     
     // ✨ NUEVO: Registrar nuevo préstamo (Fase 2)
-    registrarNuevoPrestamo: function() {
-        ModalManager.showForm(
-            '📚 Registrar Nuevo Préstamo',
-            [
-                { name: 'idLector', label: 'ID del Lector', type: 'number', required: true,
-                  placeholder: 'Ingrese el ID del lector' },
-                { name: 'idMaterial', label: 'ID del Material', type: 'number', required: true,
-                  placeholder: 'Ingrese el ID del libro/material' },
-                { name: 'fechaDevolucion', label: 'Fecha de Devolución', type: 'date', required: true },
-                { name: 'observaciones', label: 'Observaciones', type: 'textarea', rows: 3,
-                  placeholder: 'Observaciones opcionales...' }
-            ],
-            async (formData) => {
-                try {
-                    // Primero verificar el estado del lector
-                    const lectorResponse = await bibliotecaApi.get(`/lector/${formData.idLector}`);
-                    
-                    if (lectorResponse && lectorResponse.lector) {
-                        if (lectorResponse.lector.estado === 'SUSPENDIDO') {
-                            this.showAlert('⛔ No se puede crear el préstamo. El lector está suspendido.', 'danger');
-                            return false; // No cerrar modal para que vean el mensaje
-                        }
-                    }
-                    
-                    // Si el lector está activo, proceder a crear el préstamo
-                    const response = await bibliotecaApi.prestamos.crear(formData);
-                    this.showAlert('Préstamo registrado exitosamente', 'success');
-                    this.loadPrestamosGestionData();
-                    this.loadPrestamosGestionStats();
-                    return true; // Cerrar modal
-                } catch (error) {
-                    // Mostrar el mensaje de error del backend (que incluye la validación de lector suspendido)
-                    const errorMessage = error.message || 'Error desconocido';
-                    this.showAlert('Error al registrar préstamo: ' + errorMessage, 'danger');
-                    return false; // No cerrar modal
-                }
-            },
-            {
-                submitText: 'Registrar Préstamo',
-                cancelText: 'Cancelar'
+    registrarNuevoPrestamo: async function() {
+        try {
+            console.log('🚀 Iniciando registro de nuevo préstamo...');
+            
+            // Mostrar loading mientras se cargan los datos
+            this.showLoading('Cargando datos...');
+            
+            // Cargar listas de lectores, libros y artículos en paralelo
+            const [lectoresData, librosData, articulosData] = await Promise.all([
+                bibliotecaApi.lectores.lista(),
+                bibliotecaApi.donaciones.libros(),
+                bibliotecaApi.donaciones.articulos()
+            ]);
+            
+            this.hideLoading();
+            
+            console.log('📊 Datos cargados:', {
+                lectores: lectoresData.lectores?.length || 0,
+                libros: librosData.libros?.length || 0,
+                articulos: articulosData.articulos?.length || 0
+            });
+            
+            // Preparar opciones de lectores (solo activos)
+            const lectores = lectoresData.lectores || [];
+            const opcionesLectores = lectores
+                .filter(l => l.estado !== 'SUSPENDIDO') // Filtrar solo lectores activos
+                .map(l => ({
+                    value: l.id,
+                    label: `${l.nombre} ${l.apellido || ''} (${l.email})`.trim()
+                }));
+            
+            console.log(`✅ Lectores activos: ${opcionesLectores.length} de ${lectores.length}`);
+            
+            if (opcionesLectores.length === 0) {
+                console.log('⚠️ No hay lectores activos');
+                this.showAlert('⚠️ No hay lectores activos disponibles', 'warning');
+                return;
             }
-        );
+            
+            // Preparar opciones de materiales (libros + artículos disponibles)
+            const libros = librosData.libros || [];
+            const articulos = articulosData.articulos || [];
+            
+            console.log('📚 Procesando materiales...', {
+                totalLibros: libros.length,
+                totalArticulos: articulos.length
+            });
+            
+            const opcionesMateriales = [];
+            
+            // Agregar TODOS los libros (sin filtrar por disponibilidad por ahora)
+            libros.forEach(l => {
+                opcionesMateriales.push({
+                    value: l.id,
+                    label: `📚 ${l.titulo || l.descripcion || 'Sin título'} (Libro - ${l.paginas || 0} págs.)`
+                });
+            });
+            
+            // Agregar TODOS los artículos (sin filtrar por disponibilidad por ahora)
+            articulos.forEach(a => {
+                opcionesMateriales.push({
+                    value: a.id,
+                    label: `📦 ${a.descripcion || a.titulo || 'Sin descripción'} (Artículo Especial)`
+                });
+            });
+            
+            console.log(`✅ Materiales disponibles: ${opcionesMateriales.length}`);
+            
+            if (opcionesMateriales.length === 0) {
+                console.log('⚠️ No hay materiales disponibles');
+                this.showAlert('⚠️ No hay materiales disponibles para préstamo', 'warning');
+                return;
+            }
+            
+            console.log('🎨 Mostrando formulario con:', {
+                lectores: opcionesLectores.length,
+                materiales: opcionesMateriales.length
+            });
+            
+            // Mostrar formulario con listas dinámicas
+            ModalManager.showForm(
+                '📚 Registrar Nuevo Préstamo',
+                [
+                    { 
+                        name: 'lectorId', 
+                        label: 'Seleccione el Lector', 
+                        type: 'select', 
+                        required: true,
+                        options: opcionesLectores
+                    },
+                    { 
+                        name: 'materialId', 
+                        label: 'Seleccione el Material', 
+                        type: 'select', 
+                        required: true,
+                        options: opcionesMateriales
+                    },
+                    { 
+                        name: 'fechaDevolucion', 
+                        label: 'Fecha de Devolución', 
+                        type: 'date', 
+                        required: true 
+                    },
+                    { 
+                        name: 'observaciones', 
+                        label: 'Observaciones', 
+                        type: 'textarea', 
+                        rows: 3,
+                        placeholder: 'Observaciones opcionales...' 
+                    }
+                ],
+                async (formData) => {
+                    try {
+                        console.log('📤 Enviando datos del préstamo:', formData);
+                        
+                        // Agregar el ID del bibliotecario actual (del usuario logueado)
+                        const bibliotecarioId = this.config.userSession?.userId;
+                        if (bibliotecarioId) {
+                            formData.bibliotecarioId = bibliotecarioId;
+                            console.log('👨‍💼 Bibliotecario actual:', bibliotecarioId);
+                        } else {
+                            console.warn('⚠️ No se encontró bibliotecarioId en la sesión');
+                        }
+                        
+                        // Convertir fecha de YYYY-MM-DD a DD/MM/YYYY
+                        if (formData.fechaDevolucion) {
+                            const [year, month, day] = formData.fechaDevolucion.split('-');
+                            formData.fechaDevolucion = `${day}/${month}/${year}`;
+                            console.log('📅 Fecha convertida a:', formData.fechaDevolucion);
+                        }
+                        
+                        // Convertir datos a formato URL-encoded
+                        const urlEncodedData = new URLSearchParams();
+                        for (const [key, value] of Object.entries(formData)) {
+                            if (value !== undefined && value !== null && value !== '') {
+                                urlEncodedData.append(key, value);
+                            }
+                        }
+                        
+                        console.log('📤 Datos URL-encoded:', urlEncodedData.toString());
+                        
+                        // Crear el préstamo con fetch directo
+                        const response = await fetch('/prestamo/crear', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: urlEncodedData.toString()
+                        });
+                        
+                        const result = await response.json();
+                        console.log('✅ Respuesta del servidor:', result);
+                        
+                        if (result.success) {
+                            this.showAlert('✅ Préstamo registrado exitosamente', 'success');
+                            this.loadPrestamosGestionData();
+                            this.loadPrestamosGestionStats();
+                            return true; // Cerrar modal
+                        } else {
+                            this.showAlert('❌ ' + (result.message || 'Error al crear préstamo'), 'danger');
+                            return false;
+                        }
+                    } catch (error) {
+                        // Mostrar el mensaje de error del backend
+                        console.error('❌ Error al crear préstamo:', error);
+                        const errorMessage = error.message || 'Error desconocido';
+                        this.showAlert('❌ Error al registrar préstamo: ' + errorMessage, 'danger');
+                        return false; // No cerrar modal
+                    }
+                },
+                {
+                    submitText: 'Registrar Préstamo',
+                    cancelText: 'Cancelar'
+                }
+            );
+            
+        } catch (error) {
+            this.hideLoading();
+            console.error('❌ Error al cargar datos para nuevo préstamo:', error);
+            this.showAlert('❌ Error al cargar los datos: ' + error.message, 'danger');
+        }
     },
     
     // ✨ NUEVO: Ver detalles de préstamo (Fase 2)
@@ -1752,6 +1917,104 @@ const BibliotecaSPA = {
         this.showAlert('Actualizando listado...', 'info');
         this.loadPrestamosGestionData();
         this.loadPrestamosGestionStats();
+    },
+    
+    // ✨ NUEVO: Configurar filtros de préstamos en gestión
+    setupPrestamosGestionFilters: function() {
+        // Remover event listeners anteriores para evitar duplicados
+        $('#searchPrestamoBtn').off('click');
+        $('#searchPrestamoInput').off('keypress');
+        $('#estadoPrestamoFilter, #tipoMaterialPrestamoFilter').off('change');
+        
+        // Botón de búsqueda
+        $('#searchPrestamoBtn').on('click', () => {
+            this.aplicarFiltrosPrestamosGestion();
+        });
+        
+        // Buscar al presionar Enter en el input
+        $('#searchPrestamoInput').on('keypress', (e) => {
+            if (e.which === 13) { // Enter key
+                e.preventDefault();
+                this.aplicarFiltrosPrestamosGestion();
+            }
+        });
+        
+        // Aplicar filtro automático al cambiar los selectores
+        $('#estadoPrestamoFilter, #tipoMaterialPrestamoFilter').on('change', () => {
+            this.aplicarFiltrosPrestamosGestion();
+        });
+        
+        console.log('✅ Filtros de préstamos configurados');
+    },
+    
+    // ✨ NUEVO: Aplicar filtros a préstamos en gestión
+    aplicarFiltrosPrestamosGestion: function() {
+        console.log('🔍 Aplicando filtros a préstamos de gestión...');
+        
+        const searchText = $('#searchPrestamoInput').val().toLowerCase().trim();
+        const estadoFiltro = $('#estadoPrestamoFilter').val();
+        const tipoFiltro = $('#tipoMaterialPrestamoFilter').val();
+        
+        console.log('📋 Filtros aplicados:', { 
+            busqueda: searchText, 
+            estado: estadoFiltro, 
+            tipo: tipoFiltro 
+        });
+        
+        // Obtener todos los préstamos originales
+        const todosLosPrestamos = this.config.allPrestamosGestion || [];
+        
+        // Aplicar filtros
+        let prestamosFiltrados = todosLosPrestamos.filter(prestamo => {
+            // Filtro de búsqueda (por nombre de lector o título de material)
+            let cumpleBusqueda = true;
+            if (searchText) {
+                const lectorNombre = (prestamo.lectorNombre || '').toLowerCase();
+                const materialTitulo = (prestamo.materialTitulo || '').toLowerCase();
+                cumpleBusqueda = lectorNombre.includes(searchText) || materialTitulo.includes(searchText);
+            }
+            
+            // Filtro de estado
+            let cumpleEstado = true;
+            if (estadoFiltro) {
+                cumpleEstado = prestamo.estado === estadoFiltro;
+            }
+            
+            // Filtro de tipo de material
+            let cumpleTipo = true;
+            if (tipoFiltro) {
+                cumpleTipo = prestamo.tipo === tipoFiltro;
+            }
+            
+            return cumpleBusqueda && cumpleEstado && cumpleTipo;
+        });
+        
+        console.log(`✅ Filtrado completado: ${prestamosFiltrados.length} de ${todosLosPrestamos.length} préstamos`);
+        
+        // Renderizar tabla con préstamos filtrados
+        this.renderPrestamosGestionTable(prestamosFiltrados);
+        
+        // Mostrar mensaje si no hay resultados
+        if (prestamosFiltrados.length === 0) {
+            const renderer = new TableRenderer('#prestamosGestionTable');
+            renderer.showEmpty('No se encontraron préstamos con los filtros aplicados', 7);
+        }
+    },
+    
+    // ✨ NUEVO: Limpiar filtros de préstamos en gestión
+    limpiarFiltrosPrestamosGestion: function() {
+        console.log('🔄 Limpiando filtros de préstamos...');
+        
+        // Limpiar valores de los filtros
+        $('#searchPrestamoInput').val('');
+        $('#estadoPrestamoFilter').val('');
+        $('#tipoMaterialPrestamoFilter').val('');
+        
+        // Mostrar todos los préstamos
+        const todosLosPrestamos = this.config.allPrestamosGestion || [];
+        this.renderPrestamosGestionTable(todosLosPrestamos);
+        
+        console.log('✅ Filtros limpiados');
     },
     
     // Renderizar gestión de donaciones
@@ -3386,6 +3649,9 @@ const BibliotecaSPA = {
     
     // Mostrar alerta
     showAlert: function(message, type = 'info') {
+        // Limpiar alertas anteriores para evitar duplicados
+        $('#mainContent .alert').remove();
+        
         const alertHtml = `
             <div class="alert alert-${type} fade-in-up">
                 ${message}
@@ -3481,6 +3747,12 @@ const BibliotecaSPA = {
     
     // Manejar registro
     handleRegister: function() {
+        // Prevenir múltiples submissions
+        if (this.isSubmitting) {
+            console.log('⚠️ Ya hay un registro en proceso...');
+            return;
+        }
+        
         const formData = {
             userType: $('#regUserType').val(),
             nombre: $('#regNombre').val(),
@@ -3517,19 +3789,32 @@ const BibliotecaSPA = {
             return;
         }
         
+        this.isSubmitting = true;
         this.showLoading();
         
         BibliotecaAPI.register(formData).then(response => {
             this.hideLoading();
-            if (response.success) {
+            this.isSubmitting = false;
+            
+            console.log('📦 Respuesta recibida en handleRegister:');
+            console.log('  - response:', response);
+            console.log('  - response.success:', response.success);
+            console.log('  - response.message:', response.message);
+            console.log('  - typeof response.success:', typeof response.success);
+            
+            if (response.success === true) {
                 this.showAlert('Usuario registrado exitosamente. Por favor inicie sesión.', 'success');
                 this.showPage('login');
                 $('#registerForm')[0].reset();
+                return;
             } else {
-                this.showAlert('Error al registrar usuario: ' + response.message, 'danger');
+                this.showAlert('Error al registrar usuario: ' + (response.message || 'Error desconocido'), 'danger');
+                return;
             }
         }).catch(error => {
             this.hideLoading();
+            this.isSubmitting = false;
+            console.error('❌ Catch en handleRegister:', error);
             this.showAlert('Error en el sistema: ' + error.message, 'danger');
         });
     },
@@ -4673,9 +4958,23 @@ const BibliotecaSPA = {
             { field: 'tipo', header: 'Tipo', width: '100px',
               render: (p) => p.tipo === 'LIBRO' ? '📚 Libro' : '🎨 Artículo' },
             { field: 'fechaSolicitud', header: 'Fecha Solicitud', width: '120px',
-              render: (p) => BibliotecaFormatter.formatDate(p.fechaSolicitud) },
+              render: (p) => {
+                // Si la fecha ya viene formateada (contiene /), mostrarla directamente
+                if (p.fechaSolicitud && p.fechaSolicitud.includes('/')) {
+                    return p.fechaSolicitud;
+                }
+                // Si viene en formato ISO, formatear
+                return BibliotecaFormatter.formatDate(p.fechaSolicitud);
+              }},
             { field: 'fechaDevolucion', header: 'Fecha Devolución', width: '120px',
-              render: (p) => BibliotecaFormatter.formatDate(p.fechaDevolucion) },
+              render: (p) => {
+                // Si la fecha ya viene formateada (contiene /), mostrarla directamente
+                if (p.fechaDevolucion && p.fechaDevolucion.includes('/')) {
+                    return p.fechaDevolucion;
+                }
+                // Si viene en formato ISO, formatear
+                return BibliotecaFormatter.formatDate(p.fechaDevolucion);
+              }},
             { field: 'estado', header: 'Estado', width: '120px',
               render: (p) => BibliotecaFormatter.getEstadoBadge(p.estado) },
             { field: 'bibliotecario', header: 'Bibliotecario', width: '150px',
@@ -5136,12 +5435,8 @@ const BibliotecaSPA = {
     
     // Ver catálogo
     verCatalogo: function() {
-        this.showLoading('Cargando catálogo...');
-        
-        setTimeout(() => {
-            this.hideLoading();
-            this.renderCatalogo();
-        }, 1000);
+        console.log('📚 Navegando a catálogo...');
+        this.renderCatalogo();
     },
     
     // Renderizar catálogo
@@ -5228,14 +5523,22 @@ const BibliotecaSPA = {
             </div>
         `;
         
-        // Crear nueva página
+        // Ocultar todas las páginas
+        $('.page').removeClass('active').hide();
+        
+        // Crear o actualizar la página de catálogo
         const pageId = 'catalogoPage';
         if ($(`#${pageId}`).length === 0) {
-            $('main').append(`<div id="${pageId}" class="page" style="display: none;"></div>`);
+            $('#mainContent').append(`<div id="${pageId}" class="page"></div>`);
         }
         
-        $(`#${pageId}`).html(content);
-        this.showPage('catalogo');
+        // Inyectar contenido y mostrar
+        $(`#${pageId}`).html(content).show().addClass('active');
+        
+        // Actualizar navegación
+        this.updateNavigation('catalogo');
+        
+        // Cargar datos
         this.loadCatalogoData();
     },
     

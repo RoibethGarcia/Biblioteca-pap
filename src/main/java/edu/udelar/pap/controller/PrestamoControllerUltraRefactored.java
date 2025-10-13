@@ -1972,11 +1972,11 @@ public class PrestamoControllerUltraRefactored {
     
     /**
      * Obtiene la cantidad total de préstamos
-     * @return Número de préstamos registrados
+     * @return Número de préstamos registrados (TODOS, no solo activos)
      */
     public int obtenerCantidadPrestamos() {
         try {
-            List<Prestamo> prestamos = prestamoService.obtenerTodosLosPrestamosActivos();
+            List<Prestamo> prestamos = prestamoService.obtenerTodosLosPrestamos();
             return prestamos.size();
         } catch (Exception ex) {
             return 0;
@@ -1997,7 +1997,8 @@ public class PrestamoControllerUltraRefactored {
                 return 0;
             }
             
-            List<Prestamo> prestamos = prestamoService.obtenerTodosLosPrestamosActivos();
+            // Obtener TODOS los préstamos, no solo activos
+            List<Prestamo> prestamos = prestamoService.obtenerTodosLosPrestamos();
             int contador = 0;
             for (Prestamo prestamo : prestamos) {
                 if (prestamo.getEstado() == estadoEnum) {
