@@ -326,23 +326,32 @@ const BibliotecaSPA = {
     
     // Actualizar navegación principal para lector
     updateMainNavigationForLector: function() {
+        console.log('🔧 updateMainNavigationForLector: Clearing and setting navigation');
+        
+        // Clear existing navigation content to prevent stacking
+        const navContainer = $('#mainNavigation .nav-content');
+        if (navContainer.length > 0) {
+            navContainer.remove();
+        }
+        $('#mobileNavToggle').remove();
+        
         const navHtml = `
             <button class="mobile-nav-toggle" id="mobileNavToggle">
                 <i class="fas fa-bars"></i> Menú
             </button>
             <div class="nav-content" id="navContent">
-                <div class="nav-section">
-                    <h4>📚 Mis Servicios</h4>
-                    <ul>
-                        <li><a href="#dashboard" class="nav-link" data-page="dashboard">📊 Mi Dashboard</a></li>
-                    </ul>
-                </div>
-                <div class="nav-section">
-                    <h4>🔍 Buscar</h4>
-                    <ul>
-                        <li><a href="#buscar-libros" class="nav-link" data-page="buscar-libros">📚 Buscar Libros</a></li>
-                        <li><a href="#buscar-materiales" class="nav-link" data-page="buscar-materiales">📄 Buscar Materiales</a></li>
-                    </ul>
+            <div class="nav-section">
+                <h4>📚 Mis Servicios</h4>
+                <ul>
+                    <li><a href="#dashboard" class="nav-link" data-page="dashboard">📊 Mi Dashboard</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <h4>🔍 Buscar</h4>
+                <ul>
+                    <li><a href="#buscar-libros" class="nav-link" data-page="buscar-libros">📚 Buscar Libros</a></li>
+                    <li><a href="#buscar-materiales" class="nav-link" data-page="buscar-materiales">📄 Buscar Materiales</a></li>
+                </ul>
                 </div>
             </div>
         `;
@@ -352,40 +361,49 @@ const BibliotecaSPA = {
     
     // Actualizar navegación principal para bibliotecario
     updateMainNavigationForBibliotecario: function() {
+        console.log('🔧 updateMainNavigationForBibliotecario: Clearing and setting navigation');
+        
+        // Clear existing navigation content to prevent stacking
+        const navContainer = $('#mainNavigation .nav-content');
+        if (navContainer.length > 0) {
+            navContainer.remove();
+        }
+        $('#mobileNavToggle').remove();
+        
         const navHtml = `
             <button class="mobile-nav-toggle" id="mobileNavToggle">
                 <i class="fas fa-bars"></i> Menú
             </button>
             <div class="nav-content" id="navContent">
-                <div class="nav-section">
-                    <h4>📊 Gestión General</h4>
-                    <ul>
-                        <li><a href="#dashboard" class="nav-link" data-page="dashboard">📈 Dashboard</a></li>
-                        <li><a href="#reportes" class="nav-link" data-page="reportes">📊 Reportes</a></li>
-                        <li><a href="#estadisticas" class="nav-link" data-page="estadisticas">📈 Estadísticas</a></li>
-                    </ul>
-                </div>
-                <div class="nav-section">
-                    <h4>👥 Gestión de Usuarios</h4>
-                    <ul>
-                        <li><a href="#management/lectores" class="nav-link" data-page="management/lectores">👤 Gestionar Lectores</a></li>
-                        <li><a href="#management/bibliotecarios" class="nav-link" data-page="management/bibliotecarios">👨‍💼 Gestionar Bibliotecarios</a></li>
-                    </ul>
-                </div>
-                <div class="nav-section">
-                    <h4>📚 Gestión de Materiales</h4>
-                    <ul>
-                        <li><a href="#management/libros" class="nav-link" data-page="management/libros">📖 Gestionar Libros</a></li>
-                        <li><a href="#management/donaciones" class="nav-link" data-page="management/donaciones">🎁 Gestionar Donaciones</a></li>
-                        <li><a href="#management/materiales" class="nav-link" data-page="management/materiales">📄 Gestionar Materiales</a></li>
-                    </ul>
-                </div>
-                <div class="nav-section">
-                    <h4>📋 Gestión de Préstamos</h4>
-                    <ul>
-                        <li><a href="#management/prestamos" class="nav-link" data-page="management/prestamos">📚 Gestionar Préstamos</a></li>
-                        <li><a href="#management/prestamos-activos" class="nav-link" data-page="management/prestamos-activos">⏰ Préstamos Activos</a></li>
-                    </ul>
+            <div class="nav-section">
+                <h4>📊 Gestión General</h4>
+                <ul>
+                    <li><a href="#dashboard" class="nav-link" data-page="dashboard">📈 Dashboard</a></li>
+                    <li><a href="#reportes" class="nav-link" data-page="reportes">📊 Reportes</a></li>
+                    <li><a href="#estadisticas" class="nav-link" data-page="estadisticas">📈 Estadísticas</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <h4>👥 Gestión de Usuarios</h4>
+                <ul>
+                    <li><a href="#management/lectores" class="nav-link" data-page="management/lectores">👤 Gestionar Lectores</a></li>
+                    <li><a href="#management/bibliotecarios" class="nav-link" data-page="management/bibliotecarios">👨‍💼 Gestionar Bibliotecarios</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <h4>📚 Gestión de Materiales</h4>
+                <ul>
+                    <li><a href="#management/libros" class="nav-link" data-page="management/libros">📖 Gestionar Libros</a></li>
+                    <li><a href="#management/donaciones" class="nav-link" data-page="management/donaciones">🎁 Gestionar Donaciones</a></li>
+                    <li><a href="#management/materiales" class="nav-link" data-page="management/materiales">📄 Gestionar Materiales</a></li>
+                </ul>
+            </div>
+            <div class="nav-section">
+                <h4>📋 Gestión de Préstamos</h4>
+                <ul>
+                    <li><a href="#management/prestamos" class="nav-link" data-page="management/prestamos">📚 Gestionar Préstamos</a></li>
+                    <li><a href="#management/prestamos-activos" class="nav-link" data-page="management/prestamos-activos">⏰ Préstamos Activos</a></li>
+                </ul>
                 </div>
             </div>
         `;
@@ -1037,6 +1055,90 @@ const BibliotecaSPA = {
         $('#lectoresContent').html(content);
         this.loadLectoresData();
         this.loadLectoresManagementStats();
+        
+        // Set up event listeners for search and filters
+        this.setupLectoresFilters();
+    },
+    
+    // Setup event listeners for lectores filters
+    setupLectoresFilters: function() {
+        console.log('🔍 Setting up lectores filters');
+        
+        // Search button click
+        $('#searchBtn').off('click').on('click', () => {
+            this.filterLectoresTable();
+        });
+        
+        // Enter key on search input
+        $('#searchInput').off('keypress').on('keypress', (e) => {
+            if (e.which === 13) {
+                e.preventDefault();
+                this.filterLectoresTable();
+            }
+        });
+        
+        // Estado filter change
+        $('#estadoFilter').off('change').on('change', () => {
+            this.filterLectoresTable();
+        });
+        
+        // Zona filter change
+        $('#zonaFilter').off('change').on('change', () => {
+            this.filterLectoresTable();
+        });
+        
+        console.log('✅ Lectores filters set up');
+    },
+    
+    // Filter lectores table based on search and filters
+    filterLectoresTable: function() {
+        console.log('🔍 Filtering lectores table');
+        
+        const searchText = $('#searchInput').val().toLowerCase().trim();
+        const estadoFilter = $('#estadoFilter').val();
+        const zonaFilter = $('#zonaFilter').val();
+        
+        console.log('📋 Filters:', { searchText, estadoFilter, zonaFilter });
+        
+        if (!this.lectoresData || this.lectoresData.length === 0) {
+            console.warn('⚠️ No lectores data available');
+            return;
+        }
+        
+        // Apply filters
+        let filteredLectores = this.lectoresData.filter(lector => {
+            // Search filter (nombre, apellido, or email)
+            if (searchText) {
+                const nombreCompleto = `${lector.nombre || ''} ${lector.apellido || ''}`.toLowerCase();
+                const email = (lector.email || '').toLowerCase();
+                
+                if (!nombreCompleto.includes(searchText) && !email.includes(searchText)) {
+                    return false;
+                }
+            }
+            
+            // Estado filter
+            if (estadoFilter && lector.estado !== estadoFilter) {
+                return false;
+            }
+            
+            // Zona filter
+            if (zonaFilter && lector.zona !== zonaFilter) {
+                return false;
+            }
+            
+            return true;
+        });
+        
+        console.log(`✅ Filtered: ${filteredLectores.length} of ${this.lectoresData.length} lectores`);
+        
+        // Show alert if no results
+        if (filteredLectores.length === 0) {
+            this.showAlert('No se encontraron lectores con los filtros seleccionados', 'info');
+        }
+        
+        // Render filtered table
+        this.renderLectoresTable(filteredLectores);
     },
     
     // Cargar estadísticas del dashboard
@@ -1102,21 +1204,53 @@ const BibliotecaSPA = {
         
         // Cargar estadísticas reales desde el servidor
         Promise.all([
-            fetch('/lector/cantidad').then(r => r.json()),
-            fetch('/lector/cantidad-activos').then(r => r.json())
+            fetch('/lector/cantidad')
+                .then(r => {
+                    console.log('📊 /lector/cantidad response status:', r.status);
+                    return r.json();
+                })
+                .then(data => {
+                    console.log('📊 /lector/cantidad data:', data);
+                    return data;
+                }),
+            fetch('/lector/cantidad-activos')
+                .then(r => {
+                    console.log('📊 /lector/cantidad-activos response status:', r.status);
+                    return r.json();
+                })
+                .then(data => {
+                    console.log('📊 /lector/cantidad-activos data:', data);
+                    return data;
+                })
         ]).then(([totalResponse, activosResponse]) => {
+            console.log('📊 Total response:', totalResponse);
+            console.log('📊 Activos response:', activosResponse);
+            
             const total = totalResponse.cantidad || 0;
             const activos = activosResponse.cantidad || 0;
             const suspendidos = total - activos;
             
-            // Actualizar estadísticas en la gestión de lectores
-            $('#totalLectores').text(total);
-            $('#lectoresActivos').text(activos);
-            $('#lectoresSuspendidos').text(suspendidos);
+            console.log('📊 Calculated stats:', { total, activos, suspendidos });
             
-            console.log('✅ Lectores management stats loaded:', { total, activos, suspendidos });
+            // Actualizar estadísticas en la gestión de lectores
+            const $totalLectores = $('#totalLectores');
+            const $lectoresActivos = $('#lectoresActivos');
+            const $lectoresSuspendidos = $('#lectoresSuspendidos');
+            
+            console.log('📊 Found elements:', {
+                totalLectores: $totalLectores.length,
+                lectoresActivos: $lectoresActivos.length,
+                lectoresSuspendidos: $lectoresSuspendidos.length
+            });
+            
+            $totalLectores.text(total);
+            $lectoresActivos.text(activos);
+            $lectoresSuspendidos.text(suspendidos);
+            
+            console.log('✅ Lectores management stats loaded and displayed:', { total, activos, suspendidos });
         }).catch(error => {
             console.error('❌ Error loading lectores management stats:', error);
+            console.error('❌ Error details:', error.message, error.stack);
             // En caso de error, mostrar ceros
             $('#totalLectores').text('0');
             $('#lectoresActivos').text('0');
@@ -1226,6 +1360,9 @@ const BibliotecaSPA = {
     
     // Mostrar alerta
     showAlert: function(message, type = 'info') {
+        // Remove any existing alerts first to prevent duplicates
+        $('.alert').remove();
+        
         const alertHtml = `
             <div class="alert alert-${type} fade-in-up">
                 ${message}
@@ -2070,8 +2207,8 @@ const BibliotecaSPA = {
                 
                 // Si el estado es ACTIVO, mostrar el formulario
                 console.log('✅ Lector activo, mostrando formulario');
-                this.hideLoading();
-                this.renderSolicitarPrestamo();
+            this.hideLoading();
+            this.renderSolicitarPrestamo();
             } else {
                 this.hideLoading();
                 this.showAlert('Error al verificar estado del lector', 'danger');
@@ -2279,17 +2416,17 @@ const BibliotecaSPA = {
     // Renderizar opciones de materiales en el select
     renderMaterialesOptions: function(materiales) {
         const select = $('#materialSeleccionado');
-        let options = '<option value="">Seleccione un material...</option>';
+            let options = '<option value="">Seleccione un material...</option>';
         
-        materiales.forEach(material => {
-            const titulo = material.titulo || material.descripcion;
+            materiales.forEach(material => {
+                const titulo = material.titulo || material.descripcion;
             const displayText = material.titulo ? 
                 `${material.titulo} (${material.paginas} págs)` : 
                 material.descripcion.substring(0, 50) + '...';
             options += `<option value="${material.id}">${displayText}</option>`;
-        });
-        
-        select.html(options);
+            });
+            
+            select.html(options);
     },
     
     // Filtrar libros en el formulario de solicitud
@@ -5830,27 +5967,64 @@ const BibliotecaSPA = {
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-6">
+                            <div class="col-5">
                                 <div class="form-group">
-                                    <label for="filtroLectorNombre">Buscar Lector:</label>
+                                    <label for="filtroLectorNombre">Buscar por Nombre:</label>
                                     <input type="text" id="filtroLectorNombre" class="form-control" 
                                            placeholder="Ingrese nombre del lector...">
                                 </div>
                             </div>
-                            <div class="col-3 d-flex align-items-end">
-                                <button class="btn btn-primary" onclick="BibliotecaSPA.filtrarPrestamosActivos()">
-                                    🔍 Filtrar
-                                </button>
-                                <button class="btn btn-secondary ml-2" onclick="BibliotecaSPA.limpiarFiltroPrestamosActivos()">
-                                    🔄 Limpiar
+                            <div class="col-5">
+                                <div class="form-group">
+                                    <label for="filtroLectorEmail">Buscar por Email:</label>
+                                    <input type="text" id="filtroLectorEmail" class="form-control" 
+                                           placeholder="Ingrese email del lector...">
+                                </div>
+                            </div>
+                            <div class="col-2 d-flex align-items-end">
+                                <button class="btn btn-primary" style="width: 100%;" onclick="BibliotecaSPA.buscarLectoresParaPrestamosActivos()">
+                                    🔍 Buscar
                                 </button>
                             </div>
                         </div>
+                        
+                        <!-- Resultados de búsqueda de lectores -->
+                        <div id="lectoresResultadosPrestamosActivos" style="display: none;" class="mt-3">
+                            <h5>Seleccione un lector:</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Seleccionar</th>
+                                            <th>ID</th>
+                                            <th>Nombre</th>
+                                            <th>Email</th>
+                                            <th>Estado</th>
+                                            <th>Zona</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="lectoresTableBodyPrestamosActivos">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Información del lector seleccionado -->
                         <div id="lectorFiltradoInfo" class="alert alert-info mt-3" style="display: none;">
-                            <strong>Filtrando préstamos de:</strong> <span id="lectorFiltradoNombre"></span>
-                            <button class="btn btn-warning btn-sm ml-3" id="suspenderLectorBtn" onclick="BibliotecaSPA.suspenderLectorFiltrado()">
-                                ⚠️ Suspender Lector
-                            </button>
+                            <div class="row align-items-center">
+                                <div class="col-8">
+                                    <strong>📋 Mostrando préstamos de:</strong> <span id="lectorFiltradoNombre"></span><br>
+                                    <small><strong>Email:</strong> <span id="lectorFiltradoEmail"></span> | <strong>Estado:</strong> <span id="lectorFiltradoEstado"></span></small>
+                                </div>
+                                <div class="col-4 text-right">
+                                    <button class="btn btn-warning btn-sm" id="suspenderLectorBtn" onclick="BibliotecaSPA.suspenderLectorFiltrado()">
+                                        ⚠️ Suspender Lector
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm" onclick="BibliotecaSPA.limpiarFiltroPrestamosActivos()">
+                                        🔄 Limpiar Filtro
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -5918,36 +6092,112 @@ const BibliotecaSPA = {
             });
     },
     
-    // Filtrar préstamos activos por lector
-    filtrarPrestamosActivos: function() {
-        console.log('🔍 filtrarPrestamosActivos called');
+    // Buscar lectores para filtrar préstamos activos
+    buscarLectoresParaPrestamosActivos: function() {
+        console.log('🔍 buscarLectoresParaPrestamosActivos called');
         
-        const nombreLector = $('#filtroLectorNombre').val().trim().toLowerCase();
+        const nombreBusqueda = $('#filtroLectorNombre').val().trim().toLowerCase();
+        const emailBusqueda = $('#filtroLectorEmail').val().trim().toLowerCase();
         
-        if (!nombreLector) {
-            this.showAlert('Por favor ingrese un nombre para filtrar', 'warning');
+        if (!nombreBusqueda && !emailBusqueda) {
+            this.showAlert('Por favor ingrese un nombre o email para buscar', 'warning');
             return;
         }
         
-        const prestamosFiltrados = this.allPrestamosActivos.filter(p => 
-            p.lectorNombre.toLowerCase().includes(nombreLector)
-        );
+        const tbody = $('#lectoresTableBodyPrestamosActivos');
+        tbody.html('<tr><td colspan="6" class="text-center"><div class="spinner"></div> Buscando lectores...</td></tr>');
+        $('#lectoresResultadosPrestamosActivos').show();
         
-        if (prestamosFiltrados.length === 0) {
-            this.showAlert('No se encontraron préstamos para ese lector', 'info');
-            return;
-        }
+        // Buscar lectores
+        fetch('/lector/lista')
+            .then(response => response.json())
+            .then(data => {
+                console.log('📋 Lectores response:', data);
+                
+                if (data.success && data.lectores) {
+                    // Filtrar lectores por nombre o email
+                    const lectores = data.lectores.filter(lector => {
+                        const nombreCompleto = `${lector.nombre || ''} ${lector.apellido || ''}`.toLowerCase();
+                        const email = (lector.email || '').toLowerCase();
+                        
+                        const matchNombre = nombreBusqueda ? nombreCompleto.includes(nombreBusqueda) : true;
+                        const matchEmail = emailBusqueda ? email.includes(emailBusqueda) : true;
+                        
+                        return matchNombre && matchEmail;
+                    });
+                    
+                    if (lectores.length === 0) {
+                        tbody.html('<tr><td colspan="6" class="text-center text-muted">No se encontraron lectores con esos criterios</td></tr>');
+                    } else {
+                        const rows = lectores.map(lector => {
+                            const estadoBadge = lector.estado === 'ACTIVO' 
+                                ? '<span class="badge badge-success">ACTIVO</span>' 
+                                : '<span class="badge badge-danger">SUSPENDIDO</span>';
+                            
+                            // Escape HTML to prevent XSS
+                            const nombreEscaped = (lector.nombre || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            const apellidoEscaped = (lector.apellido || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            const emailEscaped = (lector.email || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            
+                            return `
+                                <tr>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-primary" 
+                                                onclick="BibliotecaSPA.seleccionarLectorParaPrestamosActivos(${lector.id}, '${nombreEscaped}', '${apellidoEscaped}', '${emailEscaped}', '${lector.estado}')">
+                                            Seleccionar
+                                        </button>
+                                    </td>
+                                    <td>${lector.id}</td>
+                                    <td>${lector.nombre} ${lector.apellido || ''}</td>
+                                    <td>${lector.email}</td>
+                                    <td>${estadoBadge}</td>
+                                    <td>${lector.zona || 'N/A'}</td>
+                                </tr>
+                            `;
+                        }).join('');
+                        tbody.html(rows);
+                    }
+                } else {
+                    tbody.html('<tr><td colspan="6" class="text-center text-danger">Error al cargar lectores</td></tr>');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error buscando lectores:', error);
+                tbody.html('<tr><td colspan="6" class="text-center text-danger">Error al buscar lectores</td></tr>');
+            });
+    },
+    
+    // Seleccionar lector y filtrar sus préstamos activos
+    seleccionarLectorParaPrestamosActivos: function(lectorId, nombre, apellido, email, estado) {
+        console.log('👤 seleccionarLectorParaPrestamosActivos called:', { lectorId, nombre, apellido, email, estado });
         
-        // Guardar el lector filtrado y su ID
-        this.lectorFiltrado = prestamosFiltrados[0].lectorNombre;
-        this.lectorFiltradoId = prestamosFiltrados[0].lectorId;
+        // Guardar información del lector seleccionado
+        this.lectorFiltradoId = lectorId;
+        this.lectorFiltrado = `${nombre} ${apellido}`.trim();
+        this.lectorFiltradoEmail = email;
+        this.lectorFiltradoEstado = estado;
         
+        // Ocultar resultados de búsqueda
+        $('#lectoresResultadosPrestamosActivos').hide();
+        
+        // Mostrar información del lector seleccionado
         $('#lectorFiltradoNombre').text(this.lectorFiltrado);
+        $('#lectorFiltradoEmail').text(email);
+        $('#lectorFiltradoEstado').html(estado === 'ACTIVO' 
+            ? '<span class="badge badge-success">ACTIVO</span>' 
+            : '<span class="badge badge-danger">SUSPENDIDO</span>');
         $('#lectorFiltradoInfo').show();
         
-        this.renderPrestamosActivosTable(prestamosFiltrados);
+        // Filtrar préstamos activos por este lector
+        const prestamosFiltrados = this.allPrestamosActivos.filter(p => p.lectorId === lectorId);
         
-        console.log(`✅ Filtrados: ${prestamosFiltrados.length} préstamos`);
+        console.log(`✅ Encontrados ${prestamosFiltrados.length} préstamos activos para el lector ${lectorId}`);
+        
+        if (prestamosFiltrados.length === 0) {
+            this.showAlert('Este lector no tiene préstamos activos (EN_CURSO)', 'info');
+        }
+        
+        this.renderPrestamosActivosTable(prestamosFiltrados);
     },
     
     // Limpiar filtro
@@ -5955,9 +6205,13 @@ const BibliotecaSPA = {
         console.log('🔄 limpiarFiltroPrestamosActivos called');
         
         $('#filtroLectorNombre').val('');
+        $('#filtroLectorEmail').val('');
+        $('#lectoresResultadosPrestamosActivos').hide();
         $('#lectorFiltradoInfo').hide();
         this.lectorFiltrado = null;
         this.lectorFiltradoId = null;
+        this.lectorFiltradoEmail = null;
+        this.lectorFiltradoEstado = null;
         
         this.renderPrestamosActivosTable(this.allPrestamosActivos || []);
     },

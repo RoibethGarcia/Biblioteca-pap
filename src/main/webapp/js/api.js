@@ -362,6 +362,11 @@ const BibliotecaAPI = {
                 data: libroData,
                 timeout: BibliotecaAPI.config.timeout
             }).then(response => {
+                // If backend already returns success field, use it
+                if (response && typeof response.success !== 'undefined') {
+                    return response;
+                }
+                // Otherwise wrap the response
                 return {
                     success: true,
                     message: 'Libro registrado exitosamente',
@@ -371,7 +376,7 @@ const BibliotecaAPI = {
                 console.error('Error creando libro:', error);
                 return {
                     success: false,
-                    message: 'Error al registrar libro'
+                    message: error.responseJSON?.message || 'Error al registrar libro'
                 };
             });
         },
@@ -384,6 +389,11 @@ const BibliotecaAPI = {
                 data: articuloData,
                 timeout: BibliotecaAPI.config.timeout
             }).then(response => {
+                // If backend already returns success field, use it
+                if (response && typeof response.success !== 'undefined') {
+                    return response;
+                }
+                // Otherwise wrap the response
                 return {
                     success: true,
                     message: 'Artículo especial registrado exitosamente',
@@ -393,7 +403,7 @@ const BibliotecaAPI = {
                 console.error('Error creando artículo:', error);
                 return {
                     success: false,
-                    message: 'Error al registrar artículo'
+                    message: error.responseJSON?.message || 'Error al registrar artículo'
                 };
             });
         },
@@ -486,12 +496,14 @@ const BibliotecaAPI = {
 };
 
 // Configurar jQuery para manejo de errores globales
+// Note: Only log errors, don't show alerts here to prevent duplicates
 $(document).ajaxError(function(event, xhr, settings, thrownError) {
     if (xhr.status !== 401) { // No mostrar error para 401 (redirect automático)
         console.error('AJAX Error:', {
             url: settings.url,
             status: xhr.status,
-            error: thrownError
+            error: thrownError,
+            response: xhr.responseText
         });
     }
 });
