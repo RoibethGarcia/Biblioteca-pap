@@ -52,6 +52,7 @@ public class PrestamoServlet extends HttpServlet {
                 out.println("    \"POST /prestamo/actualizar - Actualizar cualquier información del préstamo (prestamoId, lectorId, bibliotecarioId, materialId, fechaDevolucion, estado)\",");
                 out.println("    \"POST /prestamo/aprobar - Aprobar préstamo\",");
                 out.println("    \"POST /prestamo/cancelar - Cancelar préstamo\",");
+                out.println("    \"POST /prestamo/devolver - Devolver préstamo (id)\",");
                 out.println("    \"POST /prestamo/verificar-vencido - Verificar si préstamo está vencido\"");
                 out.println("  ]");
                 out.println("}");
@@ -133,7 +134,7 @@ public class PrestamoServlet extends HttpServlet {
                 
             } else {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                out.println("{\"error\": \"Endpoint no encontrado\"}");
+                out.println("{\"error\": \"Endpoint no encontrado: " + pathInfo + "\"}");
             }
             
         } catch (Exception e) {
@@ -153,6 +154,13 @@ public class PrestamoServlet extends HttpServlet {
         String pathInfo = request.getPathInfo();
         
         try {
+            // Validar que pathInfo no sea null
+            if (pathInfo == null) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.println("{\"error\": \"Path no especificado\"}");
+                return;
+            }
+            
             if (pathInfo.equals("/crear")) {
                 // Crear préstamo
                 String lectorId = request.getParameter("lectorId");
@@ -246,9 +254,25 @@ public class PrestamoServlet extends HttpServlet {
                 String result = factory.getPrestamoPublisher().verificarPrestamoVencido(Long.parseLong(idPrestamo));
                 out.println(result);
                 
+            } else if (pathInfo.equals("/devolver")) {
+                // Devolver préstamo - cambiar estado a DEVUELTO
+                String id = request.getParameter("id");
+                
+                if (id == null) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.println("{\"error\": \"Parámetro 'id' es requerido\"}");
+                    return;
+                }
+                
+                // Cambiar estado a DEVUELTO usando el método existente
+                String result = factory.getPrestamoPublisher().cambiarEstadoPrestamo(
+                    Long.parseLong(id), "DEVUELTO"
+                );
+                out.println(result);
+                
             } else {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                out.println("{\"error\": \"Endpoint no encontrado\"}");
+                out.println("{\"error\": \"Endpoint no encontrado: " + pathInfo + "\"}");
             }
             
         } catch (Exception e) {

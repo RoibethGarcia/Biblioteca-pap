@@ -94,8 +94,12 @@ public class PrestamoService {
         //     throw new IllegalStateException("El material seleccionado ya está prestado");
         // }
         
+        // Log del estado antes de guardar
+        System.out.println("💾 guardarPrestamo - Estado del préstamo a guardar: " + prestamo.getEstado());
+        
         // Verificar límite de préstamos por lector (máximo 3 préstamos activos)
         long prestamosActivos = obtenerNumeroPrestamosActivos(prestamo.getLector());
+        System.out.println("📊 Préstamos activos del lector: " + prestamosActivos);
         if (prestamosActivos >= 3) {
             throw new IllegalStateException("El lector ya tiene el máximo de préstamos permitidos (3)");
         }
@@ -117,9 +121,13 @@ public class PrestamoService {
                 session.persist(prestamo);
                 tx.commit();
                 
+                System.out.println("✅ Préstamo persistido con estado: " + prestamo.getEstado());
+                System.out.println("✅ ID generado: " + prestamo.getId());
+                
                 logger.info("Préstamo creado exitosamente - ID: " + prestamo.getId() + 
                            ", Lector: " + prestamo.getLector().getNombre() + 
-                           ", Material: " + prestamo.getMaterial().getClass().getSimpleName());
+                           ", Material: " + prestamo.getMaterial().getClass().getSimpleName() +
+                           ", Estado: " + prestamo.getEstado());
             } catch (Exception e) {
                 tx.rollback();
                 throw e;
@@ -306,30 +314,39 @@ public class PrestamoService {
     }
     
     /**
-     * Verifica si un material está prestado, excluyendo un préstamo específico
+     * Verifica si un material está prestado (EN_CURSO), excluyendo un préstamo específico
+     * IMPORTANTE: Solo verifica préstamos EN_CURSO, no PENDIENTES
+     * Esto permite que múltiples solicitudes PENDIENTES del mismo material coexistan
      */
     public boolean materialEstaPrestadoExcluyendo(Object material, Long prestamoIdExcluir) {
         try (Session session = sessionFactory.openSession()) {
-            return session.createQuery(
-                "FROM Prestamo WHERE material = :material AND estado != :estadoDevuelto AND id != :prestamoIdExcluir", 
+            Prestamo resultado = session.createQuery(
+                "FROM Prestamo WHERE material = :material AND estado = :estadoEnCurso AND id != :prestamoIdExcluir", 
                 Prestamo.class)
                 .setParameter("material", material)
-                .setParameter("estadoDevuelto", EstadoPrestamo.DEVUELTO)
+                .setParameter("estadoEnCurso", EstadoPrestamo.EN_CURSO)
                 .setParameter("prestamoIdExcluir", prestamoIdExcluir)
-                .uniqueResult() != null;
+                .uniqueResult();
+            
+            boolean estaPrestado = resultado != null;
+            System.out.println("🔍 materialEstaPrestadoExcluyendo - Material: " + material.getClass().getSimpleName() + 
+                             ", Excluyendo ID: " + prestamoIdExcluir + ", ¿Está prestado? " + estaPrestado);
+            return estaPrestado;
         }
     }
     
     /**
-     * Obtiene el número de préstamos activos de un lector
+     * Obtiene el número de préstamos activos (EN_CURSO) de un lector
+     * IMPORTANTE: Solo cuenta préstamos EN_CURSO, no PENDIENTES
+     * Los préstamos PENDIENTES no cuentan contra el límite hasta ser aprobados
      */
     public long obtenerNumeroPrestamosActivos(Lector lector) {
         try (Session session = sessionFactory.openSession()) {
             return session.createQuery(
-                "SELECT COUNT(*) FROM Prestamo WHERE lector = :lector AND estado != :estadoDevuelto", 
+                "SELECT COUNT(*) FROM Prestamo WHERE lector = :lector AND estado = :estadoEnCurso", 
                 Long.class)
                 .setParameter("lector", lector)
-                .setParameter("estadoDevuelto", EstadoPrestamo.DEVUELTO)
+                .setParameter("estadoEnCurso", EstadoPrestamo.EN_CURSO)
                 .uniqueResult();
         }
     }
@@ -531,19 +548,30 @@ public class PrestamoService {
      */
     public boolean aprobarPrestamo(Long prestamoId) {
         Boolean resultado = ejecutarTransaccionPrestamo(prestamoId, prestamo -> {
+            // Log del estado actual para debugging
+            System.out.println("🔍 aprobarPrestamo - Préstamo ID: " + prestamoId);
+            System.out.println("🔍 Estado actual del préstamo: " + prestamo.getEstado());
+            System.out.println("🔍 Estado esperado: " + EstadoPrestamo.PENDIENTE);
+            System.out.println("🔍 Son iguales? " + (prestamo.getEstado() == EstadoPrestamo.PENDIENTE));
+            
             // Validar que el préstamo esté en estado PENDIENTE
             if (prestamo.getEstado() != EstadoPrestamo.PENDIENTE) {
+                System.err.println("❌ El préstamo NO está en estado PENDIENTE, está en: " + prestamo.getEstado());
                 throw new IllegalStateException("El préstamo debe estar en estado PENDIENTE para ser aprobado");
             }
             
-            // Verificar que el material no esté ya prestado (excluyendo el préstamo actual)
-            if (materialEstaPrestadoExcluyendo(prestamo.getMaterial(), prestamo.getId())) {
-                throw new IllegalStateException("El material ya está prestado por otro préstamo");
-            }
+            // COMENTADO: Permitir préstamos múltiples del mismo material según requisitos
+            // Esta validación es inconsistente con la lógica de negocio que permite múltiples préstamos
+            // if (materialEstaPrestadoExcluyendo(prestamo.getMaterial(), prestamo.getId())) {
+            //     throw new IllegalStateException("El material ya está prestado por otro préstamo");
+            // }
+            System.out.println("✅ Validación de material omitida (se permiten préstamos múltiples del mismo material)");
             
             // Verificar límite de préstamos por lector
             long prestamosActivos = obtenerNumeroPrestamosActivos(prestamo.getLector());
+            System.out.println("🔍 Préstamos activos del lector: " + prestamosActivos);
             if (prestamosActivos >= 3) {
+                System.err.println("❌ El lector ya tiene 3 préstamos activos");
                 throw new IllegalStateException("El lector ya tiene el máximo de préstamos permitidos (3)");
             }
             

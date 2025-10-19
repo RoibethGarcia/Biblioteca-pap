@@ -1863,11 +1863,12 @@ public class PrestamoControllerUltraRefactored {
             prestamo.setFechaEstimadaDevolucion(fechaDev);
             prestamo.setEstado(estadoEnum);
             
-            System.out.println("💾 Guardando préstamo...");
+            System.out.println("💾 Guardando préstamo con estado: " + estadoEnum);
             // Guardar usando el servicio (aquí se valida el estado del lector)
             prestamoService.guardarPrestamo(prestamo);
             
             System.out.println("✅ Préstamo creado con ID: " + prestamo.getId());
+            System.out.println("✅ Estado del préstamo después de guardar: " + prestamo.getEstado());
             return prestamo.getId();
             
         } catch (IllegalStateException ex) {
@@ -2034,21 +2035,25 @@ public class PrestamoControllerUltraRefactored {
     }
     
     /**
-     * Obtiene la lista de préstamos activos de un lector
+     * Obtiene la lista de TODOS los préstamos de un lector (cualquier estado)
      * @param lectorId ID del lector
      * @return Lista de préstamos del lector
      */
     public List<Prestamo> obtenerPrestamosPorLector(Long lectorId) {
         try {
-            List<Prestamo> prestamos = prestamoService.obtenerTodosLosPrestamosActivos();
+            // CAMBIO: Obtener TODOS los préstamos del lector, no solo activos (EN_CURSO)
+            // Esto permite mostrar préstamos PENDIENTES, EN_CURSO, DEVUELTO, VENCIDO, etc.
+            List<Prestamo> todosPrestamos = prestamoService.obtenerTodosLosPrestamos();
             List<Prestamo> prestamosPorLector = new java.util.ArrayList<>();
-            for (Prestamo prestamo : prestamos) {
+            
+            for (Prestamo prestamo : todosPrestamos) {
                 if (prestamo.getLector().getId().equals(lectorId)) {
                     prestamosPorLector.add(prestamo);
                 }
             }
             return prestamosPorLector;
         } catch (Exception ex) {
+            ex.printStackTrace();
             return new java.util.ArrayList<>();
         }
     }

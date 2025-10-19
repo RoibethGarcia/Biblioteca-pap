@@ -691,12 +691,14 @@ public class IntegratedServer {
                     String bibliotecarioIdParam = params.get("bibliotecarioId");
                     String materialId = params.get("materialId");
                     String fechaDevolucion = params.get("fechaDevolucion");
+                    String estado = params.get("estado");  // NUEVO: Leer estado del request
                     
                     System.out.println("📚 IntegratedServer - Creando préstamo:");
                     System.out.println("   Lector ID: " + lectorId);
                     System.out.println("   Bibliotecario ID (del formulario): " + bibliotecarioIdParam);
                     System.out.println("   Material ID: " + materialId);
                     System.out.println("   Fecha devolución: " + fechaDevolucion);
+                    System.out.println("   Estado: " + estado);
                     
                     // Verificar que los parámetros no sean nulos
                     if (lectorId == null || lectorId.isEmpty()) {
@@ -728,12 +730,16 @@ public class IntegratedServer {
                         }
                     }
                     
+                    // Usar el estado proporcionado por el frontend, o PENDIENTE por defecto
+                    String estadoPrestamo = (estado != null && !estado.isEmpty()) ? estado : "PENDIENTE";
+                    System.out.println("   Estado final a usar: " + estadoPrestamo);
+                    
                     String resultado = factory.getPrestamoPublisher().crearPrestamo(
                         Long.parseLong(lectorId),
                         bibliotecarioId,  // Usa el bibliotecario seleccionado por el usuario
                         Long.parseLong(materialId),
                         fechaDevolucion,
-                        "EN_CURSO"  // Estado inicial - Aprobado automáticamente
+                        estadoPrestamo  // CAMBIO: Usar el estado del request
                     );
                     
                     System.out.println("📚 IntegratedServer - Resultado de crearPrestamo: " + resultado);
@@ -750,6 +756,52 @@ public class IntegratedServer {
                     }
                 } else if (path.equals("/prestamo/estado")) {
                     return factory.getPrestamoPublisher().obtenerEstado();
+                } else if (path.equals("/prestamo/aprobar") && method.equals("POST")) {
+                    // Aprobar préstamo pendiente
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body recibido para aprobar: " + body);
+                    
+                    // Parsear JSON simple ({"idPrestamo": 35})
+                    String idPrestamoStr = null;
+                    if (body.contains("\"idPrestamo\"")) {
+                        // Extraer valor del JSON de forma simple
+                        String[] parts = body.split("\"idPrestamo\"");
+                        if (parts.length > 1) {
+                            String valuePart = parts[1].split(":")[1].trim();
+                            idPrestamoStr = valuePart.replaceAll("[^0-9]", "");
+                        }
+                    }
+                    
+                    if (idPrestamoStr == null || idPrestamoStr.isEmpty()) {
+                        return "{\"error\":\"idPrestamo es requerido\"}";
+                    }
+                    
+                    System.out.println("✅ Aprobando préstamo ID: " + idPrestamoStr);
+                    Long idPrestamo = Long.parseLong(idPrestamoStr);
+                    return factory.getPrestamoPublisher().aprobarPrestamo(idPrestamo);
+                } else if (path.equals("/prestamo/devolver") && method.equals("POST")) {
+                    // Devolver préstamo
+                    String body = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    System.out.println("📝 Body recibido para devolver: " + body);
+                    
+                    // Parsear JSON simple ({"id": 35})
+                    String idStr = null;
+                    if (body.contains("\"id\"")) {
+                        // Extraer valor del JSON de forma simple
+                        String[] parts = body.split("\"id\"");
+                        if (parts.length > 1) {
+                            String valuePart = parts[1].split(":")[1].trim();
+                            idStr = valuePart.replaceAll("[^0-9]", "");
+                        }
+                    }
+                    
+                    if (idStr == null || idStr.isEmpty()) {
+                        return "{\"error\":\"id es requerido\"}";
+                    }
+                    
+                    System.out.println("↩️ Devolviendo préstamo ID: " + idStr);
+                    Long id = Long.parseLong(idStr);
+                    return factory.getPrestamoPublisher().cambiarEstadoPrestamo(id, "DEVUELTO");
                 } else {
                     return "{\"error\":\"Endpoint no encontrado: " + path + "\"}";
                 }

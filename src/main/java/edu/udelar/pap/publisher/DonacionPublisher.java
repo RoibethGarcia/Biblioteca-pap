@@ -208,33 +208,31 @@ public class DonacionPublisher {
             StringBuilder json = new StringBuilder();
             json.append("{\"success\": true, \"donaciones\": [");
             
-            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
-            
             for (int i = 0; i < donaciones.size(); i++) {
                 Object donacion = donaciones.get(i);
                 if (i > 0) json.append(",");
                 
                 if (donacion instanceof edu.udelar.pap.domain.Libro) {
                     edu.udelar.pap.domain.Libro libro = (edu.udelar.pap.domain.Libro) donacion;
-                    json.append(String.format(
-                        "{\"id\": %d, \"tipo\": \"LIBRO\", \"titulo\": \"%s\", \"paginas\": %d, " +
-                        "\"donante\": \"%s\", \"fechaIngreso\": \"%s\"}", 
-                        libro.getId(),
-                        libro.getTitulo().replace("\"", "\\\""),
-                        libro.getPaginas(),
-                        libro.getDonante().replace("\"", "\\\""),
-                        libro.getFechaIngreso() != null ? libro.getFechaIngreso().format(formatter) : ""));
+                    json.append("{");
+                    json.append("\"id\": ").append(libro.getId()).append(",");
+                    json.append("\"tipo\": \"LIBRO\",");
+                    json.append("\"titulo\": \"").append(libro.getTitulo().replace("\"", "\\\"")).append("\",");
+                    json.append("\"paginas\": ").append(libro.getPaginas()).append(",");
+                    json.append("\"donante\": \"").append(libro.getDonante().replace("\"", "\\\"")).append("\",");
+                    json.append("\"fechaIngreso\": \"").append(libro.getFechaIngreso()).append("\"");
+                    json.append("}");
                 } else if (donacion instanceof edu.udelar.pap.domain.ArticuloEspecial) {
                     edu.udelar.pap.domain.ArticuloEspecial articulo = (edu.udelar.pap.domain.ArticuloEspecial) donacion;
-                    json.append(String.format(
-                        "{\"id\": %d, \"tipo\": \"ARTICULO\", \"descripcion\": \"%s\", \"peso\": %.2f, " +
-                        "\"dimensiones\": \"%s\", \"donante\": \"%s\", \"fechaIngreso\": \"%s\"}", 
-                        articulo.getId(),
-                        articulo.getDescripcion().replace("\"", "\\\""),
-                        articulo.getPeso(),
-                        articulo.getDimensiones().replace("\"", "\\\""),
-                        articulo.getDonante().replace("\"", "\\\""),
-                        articulo.getFechaIngreso() != null ? articulo.getFechaIngreso().format(formatter) : ""));
+                    json.append("{");
+                    json.append("\"id\": ").append(articulo.getId()).append(",");
+                    json.append("\"tipo\": \"ARTICULO\",");
+                    json.append("\"descripcion\": \"").append(articulo.getDescripcion().replace("\"", "\\\"")).append("\",");
+                    json.append("\"peso\": ").append(articulo.getPeso()).append(",");
+                    json.append("\"dimensiones\": \"").append(articulo.getDimensiones().replace("\"", "\\\"")).append("\",");
+                    json.append("\"donante\": \"").append(articulo.getDonante().replace("\"", "\\\"")).append("\",");
+                    json.append("\"fechaIngreso\": \"").append(articulo.getFechaIngreso()).append("\"");
+                    json.append("}");
                 }
             }
             

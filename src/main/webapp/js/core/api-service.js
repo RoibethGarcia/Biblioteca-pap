@@ -283,6 +283,7 @@ class ApiService {
         crear: (data) => this.post('/prestamo/crear', data),
         actualizar: (id, data) => this.post('/prestamo/actualizar', { ...data, id }),
         devolver: (id) => this.post('/prestamo/devolver', { id }),
+        aprobar: (idPrestamo) => this.post('/prestamo/aprobar', { idPrestamo }),
         renovar: (id) => this.post('/prestamo/renovar', { id }),
         cantidad: () => this.get('/prestamo/cantidad'),
         activos: () => this.get('/prestamo/activos'),

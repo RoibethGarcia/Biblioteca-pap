@@ -369,6 +369,7 @@ const BibliotecaSPA = {
                 <ul>
                     <li><a href="#dashboard" class="nav-link" data-page="dashboard">📊 Mi Dashboard</a></li>
                     <li><a href="#prestamos" class="nav-link" data-page="prestamos">📖 Mis Préstamos</a></li>
+                    <li><a href="#solicitarPrestamo" class="nav-link" data-page="solicitarPrestamo">➕ Solicitar Préstamo</a></li>
                 </ul>
             </div>
             <div class="nav-section">
@@ -552,6 +553,15 @@ const BibliotecaSPA = {
     
     // Cargar contenido de página
     loadPageContent: function(pageName) {
+        // Páginas especiales que manejan su propio renderizado completo
+        const specialPages = ['historial', 'catalogo', 'solicitarPrestamo'];
+        
+        if (specialPages.includes(pageName)) {
+            // Llamar directamente a la función de renderizado
+            this.renderPageContent(pageName);
+            return;
+        }
+        
         const contentContainer = $(`#${pageName}Content`);
         
         if (contentContainer.length === 0) return;
@@ -598,6 +608,9 @@ const BibliotecaSPA = {
                 break;
             case 'catalogo':
                 this.verCatalogo();
+                break;
+            case 'solicitarPrestamo':
+                this.solicitarPrestamo();
                 break;
         }
     },
@@ -1381,12 +1394,26 @@ const BibliotecaSPA = {
               }},
             { field: 'estado', header: 'Estado', width: '120px',
               render: (p) => BibliotecaFormatter.getEstadoBadge(p.estado) },
-            { field: 'acciones', header: 'Acciones', width: '120px',
-              render: (p) => `
-                <button class="btn btn-info btn-sm" onclick="BibliotecaSPA.editarPrestamo(${p.id})">
+            { field: 'acciones', header: 'Acciones', width: '200px',
+              render: (p) => {
+                let botones = '';
+                
+                // Botón de aprobar solo para préstamos PENDIENTES
+                if (p.estado === 'PENDIENTE') {
+                  botones += `
+                    <button class="btn btn-success btn-sm" onclick="BibliotecaSPA.aprobarPrestamo(${p.id})" title="Aprobar Préstamo">
+                      ✓ Aprobar
+                    </button> `;
+                }
+                
+                // Botón de editar siempre
+                botones += `
+                  <button class="btn btn-info btn-sm" onclick="BibliotecaSPA.editarPrestamo(${p.id})" title="Editar">
                     ✏️ Editar
-                </button>
-              `}
+                  </button>`;
+                
+                return botones;
+              }}
         ]);
     },
     
@@ -1810,6 +1837,7 @@ const BibliotecaSPA = {
             };
             
             console.log('📝 Actualizando préstamo:', formData);
+            console.log('📝 Estado a actualizar:', estado);
             
             // Convertir a formato URL-encoded
             const params = new URLSearchParams();
@@ -1820,6 +1848,8 @@ const BibliotecaSPA = {
             params.append('fechaDevolucion', formData.fechaDevolucion);
             params.append('estado', formData.estado);
             
+            console.log('📤 Parámetros a enviar:', params.toString());
+            
             // Enviar petición con formato correcto
             const response = await fetch('/prestamo/actualizar', {
                 method: 'POST',
@@ -1829,6 +1859,8 @@ const BibliotecaSPA = {
                 body: params.toString()
             }).then(res => res.json());
             
+            console.log('📊 Respuesta del servidor:', response);
+            
             this.hideLoading();
             
             if (response && response.success) {
@@ -1837,8 +1869,10 @@ const BibliotecaSPA = {
                 
                 // Recargar la tabla de préstamos
                 this.loadPrestamosGestionData();
+                this.loadPrestamosGestionStats();
             } else {
-                const mensaje = response.message || 'Error desconocido al actualizar préstamo';
+                const mensaje = response.message || response.error || 'Error desconocido al actualizar préstamo';
+                console.error('❌ Error al actualizar:', mensaje);
                 this.showAlert('Error al actualizar préstamo: ' + mensaje, 'danger');
             }
             
@@ -1847,6 +1881,53 @@ const BibliotecaSPA = {
             console.error('❌ Error al guardar edición:', error);
             this.showAlert('Error al guardar cambios: ' + error.message, 'danger');
         }
+    },
+    
+    // Aprobar préstamo pendiente
+    aprobarPrestamo: function(idPrestamo) {
+        ModalManager.showConfirm(
+            '✓ Aprobar Préstamo',
+            '¿Está seguro que desea aprobar este préstamo? El estado cambiará a EN_CURSO.',
+            async () => {
+                try {
+                    this.showLoading('Aprobando préstamo...');
+                    
+                    console.log('📝 Aprobando préstamo ID:', idPrestamo);
+                    
+                    // Usar el endpoint que ya existe
+                    const response = await bibliotecaApi.post('/prestamo/aprobar', { idPrestamo });
+                    
+                    console.log('📊 Respuesta completa de aprobar:', response);
+                    console.log('📊 response.success:', response.success);
+                    console.log('📊 response.message:', response.message);
+                    
+                    this.hideLoading();
+                    
+                    // Verificar success de varias formas posibles
+                    if (response.success === true || response.message?.includes('exitosamente')) {
+                        this.showAlert('✅ Préstamo aprobado exitosamente', 'success');
+                        
+                        // Recargar tabla de préstamos
+                        this.loadPrestamosGestionData();
+                        this.loadPrestamosGestionStats();
+                    } else {
+                        const errorMsg = response.message || response.error || 'Error desconocido';
+                        console.error('❌ Error al aprobar:', errorMsg);
+                        this.showAlert('Error al aprobar préstamo: ' + errorMsg, 'danger');
+                    }
+                } catch (error) {
+                    this.hideLoading();
+                    console.error('❌ Excepción al aprobar préstamo:', error);
+                    this.showAlert('Error al aprobar préstamo: ' + error.message, 'danger');
+                }
+            },
+            {
+                confirmText: '✓ Aprobar',
+                cancelText: 'Cancelar',
+                confirmClass: 'btn-success',
+                icon: '✓'
+            }
+        );
     },
     
     // ✨ NUEVO: Renovar préstamo (Fase 2)
@@ -2565,7 +2646,7 @@ const BibliotecaSPA = {
                         <!-- Selector de tipo de material -->
                         <div class="form-group">
                             <label for="tipoMaterial">Tipo de Material:</label>
-                            <select id="tipoMaterial" class="form-control" onchange="BibliotecaSPA.cambiarFormularioMaterial()">
+                            <select id="tipoMaterial" class="form-control">
                                 <option value="">Seleccione el tipo...</option>
                                 <option value="LIBRO">📚 Libro</option>
                                 <option value="ARTICULO">📄 Artículo Especial</option>
@@ -2635,6 +2716,14 @@ const BibliotecaSPA = {
         console.log('✅ Modal agregado al DOM');
         console.log('🔍 Verificando elemento en DOM:', document.getElementById('agregarMaterialModal'));
         
+        // Configurar event listener para el cambio de tipo
+        setTimeout(() => {
+            $('#tipoMaterial').on('change', () => {
+                this.cambiarFormularioMaterial();
+            });
+            console.log('✅ Event listener configurado para tipoMaterial');
+        }, 100);
+        
         // Prevenir el scroll del body cuando el modal está abierto
         $('body').css('overflow', 'hidden');
     },
@@ -2644,19 +2733,35 @@ const BibliotecaSPA = {
         const tipo = $('#tipoMaterial').val();
         console.log('🔄 Cambiando formulario a tipo:', tipo);
         
-        $('#formularioLibro').hide();
-        $('#formularioArticulo').hide();
-        $('#mensajeInfo').hide();
+        const $formularioLibro = $('#formularioLibro');
+        const $formularioArticulo = $('#formularioArticulo');
+        const $mensajeInfo = $('#mensajeInfo');
+        
+        // Validar que los elementos existan
+        if ($formularioLibro.length === 0) {
+            console.error('❌ formularioLibro no encontrado en DOM');
+            return;
+        }
+        if ($formularioArticulo.length === 0) {
+            console.error('❌ formularioArticulo no encontrado en DOM');
+            return;
+        }
+        
+        $formularioLibro.hide();
+        $formularioArticulo.hide();
+        $mensajeInfo.hide();
         
         if (tipo === 'LIBRO') {
             console.log('📚 Mostrando formulario de libro');
-            $('#formularioLibro').show();
-            $('#mensajeInfo').show();
+            $formularioLibro.show();
+            $mensajeInfo.show();
         } else if (tipo === 'ARTICULO') {
             console.log('📄 Mostrando formulario de artículo');
-            $('#formularioArticulo').show();
-            $('#mensajeInfo').show();
+            $formularioArticulo.show();
+            $mensajeInfo.show();
         }
+        
+        console.log('✅ Formulario actualizado. Libro visible:', $formularioLibro.is(':visible'), 'Artículo visible:', $formularioArticulo.is(':visible'));
     },
     
     // Guardar nuevo material en la base de datos
@@ -4831,6 +4936,10 @@ const BibliotecaSPA = {
                         <div class="stat-label">Total Préstamos</div>
                     </div>
                     <div class="stat-card">
+                        <div class="stat-number" id="prestamosPendientes">-</div>
+                        <div class="stat-label">Pendientes Aprobación</div>
+                    </div>
+                    <div class="stat-card">
                         <div class="stat-number" id="prestamosEnCurso">-</div>
                         <div class="stat-label">En Curso</div>
                     </div>
@@ -4984,6 +5093,36 @@ const BibliotecaSPA = {
                 const dias = p.diasRestantes > 0 ? p.diasRestantes : 'Vencido';
                 const cssClass = p.diasRestantes <= 0 ? 'text-danger' : p.diasRestantes <= 3 ? 'text-warning' : '';
                 return `<span class="${cssClass}">${dias}</span>`;
+              }},
+            { field: 'acciones', header: 'Acciones', width: '180px',
+              render: (p) => {
+                // Préstamo PENDIENTE - esperando aprobación
+                if (p.estado === 'PENDIENTE') {
+                  return '<span class="badge badge-warning">⏳ Pendiente Aprobación</span>';
+                }
+                // Préstamo EN_CURSO - puede devolver
+                else if (p.estado === 'EN_CURSO') {
+                  return `
+                    <button class="btn btn-success btn-sm" 
+                            onclick="BibliotecaSPA.devolverPrestamoLector(${p.id})">
+                      ↩️ Devolver
+                    </button>
+                  `;
+                }
+                // Préstamo DEVUELTO
+                else if (p.estado === 'DEVUELTO') {
+                  return '<span class="badge badge-success">✓ Devuelto</span>';
+                }
+                // Préstamo VENCIDO - puede devolver
+                else if (p.estado === 'VENCIDO') {
+                  return `
+                    <button class="btn btn-warning btn-sm" 
+                            onclick="BibliotecaSPA.devolverPrestamoLector(${p.id})">
+                      ⚠️ Devolver
+                    </button>
+                  `;
+                }
+                return '-';
               }}
         ]);
     },
@@ -5004,14 +5143,62 @@ const BibliotecaSPA = {
     // Actualizar estadísticas de mis préstamos
     updateMisPrestamosStats: function(prestamos) {
         const total = prestamos.length;
+        const pendientes = prestamos.filter(p => p.estado === 'PENDIENTE').length;  // NUEVO
         const enCurso = prestamos.filter(p => p.estado === 'EN_CURSO').length;
         const vencidos = prestamos.filter(p => p.diasRestantes <= 0).length;
         const devueltos = prestamos.filter(p => p.estado === 'DEVUELTO').length;
         
         $('#totalMisPrestamos').text(total);
+        $('#prestamosPendientes').text(pendientes);  // NUEVO
         $('#prestamosEnCurso').text(enCurso);
         $('#prestamosVencidos').text(vencidos);
         $('#prestamosDevueltos').text(devueltos);
+    },
+    
+    // Devolver préstamo desde la vista del lector
+    devolverPrestamoLector: function(idPrestamo) {
+        ModalManager.showConfirm(
+            '↩️ Devolver Préstamo',
+            '¿Está seguro que desea marcar este préstamo como devuelto? Un bibliotecario confirmará la devolución.',
+            async () => {
+                try {
+                    this.showLoading('Procesando devolución...');
+                    
+                    const response = await bibliotecaApi.prestamos.devolver(idPrestamo);
+                    
+                    this.hideLoading();
+                    
+                    if (response.success || response.message) {
+                        this.showAlert('✅ Devolución procesada exitosamente', 'success');
+                        
+                        // Recargar la lista de préstamos
+                        this.loadMisPrestamosData();
+                        
+                        // Actualizar contador de préstamos activos si existe
+                        if (this.cargarPrestamosActivos) {
+                            this.cargarPrestamosActivos();
+                        }
+                        
+                        // Actualizar estadísticas del dashboard
+                        if (this.loadLectorStats) {
+                            this.loadLectorStats();
+                        }
+                    } else {
+                        this.showAlert('Error al procesar devolución', 'danger');
+                    }
+                } catch (error) {
+                    this.hideLoading();
+                    console.error('Error al devolver préstamo:', error);
+                    this.showAlert('Error al procesar devolución: ' + error.message, 'danger');
+                }
+            },
+            {
+                confirmText: '✓ Confirmar Devolución',
+                cancelText: 'Cancelar',
+                confirmClass: 'btn-success',
+                icon: '↩️'
+            }
+        );
     },
     
     // Solicitar préstamo
@@ -5130,10 +5317,12 @@ const BibliotecaSPA = {
                                     </ul>
                                 </div>
                                 
-                                <div class="alert alert-warning">
-                                    <strong>⚠️ Estado Actual:</strong>
-                                    <p>Préstamos activos: <span id="prestamosActivosCount">-</span></p>
-                                    <p>Límite: 3 préstamos</p>
+                                <div class="alert alert-info">
+                                    <strong>ℹ️ Estado Actual:</strong>
+                                    <p>Préstamos activos: <span id="prestamosActivosCount" style="font-weight: bold; font-size: 1.2em;">
+                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    </span> / 3</p>
+                                    <small class="text-muted">Máximo: 3 préstamos simultáneos</small>
                                 </div>
                             </div>
                         </div>
@@ -5145,13 +5334,18 @@ const BibliotecaSPA = {
         // Crear nueva página
         const pageId = 'solicitarPrestamoPage';
         if ($(`#${pageId}`).length === 0) {
-            $('main').append(`<div id="${pageId}" class="page" style="display: none;"></div>`);
+            $('#mainContent').append(`<div id="${pageId}" class="page" style="display: none;"></div>`);
         }
         
         $(`#${pageId}`).html(content);
         this.showPage('solicitarPrestamo');
         this.setupSolicitarPrestamoForm();
-        this.cargarPrestamosActivos();
+        
+        // SINCRONIZACIÓN: Esperar a que el DOM esté completamente renderizado y visible
+        // antes de cargar datos (showPage usa setTimeout de 50ms)
+        setTimeout(() => {
+            this.cargarPrestamosActivos();
+        }, 150);
     },
     
     // Configurar formulario de solicitar préstamo
@@ -5161,9 +5355,20 @@ const BibliotecaSPA = {
             this.procesarSolicitudPrestamo();
         });
         
-        // Establecer fecha mínima (hoy)
-        const today = new Date();
-        $('#fechaDevolucion').attr('min', today.toISOString().split('T')[0]);
+        // Establecer fecha mínima (mañana) - usar hora local, no UTC
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        // Formatear fecha en hora local (no UTC) para evitar problemas de zona horaria
+        const year = tomorrow.getFullYear();
+        const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+        const day = String(tomorrow.getDate()).padStart(2, '0');
+        const minDate = `${year}-${month}-${day}`;
+        
+        $('#fechaDevolucion').attr('min', minDate);
+        console.log('📅 Fecha mínima establecida:', minDate);
+        console.log('🌍 Zona horaria detectada:', Intl.DateTimeFormat().resolvedOptions().timeZone);
+        console.log('⏰ Offset UTC:', -(new Date().getTimezoneOffset() / 60), 'horas');
         
         // Cargar bibliotecarios disponibles
         this.cargarBibliotecarios();
@@ -5214,6 +5419,13 @@ const BibliotecaSPA = {
     // ✨ REFACTORIZADO: Usar ApiService (Fase 3 - 100%)
     cargarBibliotecarios: async function() {
         const select = $('#bibliotecarioSeleccionado');
+        
+        // VALIDAR que el elemento exista antes de modificar
+        if (select.length === 0) {
+            console.warn('⚠️ Select de bibliotecarios no encontrado en DOM, reintentando...');
+            setTimeout(() => this.cargarBibliotecarios(), 100);
+            return;
+        }
         
         select.html('<option value="">Cargando bibliotecarios...</option>');
         
@@ -5291,7 +5503,8 @@ const BibliotecaSPA = {
             if (!lectorId) {
                 console.warn('⚠️ No se pudo obtener el ID del lector');
                 $('#prestamosActivosCount').text('0');
-                return;
+                this.cantidadPrestamosActivos = 0;
+                return 0;
             }
             
             console.log('📚 Obteniendo préstamos activos para lector ID:', lectorId);
@@ -5303,14 +5516,104 @@ const BibliotecaSPA = {
             
             if (response && response.success) {
                 const cantidad = response.cantidad || 0;
-                $('#prestamosActivosCount').text(cantidad);
+                this.actualizarContadorPrestamos(cantidad);
                 console.log('✅ Préstamos activos cargados:', cantidad);
+                return cantidad;
             } else {
-                $('#prestamosActivosCount').text('0');
+                this.actualizarContadorPrestamos(0);
+                return 0;
             }
         } catch (error) {
             console.error('❌ Error al cargar préstamos activos:', error);
-            $('#prestamosActivosCount').text('0');
+            this.actualizarContadorPrestamos(0);
+            return 0;
+        }
+    },
+    
+    // Actualizar contador de préstamos con estilos visuales
+    actualizarContadorPrestamos: function(cantidad, intentos = 0) {
+        const LIMITE = 3;
+        const MAX_INTENTOS = 10;
+        this.cantidadPrestamosActivos = cantidad;
+        
+        const $contador = $('#prestamosActivosCount');
+        
+        // VALIDAR que el elemento exista antes de modificar
+        if ($contador.length === 0) {
+            // Solo reintentar si estamos en la página correcta y no excedimos intentos
+            if (this.config.currentPage === 'solicitarPrestamo' && intentos < MAX_INTENTOS) {
+                console.warn(`⚠️ Contador no encontrado en DOM, reintentando... (${intentos + 1}/${MAX_INTENTOS})`);
+                setTimeout(() => this.actualizarContadorPrestamos(cantidad, intentos + 1), 100);
+            } else if (intentos >= MAX_INTENTOS) {
+                console.error('❌ Contador no encontrado después de múltiples intentos, abortando.');
+            }
+            // Si no estamos en la página correcta, simplemente ignorar
+            return;
+        }
+        
+        const $alertContainer = $contador.closest('.alert');
+        const $submitBtn = $('#solicitarPrestamoForm button[type="submit"]');
+        
+        // Validar que el contenedor alert exista
+        if ($alertContainer.length === 0) {
+            if (intentos < MAX_INTENTOS) {
+                console.warn('⚠️ Alert container no encontrado, esperando...');
+                setTimeout(() => this.actualizarContadorPrestamos(cantidad, intentos + 1), 100);
+            }
+            return;
+        }
+        
+        // Actualizar texto
+        $contador.text(cantidad);
+        
+        // Aplicar estilos según la cantidad
+        $contador.css('font-weight', 'bold');
+        $contador.css('font-size', '1.2em');
+        
+        if (cantidad >= LIMITE) {
+            // Límite alcanzado - rojo
+            $contador.css('color', '#dc3545');
+            $alertContainer.removeClass('alert-warning alert-info').addClass('alert-danger');
+            $alertContainer.find('strong').html('🚫 Límite Alcanzado:');
+            
+            // Deshabilitar botón de envío
+            $submitBtn.prop('disabled', true);
+            $submitBtn.html('🚫 Límite Alcanzado - Devuelva un Material');
+            $submitBtn.removeClass('btn-success').addClass('btn-secondary');
+            
+            // Agregar mensaje adicional si no existe
+            if ($('#limiteAlcanzadoMsg').length === 0) {
+                $alertContainer.append(
+                    '<p id="limiteAlcanzadoMsg" class="mb-0 mt-2" style="font-weight: bold;">' +
+                    '⚠️ Debe devolver al menos un material antes de solicitar otro préstamo.</p>'
+                );
+            }
+        } else if (cantidad === LIMITE - 1) {
+            // Cerca del límite - amarillo
+            $contador.css('color', '#fd7e14');
+            $alertContainer.removeClass('alert-danger alert-info').addClass('alert-warning');
+            $alertContainer.find('strong').html('⚠️ Casi en el Límite:');
+            
+            // Habilitar botón con advertencia
+            $submitBtn.prop('disabled', false);
+            $submitBtn.html('📖 Solicitar Préstamo (Último Disponible)');
+            $submitBtn.removeClass('btn-secondary').addClass('btn-success');
+            
+            // Remover mensaje de límite
+            $('#limiteAlcanzadoMsg').remove();
+        } else {
+            // Normal - azul
+            $contador.css('color', '#0056b3');
+            $alertContainer.removeClass('alert-danger alert-warning').addClass('alert-info');
+            $alertContainer.find('strong').html('ℹ️ Estado Actual:');
+            
+            // Botón normal
+            $submitBtn.prop('disabled', false);
+            $submitBtn.html('📖 Solicitar Préstamo');
+            $submitBtn.removeClass('btn-secondary').addClass('btn-success');
+            
+            // Remover mensaje de límite
+            $('#limiteAlcanzadoMsg').remove();
         }
     },
     
@@ -5350,6 +5653,24 @@ const BibliotecaSPA = {
             return;
         }
         
+        // Validar límite de préstamos antes de procesar
+        this.showLoading('Verificando disponibilidad...');
+        const cantidadActual = await this.cargarPrestamosActivos();
+        console.log('📊 Cantidad actual de préstamos activos:', cantidadActual);
+        
+        const LIMITE_PRESTAMOS = 3;
+        if (cantidadActual >= LIMITE_PRESTAMOS) {
+            this.hideLoading();
+            this.showAlert(
+                `⚠️ Ha alcanzado el límite máximo de ${LIMITE_PRESTAMOS} préstamos activos. Por favor, devuelva algún material antes de solicitar uno nuevo.`, 
+                'warning'
+            );
+            console.log('❌ Solicitud rechazada: límite de préstamos alcanzado');
+            return;
+        }
+        
+        console.log(`✅ Validación de límite OK: ${cantidadActual}/${LIMITE_PRESTAMOS} préstamos activos`);
+        
         this.showLoading('Procesando solicitud de préstamo...');
         
         try {
@@ -5365,7 +5686,7 @@ const BibliotecaSPA = {
                 bibliotecarioId: formData.bibliotecarioId,
                 materialId: formData.materialId,
                 fechaDevolucion: fechaDevolucionFormatted,
-                estado: 'EN_CURSO'
+                estado: 'PENDIENTE'  // Estado inicial: requiere aprobación del bibliotecario
             });
             
             console.log('📊 Respuesta crear préstamo:', response);
@@ -5373,7 +5694,19 @@ const BibliotecaSPA = {
             this.hideLoading();
             
             if (response.success || (response.data && response.data.success)) {
-                this.showAlert('¡Préstamo aprobado y creado exitosamente! Puede ver los detalles en "Mis Préstamos".', 'success');
+                // Actualizar contador de préstamos activos
+                const nuevaCantidad = cantidadActual + 1;
+                this.actualizarContadorPrestamos(nuevaCantidad);
+                
+                // Mostrar mensaje informativo
+                this.showAlert(
+                    `✅ ¡Solicitud de préstamo enviada exitosamente! Su préstamo está PENDIENTE de aprobación por un bibliotecario. Será notificado cuando sea aprobado. Puede ver el estado en "Mis Préstamos".`, 
+                    'info'
+                );
+                
+                // Limpiar formulario
+                $('#solicitarPrestamoForm')[0].reset();
+                $('#materialSeleccionado').prop('disabled', true).html('<option value="">Primero seleccione el tipo de material</option>');
                 
                 // Actualizar estadísticas del dashboard
                 await this.loadLectorStats();
@@ -5381,10 +5714,10 @@ const BibliotecaSPA = {
                 // Redirigir a "Mis Préstamos" para ver el nuevo préstamo
                 setTimeout(() => {
                     this.verMisPrestamos();
-                }, 1500);
+                }, 2000);
             } else {
                 const message = response.message || (response.data && response.data.message) || 'Error desconocido al crear préstamo';
-                this.showAlert('Error al solicitar préstamo: ' + message, 'danger');
+                this.showAlert('❌ Error al solicitar préstamo: ' + message, 'danger');
             }
         } catch (error) {
             console.error('❌ Error al procesar solicitud:', error);
@@ -5415,20 +5748,45 @@ const BibliotecaSPA = {
             return false;
         }
         
-        const fechaDevolucion = new Date(data.fechaDevolucion);
-        const hoy = new Date();
-        const maxFecha = new Date();
-        maxFecha.setDate(hoy.getDate() + 30); // Máximo 30 días
+        // Normalizar fechas a medianoche para comparar solo el día (sin hora)
+        // IMPORTANTE: Parsear la fecha en zona horaria local, no UTC
+        // Si usamos new Date('2025-10-18'), JavaScript lo interpreta como UTC y causa desfase
+        const [year, month, day] = data.fechaDevolucion.split('-').map(Number);
+        const fechaDevolucion = new Date(year, month - 1, day, 0, 0, 0, 0);
         
-        if (fechaDevolucion <= hoy) {
-            this.showAlert('La fecha de devolución debe ser futura', 'danger');
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        
+        const mañana = new Date();
+        mañana.setHours(0, 0, 0, 0);
+        mañana.setDate(mañana.getDate() + 1);
+        
+        const maxFecha = new Date();
+        maxFecha.setHours(0, 0, 0, 0);
+        maxFecha.setDate(maxFecha.getDate() + 30); // Máximo 30 días
+        
+        console.log('📅 Validación de fechas:');
+        console.log('  - Fecha seleccionada (string):', data.fechaDevolucion);
+        console.log('  - Fecha parseada (local):', fechaDevolucion.toLocaleDateString('es-UY'));
+        console.log('  - Fecha normalizada (objeto):', fechaDevolucion);
+        console.log('  - Hoy:', hoy.toLocaleDateString('es-UY'), '-', hoy);
+        console.log('  - Mañana (mínimo):', mañana.toLocaleDateString('es-UY'), '-', mañana);
+        console.log('  - Máximo (30 días):', maxFecha.toLocaleDateString('es-UY'), '-', maxFecha);
+        
+        // La fecha de devolución debe ser al menos mañana (no hoy ni antes)
+        if (fechaDevolucion < mañana) {
+            this.showAlert('La fecha de devolución debe ser al menos mañana', 'danger');
+            console.log('❌ Fecha rechazada: es anterior a mañana');
             return false;
         }
         
         if (fechaDevolucion > maxFecha) {
             this.showAlert('La fecha de devolución no puede ser mayor a 30 días', 'danger');
+            console.log('❌ Fecha rechazada: supera los 30 días');
             return false;
         }
+        
+        console.log('✅ Fecha validada correctamente');
         
         return true;
     },
