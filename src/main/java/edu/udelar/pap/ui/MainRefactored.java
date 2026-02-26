@@ -122,61 +122,42 @@ public class MainRefactored {
         mainController.inicializarAplicacion();
         System.out.println("✅ Aplicación inicializada exitosamente");
         
-        // Opcional: Ofrecer iniciar también servicios adicionales
-        SwingUtilities.invokeLater(() -> {
-            Object[] opciones = {"Servidor Web (HTTP)", "Servicios SOAP (WSDL)", "Ninguno"};
-            int opcion = JOptionPane.showOptionDialog(null,
-                "¿Desea iniciar servicios adicionales?\n\n" +
-                "• Servidor Web: Acceso HTTP/REST en http://localhost:8080\n" +
-                "• Servicios SOAP: Web Services con WSDL en puertos 9001-9004",
-                "Servicios Adicionales",
-                JOptionPane.YES_NO_CANCEL_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                opciones,
-                opciones[2]);
-            
-            if (opcion == 0) {
-                // Iniciar servidor web en hilo separado
-                new Thread(() -> {
-                    try {
-                        IntegratedServer.startIntegratedServer();
-                    } catch (Exception e) {
-                        SwingUtilities.invokeLater(() -> {
-                            JOptionPane.showMessageDialog(null,
-                                "Error al iniciar servidor web:\n" + e.getMessage(),
-                                "Error del Servidor",
-                                JOptionPane.ERROR_MESSAGE);
-                        });
-                    }
-                }).start();
-            } else if (opcion == 1) {
-                // Iniciar servicios SOAP en hilo separado
-                new Thread(() -> {
-                    try {
-                        WebServicePublisher.iniciarServiciosNoBloqueo();
-                        SwingUtilities.invokeLater(() -> {
-                            JOptionPane.showMessageDialog(null,
-                                "Servicios SOAP iniciados correctamente\n\n" +
-                                "WSDLs disponibles en:\n" +
-                                "• http://localhost:9001/BibliotecarioWS?wsdl\n" +
-                                "• http://localhost:9002/LectorWS?wsdl\n" +
-                                "• http://localhost:9003/PrestamoWS?wsdl\n" +
-                                "• http://localhost:9004/DonacionWS?wsdl",
-                                "Servicios SOAP",
-                                JOptionPane.INFORMATION_MESSAGE);
-                        });
-                    } catch (Exception e) {
-                        SwingUtilities.invokeLater(() -> {
-                            JOptionPane.showMessageDialog(null,
-                                "Error al iniciar servicios SOAP:\n" + e.getMessage(),
-                                "Error de Servicios",
-                                JOptionPane.ERROR_MESSAGE);
-                        });
-                    }
-                }).start();
+        // AUTO-INICIAR servicios adicionales automáticamente
+        System.out.println("🚀 Iniciando servicios adicionales automáticamente...");
+        
+        // 1. Iniciar servidor web HTTP en hilo separado
+        new Thread(() -> {
+            try {
+                System.out.println("🌐 Iniciando servidor web HTTP en puerto 8080...");
+                IntegratedServer.startIntegratedServer();
+            } catch (Exception e) {
+                System.err.println("❌ Error al iniciar servidor web: " + e.getMessage());
+                e.printStackTrace();
             }
-        });
+        }, "Servidor-HTTP").start();
+        
+        // 2. Iniciar servicios SOAP/WSDL en hilo separado
+        new Thread(() -> {
+            try {
+                System.out.println("🌐 Iniciando servicios SOAP/WSDL en puertos 9001-9004...");
+                WebServicePublisher.iniciarServiciosNoBloqueo();
+                System.out.println("✅ Servicios SOAP iniciados correctamente");
+                System.out.println("   WSDLs disponibles en:");
+                System.out.println("   • http://localhost:9001/BibliotecarioWS?wsdl");
+                System.out.println("   • http://localhost:9002/LectorWS?wsdl");
+                System.out.println("   • http://localhost:9003/PrestamoWS?wsdl");
+                System.out.println("   • http://localhost:9004/DonacionWS?wsdl");
+            } catch (Exception e) {
+                System.err.println("❌ Error al iniciar servicios SOAP: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }, "Servicios-SOAP").start();
+        
+        // Mensaje informativo en consola
+        System.out.println("\n✅ Aplicación de escritorio iniciada con servicios web");
+        System.out.println("   • Interfaz Swing: Disponible");
+        System.out.println("   • Servidor HTTP: Iniciando en http://localhost:8080");
+        System.out.println("   • Servicios SOAP: Iniciando en puertos 9001-9004\n");
     }
     
     /**
