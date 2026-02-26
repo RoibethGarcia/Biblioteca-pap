@@ -1,40 +1,195 @@
-# 📚 Biblioteca PAP - Sistema de Gestión Completo
+📚 Biblioteca PAP - Sistema de Gestión
+Sistema de gestión de biblioteca desarrollado en Java con Hibernate. Incluye interfaz de escritorio (Swing), aplicación web (SPA) con API REST, servicios SOAP (JAX-WS) y servidor HTTP integrado.
 
-## 🚀 INSTRUCCIONES RÁPIDAS (IntelliJ IDEA)
+🚀 Características
+    Aplicación de escritorio (Swing)
+    Gestión de Usuarios: Lectores y Bibliotecarios
+    Gestión de Materiales: Libros y Artículos Especiales
+    Sistema de Donaciones: Registro de materiales donados
+    Consulta de Donaciones: Filtros por rango de fechas para trazabilidad
+    Gestión de Préstamos: Control completo de préstamos (crear, editar, devoluciones, reportes)
+    Aplicación web
+    Autenticación: Login, registro y sesiones con roles (lector / bibliotecario)
+    Dashboard diferenciado: Interfaz según rol del usuario
+    SPA: Single Page Application con navegación dinámica (spa.html)
+    API REST: Endpoints en /api/, /auth/, /lector/, /prestamo/, /donacion/, /bibliotecario/
+    Servicios SOAP (JAX-WS): Bibliotecario, Lector, Préstamo y Donación con WSDL generado
+    Servidor integrado: HTTP en puerto 8080 (sin contenedor externo en modo desarrollo)
+    Base de Datos: H2 (desarrollo) y MySQL (producción)
+🛠️ Tecnologías Utilizadas
+    Java 21
+    Hibernate 6.x (ORM)
+    JPA (Jakarta Persistence)
+    H2 Database (desarrollo)
+    MySQL (producción)
+    Maven (gestión de dependencias, packaging WAR)
+    Swing (interfaz de escritorio)
+    Servlets / JSP (aplicación web)
+    JAX-WS (Metro) (servicios SOAP con WSDL)
+    BCrypt (hash de contraseñas)
+    Servidor HTTP integrado (Java HttpServer, puerto 8080)
+🎯 Estado del Proyecto
+✅ IMPLEMENTACIÓN COMPLETA
+🎉 ¡PROYECTO COMPLETAMENTE IMPLEMENTADO!
 
-### 1. Configuración Inicial
-1) **Open** -> `/Users/roibethgarcia/Projects/biblioteca-pap`
-2) **Maven import automático** (IntelliJ detecta pom.xml)
-3) **Configura JDK 17** en Project Structure
-4) **Run**: `mvn -q -DskipTests exec:java` (Maven) o **Shift+F10** en IntelliJ (MainRefactored.java)
+✅ Funcionalidades Mínimas: 9/9 COMPLETADAS
+✅ Funcionalidades Opcionales: 6/6 COMPLETADAS
+✅ Total de Funcionalidades: 15/15 IMPLEMENTADAS
 
-### 2. Base de Datos
-#### H2 (Desarrollo - Recomendado):
-- ✅ **Configurado por defecto** - No requiere configuración
-- Datos en: `./target/h2db/biblioteca_pap`
-- Consola web: `java -cp "target/classes:target/dependency/*" org.h2.tools.Console`
+📊 Resumen de Implementación
+    Categoría	Funcionalidades	Estado
+    Gestión de Usuarios	4 funcionalidades	✅ COMPLETADO
+    Gestión de Materiales	4 funcionalidades	✅ COMPLETADO
+    Gestión de Préstamos	5 funcionalidades	✅ COMPLETADO
+    Control y Seguimiento	2 funcionalidades	✅ COMPLETADO
+🏆 Logros Alcanzados
+    100% de funcionalidades mínimas implementadas
+    100% de funcionalidades opcionales implementadas
+    Sistema completo de gestión de biblioteca
+    Interfaz moderna y funcional
+    Documentación completa de todas las funcionalidades
+    Scripts de prueba para cada funcionalidad
+📋 Requisitos Previos
+    Java JDK 21 o superior
+    Maven 3.6+ (opcional; IntelliJ importa el proyecto automáticamente)
+    Git
+🔧 Instalación y Configuración
+    1. Clonar el repositorio
+    git clone https://github.com/RoibethGarcia/biblioteca-pap.git
+    cd biblioteca-pap
+    2. Abrir en IntelliJ IDEA
+    File → Open → Seleccionar carpeta biblioteca-pap
+    Import Maven project (automático)
+    Configurar JDK 21 en Project Structure si no está configurado
+    3. Configurar Base de Datos
+    Opción A: H2 (Desarrollo - Recomendado)
+✅ Configurado por defecto
+    Los datos se guardan en ./target/h2db/biblioteca_pap
+    No requiere configuración adicional
+    Opción B: MySQL (Producción)
+    Crear base de datos:
+    CREATE DATABASE biblioteca_pap CHARACTER SET utf8mb4;
+    Configurar conexión:
+    
+    Editar src/main/resources/hibernate-mysql.cfg.xml
+    Ajustar usuario y contraseña
+    Ejecutar con MySQL (variable de entorno):
+    
+    java -Ddb=mysql -cp "target/classes:target/dependency/*" edu.udelar.pap.ui.MainRefactored
+    Para despliegue en contenedor (WAR): desplegar target/biblioteca-pap-*.war y configurar el datasource según el servidor.
 
-#### MySQL (Producción):
-- Crea BD: `CREATE DATABASE biblioteca_pap CHARACTER SET utf8mb4;`
-- Configura: `src/main/resources/hibernate-mysql.cfg.xml`
-- Ejecuta: `java -Ddb=mysql -jar target/biblioteca-pap.jar`
+🎯 Ejecutar la Aplicación
+    La aplicación admite tres modos desde MainRefactored (clase principal).
+    
+    Modo 1: Aplicación de escritorio (por defecto)
+    Inicia la interfaz Swing y, automáticamente, el servidor HTTP (puerto 8080) y los servicios SOAP (puertos 9001–9004).
+    
+    Script (recomendado):
+    
+    ./scripts/ejecutar-app.sh
+    (En Windows: scripts\ejecutar-app.bat)
+    
+    Desde IntelliJ:
+    Abrir src/main/java/edu/udelar/pap/ui/MainRefactored.java → Run (Shift+F10).
+    
+    Maven:
+    
+    mvn -q -DskipTests exec:java
+    Modo 2: Solo servidor web (sin Swing)
+    Solo servidor HTTP en puerto 8080 (landing, SPA, API REST).
+    
+    mvn -q -DskipTests exec:java -Dexec.args="--server"
+    O con Java: java -cp "target/classes:target/dependency/*" edu.udelar.pap.ui.MainRefactored --server
+    
+    Script: ./scripts/ejecutar-servidor-integrado.sh
+    
+    URLs:
+    
+    Landing: http://localhost:8080/landing.html
+    SPA: http://localhost:8080/spa.html
+    API: http://localhost:8080/api/
+    Modo 3: Solo servicios SOAP (WSDL)
+    Solo publicación de servicios JAX-WS (sin UI ni servidor web).
+    
+    mvn -q -DskipTests exec:java -Dexec.args="--soap"
+    WSDLs:
+    
+    http://localhost:9001/BibliotecarioWS?wsdl
+    http://localhost:9002/LectorWS?wsdl
+    http://localhost:9003/PrestamoWS?wsdl
+    http://localhost:9004/DonacionWS?wsdl
+    Ayuda
+    mvn -q exec:java -Dexec.args="--help"
+📊 Verificar Datos en la Base de Datos
+Consola H2 Web
+Ejecutar: java -cp "target/classes:target/dependency/*" org.h2.tools.Console
+Abrir navegador en: http://localhost:8082
+Configuración:
+JDBC URL: jdbc:h2:./target/h2db/biblioteca_pap
+Usuario: sa
+Contraseña: (dejar vacío)
+Consultas SQL Ejemplo
+-- Ver todos los lectores
+SELECT * FROM LECTOR;
 
-## 🏗️ ESTRUCTURA ACTUAL DEL PROYECTO
+-- Ver todos los libros
+SELECT * FROM LIBRO;
 
-```
+-- Ver préstamos activos
+SELECT * FROM PRESTAMO WHERE ESTADO = 'ACTIVO';
+
+-- Consultar donaciones por rango de fechas
+    SELECT * FROM LIBRO WHERE FECHA_INGRESO BETWEEN '2024-01-01' AND '2024-12-31';
+    SELECT * FROM ARTICULOS_ESPECIALES WHERE FECHA_INGRESO BETWEEN '2024-01-01' AND '2024-12-31';
+    🆕 Nuevas Funcionalidades
+    📅 Consulta de Donaciones por Rango de Fechas
+    Acceso: Menú → Materiales → Consultar Donaciones
+    Funcionalidad: Filtrar donaciones por período específico
+    Formato: DD/MM/AAAA (ejemplo: 01/01/2024 a 31/12/2024)
+    Beneficios: Trazabilidad temporal del inventario
+✏️ Edición Completa de Préstamos
+    Acceso: Menú → Préstamos → Gestionar Devoluciones
+    Funcionalidad: Editar cualquier campo de un préstamo existente
+    Campos editables: Lector, Bibliotecario, Material, Fecha devolución, Estado
+    Beneficios: Flexibilidad total en la gestión de préstamos
+📚 Préstamos Activos por Lector
+    Acceso: Menú → Préstamos → Préstamos por Lector
+    Funcionalidad: Consultar y gestionar préstamos activos de un lector específico
+    Características: Tabla detallada, estadísticas, acciones completas
+    Beneficios: Control granular y seguimiento de cumplimiento
+📊 Historial por Bibliotecario
+    Acceso: Menú → Préstamos → Historial por Bibliotecario
+    Funcionalidad: Auditar actividad y rendimiento de préstamos por bibliotecario
+    Características: Historial completo, estadísticas de rendimiento, análisis de productividad
+    Beneficios: Auditoría de personal y control de calidad
+🗺️ Reporte por Zona
+    Acceso: Menú → Préstamos → Reporte por Zona
+    Funcionalidad: Analizar uso del servicio de préstamos por zona geográfica
+    Características: Reporte territorial, estadísticas por ubicación, análisis de distribución
+    Beneficios: Planificación territorial y optimización de recursos
+📋 Materiales Pendientes
+    Acceso: Menú → Préstamos → Materiales Pendientes
+    Funcionalidad: Identificar y priorizar materiales con préstamos pendientes
+    Características: Ranking inteligente, sistema de priorización, análisis de demanda
+    Beneficios: Optimización de inventario y mejora de satisfacción del usuario
+    Para más detalles, ver: FUNCIONALIDAD_RANGO_FECHAS.md | FUNCIONALIDAD_EDICION_PRESTAMOS.md | FUNCIONALIDAD_PRESTAMOS_POR_LECTOR.md | FUNCIONALIDAD_HISTORIAL_POR_BIBLIOTECARIO.md | FUNCIONALIDAD_REPORTE_POR_ZONA.md | FUNCIONALIDAD_MATERIALES_PENDIENTES.md | FUNCIONALIDAD_CONSULTA_DONACIONES_POR_FECHA.md | WEB_SERVICES_SOAP_IMPLEMENTADOS.md
+
+📁 Estructura del Proyecto
 biblioteca-pap/
 ├── 📁 src/main/java/edu/udelar/pap/
 │   ├── 🎮 controller/                    # Controladores MVC
 │   │   ├── MainController.java           # Controlador principal
+│   │   ├── ControllerFactory.java        # Factory de controladores
 │   │   ├── LectorController.java         # Gestión de lectores
 │   │   ├── BibliotecarioController.java  # Gestión de bibliotecarios
 │   │   ├── DonacionController.java       # Gestión de donaciones
-│   │   ├── PrestamoController.java       # Gestión de préstamos
+│   │   ├── PrestamoController.java       # Gestión de préstamos (legacy)
+│   │   ├── PrestamoControllerUltraRefactored.java
 │   │   ├── PrestamoUIHelper.java         # Helper UI préstamos
 │   │   └── PrestamoValidator.java        # Validador préstamos
 │   │
 │   ├── 🏗️ domain/                        # Entidades JPA
-│   │   ├── Usuario.java                  # Clase base usuarios
+│   │   ├── Usuario.java                  # Clase base de usuarios
 │   │   ├── Lector.java                   # Entidad lector
 │   │   ├── Bibliotecario.java            # Entidad bibliotecario
 │   │   ├── DonacionMaterial.java         # Entidad donación
@@ -46,350 +201,163 @@ biblioteca-pap/
 │   │   └── Zona.java                     # Enum zona
 │   │
 │   ├── ⚙️ service/                       # Lógica de negocio
-│   │   ├── LectorService.java            # Servicios lector
-│   │   ├── BibliotecarioService.java     # Servicios bibliotecario
-│   │   ├── DonacionService.java          # Servicios donación
-│   │   ├── PrestamoService.java          # Servicios préstamo
-│   │   └── PrestamoServiceRefactored.java # Servicios refactorizados
+│   │   ├── LectorService.java            # Servicios de lector
+│   │   ├── BibliotecarioService.java     # Servicios de bibliotecario
+│   │   ├── DonacionService.java          # Servicios de donación
+│   │   ├── PrestamoService.java          # Servicios de préstamo
+│   │   ├── PrestamoServiceRefactored.java # Servicios refactorizados
+│   │   └── AutenticacionService.java     # Login y sesiones
 │   │
 │   ├── 🗄️ repository/                    # Acceso a datos
-│   │   ├── PrestamoRepository.java       # Interfaz repositorio
+│   │   ├── LectorRepository.java         # Interfaz repositorio lectores
+│   │   ├── PrestamoRepository.java       # Interfaz repositorio préstamos
 │   │   └── impl/
-│   │       └── PrestamoRepositoryImpl.java # Implementación
+│   │       ├── LectorRepositoryImpl.java
+│   │       └── PrestamoRepositoryImpl.java
 │   │
-│   ├── 🖥️ ui/                           # Interfaces Swing
-│   │   ├── MainRefactored.java           # Punto entrada principal
+│   ├── 🖥️ ui/                            # Interfaz Swing (escritorio)
+│   │   ├── MainRefactored.java           # Punto de entrada principal
 │   │   ├── LectorUIUtil.java             # Utilidades UI lector
-│   │   ├── ControllerUtil.java           # Utilidades controlador
-│   │   ├── DataViewer.java               # Visualizador datos
-│   │   ├── ValidacionesUtil.java         # Utilidades validación
+│   │   ├── PrestamoUIUtil.java           # Utilidades UI préstamo
+│   │   ├── DataViewer.java               # Visualizador de datos
 │   │   ├── DateTextField.java            # Campo fecha personalizado
-│   │   ├── MaterialComboBoxItem.java     # Item combo materiales
+│   │   └── MaterialComboBoxItem.java     # Item combo materiales
+│   │
+│   ├── 🌐 server/                        # Servidor web integrado
+│   │   └── IntegratedServer.java         # HTTP en puerto 8080 (REST + estáticos)
+│   │
+│   ├── 🖥️ servlet/                       # Servlets (despliegue WAR)
+│   │   ├── AuthServlet.java              # Autenticación
+│   │   ├── LectorServlet.java            # API lectores
+│   │   ├── LectorServletRefactored.java
+│   │   ├── BibliotecarioServlet.java     # API bibliotecarios
+│   │   ├── DonacionServlet.java          # API donaciones
+│   │   ├── PrestamoServlet.java          # API préstamos
+│   │   ├── DashboardServlet.java         # Dashboard
+│   │   ├── ManagementServlet.java        # Gestión usuarios
+│   │   ├── TestServlet.java
+│   │   └── handler/
+│   │       └── LectorRequestHandler.java
+│   │
+│   ├── 📡 webservice/                    # Servicios SOAP (JAX-WS)
+│   │   ├── BibliotecarioWebService.java  # Interface + Impl
+│   │   ├── LectorWebService.java
+│   │   ├── PrestamoWebService.java
+│   │   └── DonacionWebService.java
+│   │
+│   ├── 📡 publisher/                      # Publicadores SOAP
+│   │   ├── PublisherFactory.java
+│   │   ├── BibliotecarioPublisher.java
+│   │   ├── LectorPublisher.java
+│   │   ├── PrestamoPublisher.java
+│   │   └── DonacionPublisher.java
+│   │
+│   ├── 🏭 factory/
+│   │   └── ServiceFactory.java           # Factory de servicios
+│   │
+│   ├── 🛠️ util/                         # Utilidades generales
+│   │   ├── ErrorHandler.java             # Manejador de errores
+│   │   ├── ControllerUtil.java           # Utilidades controlador
+│   │   ├── ValidacionesUtil.java         # Validaciones
 │   │   ├── InterfaceUtil.java            # Utilidades interfaz
 │   │   ├── DatabaseUtil.java             # Utilidades BD
 │   │   ├── DatabaseTester.java           # Tester BD
-│   │   ├── SchemaGenerator.java          # Generador esquemas
-│   │   └── ConfigChecker.java            # Verificador configuración
-│   │
-│   ├── 🌐 servlet/                       # Servlets Web
-│   │   ├── AuthServlet.java              # Autenticación web
-│   │   ├── LectorServlet.java            # Gestión lectores web
-│   │   ├── LectorServletRefactored.java  # Servlet refactorizado
-│   │   ├── BibliotecarioServlet.java     # Gestión bibliotecarios web
-│   │   ├── DonacionServlet.java          # Gestión donaciones web
-│   │   ├── PrestamoServlet.java          # Gestión préstamos web
-│   │   ├── DashboardServlet.java         # Dashboard web
-│   │   ├── ManagementServlet.java        # Gestión usuarios web
-│   │   ├── TestServlet.java              # Testing web
-│   │   └── handler/
-│   │       └── LectorRequestHandler.java # Handler requests
-│   │
-│   ├── 📡 publisher/                     # Servicios Web (JAX-WS)
-│   │   ├── LectorPublisher.java          # Publisher lectores
-│   │   └── BibliotecarioPublisher.java   # Publisher bibliotecarios
-│   │
-│   ├── 🏭 factory/                       # Patrones Factory
-│   │   └── ServiceFactory.java           # Factory servicios
-│   │
-│   ├── 🛠️ util/                         # Utilidades generales
-│   │   └── ErrorHandler.java             # Manejador errores
+│   │   ├── SchemaGenerator.java          # Generador de esquemas
+│   │   ├── ConfigChecker.java            # Verificador de configuración
+│   │   ├── CrearBibliotecarioInicial.java
+│   │   └── FixPasswordHashing.java
 │   │
 │   ├── ⚠️ exception/                     # Excepciones personalizadas
 │   │   ├── BibliotecaException.java      # Excepción base
 │   │   ├── BusinessRuleException.java    # Excepción regla negocio
 │   │   └── ValidationException.java      # Excepción validación
 │   │
-│   ├── 🔧 persistence/                   # Configuración persistencia
-│   │   └── HibernateUtil.java            # Utilidad Hibernate
-│   │
-│   └── 🖥️ server/                        # Servidor integrado
-│       └── IntegratedServer.java         # Servidor desarrollo
+│   └── 🔧 persistence/                   # Configuración persistencia
+│       └── HibernateUtil.java            # Utilidad Hibernate
 │
-├── 📁 src/main/webapp/                   # Aplicación Web
-│   ├── 📄 index.html                     # Página principal
-│   ├── 📄 landing.html                   # Landing page
-│   ├── 📄 spa.html                       # Single Page Application
-│   ├── 📄 test-spa.html                  # Testing SPA
-│   │
-│   ├── 📁 css/                           # Estilos
-│   │   ├── style.css                     # Estilos principales
-│   │   ├── spa.css                       # Estilos SPA
-│   │   └── landing.css                   # Estilos landing
-│   │
-│   ├── 📁 js/                            # JavaScript
-│   │   ├── main.js                       # JavaScript principal
-│   │   ├── api.js                        # API JavaScript
-│   │   ├── spa.js                        # Lógica SPA
-│   │   ├── dashboard.js                  # Dashboard
-│   │   ├── management.js                 # Gestión usuarios
-│   │   ├── forms.js                      # Formularios
-│   │   ├── landing.js                    # Landing page
-│   │   └── lazy-loading.js               # Carga perezosa
-│   │
-│   └── 📁 WEB-INF/                       # Configuración Web
-│       ├── web.xml                       # Descriptor web
-│       ├── sun-jaxws.xml                 # Configuración JAX-WS
-│       └── jsp/                          # Páginas JSP
-│           ├── auth/                     # Autenticación
-│           ├── dashboard/                # Dashboard
-│           ├── management/               # Gestión
-│           └── shared/                   # Componentes compartidos
+├── 📁 src/main/webapp/                   # Aplicación web (WAR)
+│   ├── index.html, landing.html, spa.html, test-spa.html
+│   ├── 📁 css/                           # style.css, spa.css, landing.css
+│   ├── 📁 js/                            # main.js, api.js, spa.js, dashboard.js, etc.
+│   │   └── core/                         # api-service.js, permission-manager.js
+│   └── 📁 WEB-INF/
+│       ├── web.xml, sun-jaxws.xml
+│       └── jsp/                          # auth/, dashboard/, management/, shared/
 │
 ├── 📁 src/main/resources/                # Configuraciones
 │   ├── hibernate-h2.cfg.xml              # Config H2 (desarrollo)
 │   ├── hibernate-mysql.cfg.xml           # Config MySQL (producción)
 │   ├── hibernate-mysql-team.cfg.xml      # Config MySQL equipo
-│   └── logging.properties                # Configuración logging
+│   └── logging.properties
 │
-├── 📁 documentacion/                     # Documentación completa
-│   ├── README.md                         # Documentación principal
-│   ├── FUNCIONES_IMPLEMENTADAS.md        # Funciones implementadas
-│   ├── FUNCIONALIDAD_*.md                # Documentación funcionalidades
-│   ├── REFACTORIZACION_*.md              # Documentación refactorización
-│   ├── INSTRUCCIONES_*.md                # Instrucciones migración
-│   ├── CONFIGURACION_*.md                # Configuraciones equipo
-│   └── WARNINGS_SOLUCIONADOS.md          # Warnings solucionados
+├── 📁 documentacion/                     # Documentación (este README y más)
+│   ├── README.md                         # Este archivo
+│   ├── FUNCIONES_IMPLEMENTADAS.md
+│   ├── FUNCIONALIDAD_*.md                # Documentación por funcionalidad
+│   ├── WEB_SERVICES_SOAP_IMPLEMENTADOS.md
+│   ├── REFACTORIZACION_*.md, INSTRUCCIONES_*.md, FIX_*.md
+│   └── ...
 │
-├── 📁 scripts/                           # Scripts automatización
-│   ├── ejecutar-app.sh                   # Ejecutar aplicación
-│   ├── ejecutar-servidor-integrado.sh    # Servidor integrado
-│   ├── compile-all.sh                    # Compilar todo
-│   ├── probar-*.sh                       # Scripts de prueba
-│   ├── debug-*.sh                        # Scripts de debug
-│   └── recargar-webapp.sh                # Recargar webapp
+├── 📁 scripts/                           # Scripts de automatización
+│   ├── ejecutar-app.sh / .bat            # Ejecutar aplicación (escritorio + web)
+│   ├── ejecutar-servidor-integrado.sh    # Solo servidor HTTP
+│   └── compile-all.sh, probar-*.sh, ...
 │
-├── 📁 target/                            # Archivos compilados
-├── 📄 pom.xml                            # Configuración Maven
-├── 📄 README.txt                         # Este archivo
-└── 📄 .gitignore                         # Archivos ignorados
-```
+├── 📁 target/                            # Compilados y WAR
+├── 📁 logs/                              # Logs de aplicación
+├── 📄 pom.xml                            # Maven (Java 21, packaging WAR)
+├── 📄 README.txt                         # Instrucciones rápidas en raíz
+└── 📄 .gitignore
+📖 Documentación relacionada
+    Web y SOAP: WEB_SERVICES_SOAP_IMPLEMENTADOS.md, INICIO_RAPIDO_SOAP.md
+    Pruebas web: GUIA_PRUEBAS_WEB.md
+    Instrucciones: README.txt en la raíz del proyecto (resumen rápido)
+👥 Autores del Proyecto
+    🎯 Equipo de Desarrollo
+    Roibeth Garcia - GitHub
+        
+        Desarrollador principal
+        Arquitectura del sistema
+        Implementación de funcionalidades core
+        Refactorización y optimización
 
-## ✅ FUNCIONALIDADES IMPLEMENTADAS (Desktop)
+    Lucas Machin - GitHub
+    
+        Desarrollador colaborador
+        Implementación de funcionalidades adicionales
+        Testing y validación
+        Documentación técnica
 
-### 🎯 **100% COMPLETADO - 15/15 Funcionalidades**
-- ✅ **Gestión de Usuarios**: Lectores y Bibliotecarios
-- ✅ **Gestión de Materiales**: Libros y Artículos Especiales
-- ✅ **Sistema de Donaciones**: Registro completo
-- ✅ **Consulta de Donaciones**: Filtros por rango de fechas
-- ✅ **Gestión de Préstamos**: Control completo
-- ✅ **Edición de Préstamos**: Todos los campos editables
-- ✅ **Préstamos por Lector**: Consulta específica
-- ✅ **Historial por Bibliotecario**: Auditoría completa
-- ✅ **Reporte por Zona**: Análisis territorial
-- ✅ **Materiales Pendientes**: Priorización inteligente
+🤝 Colaboración
+Este proyecto es el resultado de la colaboración entre ambos desarrolladores, implementando un sistema completo de gestión de biblioteca comunitaria con todas las funcionalidades requeridas.
 
-## 🌐 FUNCIONALIDADES WEB IMPLEMENTADAS
+🔧 Solución de Problemas
+Error: "illegal component position"
+✅ SOLUCIONADO: El mensaje de bienvenida ahora se centra correctamente
+La aplicación se ejecuta sin problemas
+Error de Compilación
+Verificar que Java 21+ esté instalado: java -version
+Limpiar y recompilar: mvn clean compile
+Error de Base de Datos
+H2 se crea automáticamente en ./target/h2db/
+Verificar permisos de escritura en el directorio
+📝 Licencia
+Este proyecto es parte del curso PAP (Programación Avanzada y Persistencia).
 
-### ✅ **Autenticación Web (2/15 funcionalidades)**
-- ✅ **Login de usuarios**: Como bibliotecario o lector, quiero poder hacer login en la aplicación
-- ✅ **Diferenciación de roles**: Sistema de autenticación con roles diferenciados
-- ✅ **Registro de nuevos usuarios**: Formulario de registro para nuevos usuarios
-- ✅ **Gestión de sesiones**: Control de sesiones de usuario
-- ✅ **Dashboard diferenciado**: Interfaz adaptada según el rol del usuario
+🎉 ¡Listo para Usar!
+La aplicación está completamente funcional en escritorio (Swing) y ofrece además interfaz web (SPA), API REST y servicios SOAP. El mensaje de bienvenida en la interfaz Swing se centra correctamente en cualquier resolución.
 
-### ✅ **Infraestructura Web**
-- ✅ **Servicios Web (JAX-WS)**: API REST para lectores y bibliotecarios
-- ✅ **Endpoints de autenticación**: Servicios de login y registro
-- ✅ **Interfaz SPA**: Single Page Application con navegación dinámica
-- ✅ **Servidor integrado**: Servidor de desarrollo para testing
-
-### 📊 **ESTADO DETALLADO DE IMPLEMENTACIÓN WEB**
-
-| Funcionalidad | Estado | Descripción |
-|---------------|--------|-------------|
-| **Login de usuarios** | ✅ IMPLEMENTADO | Sistema de autenticación funcional |
-| **Diferenciación de roles** | ✅ IMPLEMENTADO | Dashboard diferenciado por rol |
-| **Suspensión de lectores** | ❌ FALTANTE | Cambiar estado a SUSPENDIDO |
-| **Cambio de zona** | ❌ FALTANTE | Modificar barrio del lector |
-| **Registro de donación libros** | ❌ FALTANTE | Formulario de donación de libros |
-| **Registro de donación artículos** | ❌ FALTANTE | Formulario de donación de artículos |
-| **Consulta de donaciones** | ❌ FALTANTE | Listado de todas las donaciones |
-| **Consulta por rango fechas** | ❌ FALTANTE | Filtro de donaciones por período |
-| **Creación de préstamos** | ❌ FALTANTE | Formulario de nuevo préstamo |
-| **Actualización estado préstamos** | ❌ FALTANTE | Cambiar estado EN CURSO/DEVUELTO |
-| **Consulta préstamos por estado** | ❌ FALTANTE | Ver préstamos agrupados por estado |
-| **Actualización completa préstamos** | ❌ FALTANTE | Editar cualquier campo de préstamo |
-| **Listado préstamos activos** | ❌ FALTANTE | Préstamos activos por lector |
-| **Historial por bibliotecario** | ❌ FALTANTE | Préstamos gestionados por bibliotecario |
-| **Reporte por zona** | ❌ FALTANTE | Análisis de préstamos por barrio |
-| **Materiales pendientes** | ❌ FALTANTE | Identificar materiales con muchos préstamos |
-
-## ❌ CASOS DE USO WEBAPP FALTANTES POR IMPLEMENTAR
-
-### 📋 **HISTORIAS DE USUARIO - FUNCIONALIDADES MÍNIMAS REQUERIDAS**
-
-#### 1. **👥 Gestión de Usuarios**
-
-##### ✅ **IMPLEMENTADO**
-- ✅ **Login de usuarios**: Como bibliotecario o lector, quiero poder hacer login en la aplicación
-- ✅ **Diferenciación de roles**: Sistema de autenticación con roles diferenciados
-
-##### ❌ **FALTANTE POR IMPLEMENTAR**
-- ❌ **Suspensión de lectores**: Como bibliotecario, quiero modificar el estado de un lector a "SUSPENDIDO" para impedirle realizar nuevos préstamos si incumple con las normas
-- ❌ **Cambio de zona**: Como bibliotecario quiero cambiar el barrio (zona) de un lector para mantener actualizada su ubicación dentro del sistema
-
-#### 2. **📚 Gestión de Materiales**
-
-##### ❌ **FALTANTE POR IMPLEMENTAR**
-- ❌ **Registro de donación de libros**: Como bibliotecario, quiero registrar una nueva donación de libros indicando su título y cantidad de páginas para incorporar al inventario
-- ❌ **Registro de donación de artículos especiales**: Como bibliotecario, quiero registrar una nueva donación de artículo especial con su descripción, peso y dimensiones para que esté disponible para préstamo
-- ❌ **Consulta de donaciones**: Como bibliotecario y lector quiero consultar todas las donaciones registradas
-- ❌ **Consulta de donaciones por rango de fechas** (OPCIONAL): Como bibliotecario, quiero consultar todas las donaciones registradas en un rango de fechas para tener trazabilidad del inventario
-
-#### 3. **📖 Gestión de Préstamos**
-
-##### ❌ **FALTANTE POR IMPLEMENTAR**
-- ❌ **Creación de préstamos**: Como lector, quiero crear un nuevo préstamo asociando un material a un lector y a un bibliotecario, para registrar el movimiento del material
-- ❌ **Actualización de estado de préstamos**: Como bibliotecario, quiero actualizar el estado de un préstamo a "EN CURSO" o "DEVUELTO" para reflejar su progreso
-- ❌ **Consulta de préstamos por estado**: Como lector quiero ver todas mis préstamos agrupados por estado
-- ❌ **Actualización completa de préstamos** (OPCIONAL): Como bibliotecario, quiero actualizar cualquier información de un préstamo
-- ❌ **Listado de préstamos activos por lector** (OPCIONAL): Como bibliotecario quiero listar todos los préstamos activos de un lector para verificar su historial y controlar el cumplimiento de devoluciones
-
-#### 4. **📊 Control y Seguimiento**
-
-##### ❌ **FALTANTE POR IMPLEMENTAR (TODOS OPCIONALES)**
-- ❌ **Historial de préstamos por bibliotecario** (OPCIONAL): Como bibliotecario quiero ver el historial de préstamos gestionados por mi
-- ❌ **Reporte de préstamos por zona** (OPCIONAL): Como bibliotecario, quiero obtener un reporte de préstamos por zona para analizar el uso del servicio en diferentes barrios
-- ❌ **Identificación de materiales pendientes** (OPCIONAL): Como bibliotecario, quiero identificar materiales con muchos préstamos pendientes para priorizar su devolución o reposición
-
-### 🎯 **RESUMEN DE IMPLEMENTACIÓN WEBAPP**
-
-| Categoría | Funcionalidades | Implementadas | Faltantes | Total |
-|-----------|----------------|---------------|-----------|-------|
-| **Gestión de Usuarios** | 3 | 2 | 1 | 3 |
-| **Gestión de Materiales** | 4 | 0 | 4 | 4 |
-| **Gestión de Préstamos** | 5 | 0 | 5 | 5 |
-| **Control y Seguimiento** | 3 | 0 | 3 | 3 |
-| **TOTAL** | **15** | **2** | **13** | **15** |
-
-### 📈 **ESTADO ACTUAL WEBAPP**
-- ✅ **Implementado**: 2/15 funcionalidades (13.3%)
-- ❌ **Faltante**: 13/15 funcionalidades (86.7%)
-- 🎯 **Progreso**: Sistema básico de autenticación implementado
-
-### 🔴 **PRIORIDADES DE IMPLEMENTACIÓN**
-
-#### **FASE 1 - FUNCIONALIDADES MÍNIMAS (ALTA PRIORIDAD)**
-1. **Gestión de usuarios restante** (2 funcionalidades)
-2. **Gestión de materiales completa** (4 funcionalidades)
-3. **Gestión de préstamos básica** (3 funcionalidades principales)
-
-#### **FASE 2 - FUNCIONALIDADES OPCIONALES (MEDIA PRIORIDAD)**
-4. **Gestión de préstamos avanzada** (2 funcionalidades opcionales)
-5. **Control y seguimiento** (3 funcionalidades opcionales)
-
-### 🛠️ **FUNCIONALIDADES ADICIONALES IDENTIFICADAS (NO REQUERIDAS)**
-
-#### **🟡 MEJORAS DE USABILIDAD**
-- ❌ **Perfil de usuario**: Edición de datos personales
-- ❌ **Cambio de contraseña**: Seguridad de cuentas
-- ❌ **Recuperación de contraseña**: Reset por email
-- ❌ **Dashboard personalizado**: Interfaz adaptada por rol
-
-#### **🟢 FUNCIONALIDADES AVANZADAS**
-- ❌ **Sistema de notificaciones**: Alertas y recordatorios
-- ❌ **Búsqueda avanzada**: Filtros múltiples
-- ❌ **Exportación de datos**: PDF, Excel, CSV
-- ❌ **API REST completa**: Integración con sistemas externos
-
-## 🛠️ TECNOLOGÍAS UTILIZADAS
-
-### **Backend**
-- **Java 17** - Lenguaje principal
-- **Hibernate 6.x** - ORM para persistencia
-- **Maven** - Gestión de dependencias
-- **JAX-WS** - Servicios web
-- **Servlets** - Manejo de requests HTTP
-- **JSP** - Páginas dinámicas
-
-### **Frontend**
-- **HTML5/CSS3** - Estructura y estilos
-- **JavaScript ES6+** - Lógica del cliente
-- **Bootstrap** - Framework CSS (parcial)
-- **AJAX** - Comunicación asíncrona
-- **SPA Architecture** - Single Page Application
-
-### **Base de Datos**
-- **H2 Database** - Desarrollo
-- **MySQL** - Producción
-- **JPA/Hibernate** - Mapeo objeto-relacional
-
-### **Herramientas**
-- **IntelliJ IDEA** - IDE principal
-- **Git** - Control de versiones
-- **Maven** - Build automation
-
-## 🚀 COMANDOS ÚTILES
-
-### **Ejecución**
-```bash
-# Aplicación desktop
-./scripts/ejecutar-app.sh
-
-# Servidor web integrado
-./scripts/ejecutar-servidor-integrado.sh
-
-# Compilar todo
-./scripts/compile-all.sh
-```
-
-### **Testing**
-```bash
-# Probar funcionalidades específicas
-./scripts/probar-*.sh
-
-# Debug de problemas
-./scripts/debug-*.sh
-```
-
-### **Desarrollo**
-```bash
-# Compilar con Maven
-mvn clean compile
-
-# Ejecutar tests
-mvn test
-
-# Generar JAR
-mvn package
-```
-
-## 📞 CONTACTO Y SOPORTE
-
-**Desarrollador Principal**: Roibeth Garcia
-- **GitHub**: https://github.com/RoibethGarcia
-- **Proyecto**: https://github.com/RoibethGarcia/Biblioteca-pap
-
-**Colaborador**: Lucas Machin
-- **GitHub**: https://github.com/lucasmachin1234
-
-## 📝 NOTAS IMPORTANTES
-
-1. **JDK 17+** es requerido para ejecutar el proyecto
-2. **H2 Database** se configura automáticamente para desarrollo
-3. **MySQL** requiere configuración manual para producción
-4. **IntelliJ IDEA** es el IDE recomendado
-5. **Maven** maneja automáticamente las dependencias
-6. **Documentación completa** disponible en `/documentacion/`
-7. **Scripts automatizados** disponibles en `/scripts/`
-
-## 🎯 **RESUMEN EJECUTIVO**
-
-### **📊 Estado del Proyecto**
-- **🖥️ Aplicación Desktop**: ✅ **100% COMPLETADA** (15/15 funcionalidades)
-- **🌐 Aplicación Web**: ⚠️ **13.3% COMPLETADA** (2/15 funcionalidades)
-
-### **🚀 Próximos Pasos Recomendados**
-1. **Implementar gestión de usuarios restante** (suspensión y cambio de zona)
-2. **Desarrollar gestión completa de materiales** (donaciones de libros y artículos)
-3. **Crear sistema de préstamos web** (creación, actualización y consulta)
-4. **Implementar funcionalidades opcionales** (reportes y control avanzado)
-
-### **📈 Progreso General**
-- **Total de funcionalidades**: 30 (15 desktop + 15 web)
-- **Implementadas**: 17 (15 desktop + 2 web)
-- **Faltantes**: 13 (0 desktop + 13 web)
-- **Progreso general**: 56.7% completado
-
----
-**🎉 ¡Proyecto desktop 100% funcional, webapp con base sólida para desarrollo!**
+📝 Cambios Recientes
+✅ Última actualización (documentación)
+📚 README: Actualizado para reflejar el estado actual del proyecto.
+🛠️ Tecnologías: Java 21, packaging WAR, JAX-WS, Servlets, servidor integrado.
+🎯 Ejecución: Documentados los tres modos (escritorio, --server, --soap) y la ruta correcta de scripts (scripts/ejecutar-app.sh).
+📁 Estructura: Incluidos paquetes server/, servlet/, webservice/, publisher/, factory/, repositorios y webapp/.
+🌐 Web: Descripción de la aplicación web (SPA, API REST, SOAP) y URLs del servidor integrado.
+🚀 Funcionalidades del proyecto
+✅ Sistema completo de gestión de biblioteca (escritorio)
+✅ Interfaz web: login, registro, dashboard por rol, SPA
+✅ API REST y servidor HTTP integrado (puerto 8080)
+✅ Servicios SOAP (JAX-WS) con WSDL en puertos 9001–9004
+✅ Base de datos H2 y MySQL
+✅ Documentación y scripts en documentacion/ y scripts/
